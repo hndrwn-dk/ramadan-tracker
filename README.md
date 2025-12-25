@@ -1,10 +1,10 @@
-# Ramadan Companion
+# Ramadan Tracker
 
-Premium offline-first Ramadan planner & tracker with yearly seasons, Autopilot plan, and local backup/restore.
+Premium Ramadan tracker & planner with yearly seasons, Autopilot Qur'an plan, Sahur/Iftar reminders, and local backup/restore.
 
 ## Features
 
-- **Offline-First**: Works completely offline, no internet required
+- **Offline-First**: Works completely offline, no internet or account required
 - **Yearly Reusable**: Create multiple Ramadan seasons (2025, 2026, etc.)
 - **Ramadan Autopilot**: AI-free algorithm that generates daily plans based on your goals and available time
 - **Quick Logging**: Complete daily tracking in under 15 seconds
@@ -67,8 +67,8 @@ The app uses Drift (SQLite) with the following tables:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd ramadan-offline-mobile
+git clone https://github.com/hndrwn-dk/ramadan-tracker.git
+cd ramadan-tracker
 ```
 
 2. Install dependencies:
@@ -90,9 +90,11 @@ flutter run
 
 ### First Launch
 
-On first launch, the app will:
-- Seed default habits (fasting, prayers, taraweeh, qiyam, sadaqah, quran, dhikr, reflection)
-- Create a default Ramadan season for the current year
+On first launch, the app will guide you through onboarding:
+- Set up your Ramadan season (start date, number of days)
+- Choose which habits to track (fasting, Quran, Dhikr, Taraweeh, Sedekah, I'tikaf)
+- Configure goals (Quran pages/day, Dhikr target, Sedekah amount & currency)
+- Set up prayer time reminders (Sahur & Iftar)
 
 ### Creating a New Season
 
@@ -104,22 +106,23 @@ On first launch, the app will:
 
 ### Setting Up Autopilot
 
-1. Go to the Plan tab
+The Autopilot plan is configured during onboarding, but you can adjust it later:
+1. Go to Settings > Goals
 2. Configure:
-   - Intensity (Light/Balanced/Strong)
-   - Available time blocks (morning/day/night minutes)
-   - Quran goal (1 Khatam / 2 Khatam / Custom pages)
-   - Dhikr target
-3. Tap "Save Plan"
-4. View your daily plan timeline
+   - Quran goal (1 Khatam / 2 Khatam / Custom pages per day)
+   - Dhikr target (33/100/300/1000 per day)
+   - Sedekah goal (optional, with currency selection)
+   - Autopilot intensity (Light/Balanced/Strong)
+3. View your daily plan in the Plan tab
 
 ### Quick Logging
 
 The Today tab allows fast logging:
-- Toggle boolean habits (fasting, prayers, etc.)
+- Toggle boolean habits (fasting, Taraweeh, I'tikaf)
 - Adjust count habits (Quran pages, Dhikr) with +/- buttons
-- Use quick-add chips (5, 10, 20 for Quran; 33, 100, 300 for Dhikr)
-- Write reflections
+- Use quick-add chips (+5, +10, +20 for Quran; +33, +100, +300 for Dhikr)
+- Track Sedekah with currency support (IDR, SGD, USD, MYR)
+- Write daily reflections
 
 ### Backup & Restore
 
@@ -134,18 +137,19 @@ The Today tab allows fast logging:
 The Autopilot generates daily plans based on:
 
 1. **Quran Planning**:
+   - Default: 1 Juz/day = 20 pages/day
    - Calculates remaining pages and days
-   - Suggests daily target with catch-up cap
-   - Distributes reading across time blocks
+   - Suggests daily target with catch-up cap (max +5 pages/day)
+   - Distributes reading across morning/day/night time blocks
 
 2. **Time Allocation**:
    - Quran: ~1.5 minutes per page
    - Dhikr: ~0.02 minutes per count
-   - Qiyam: 10/20/30 minutes based on intensity
+   - Taraweeh: 10/20/30 minutes based on intensity
 
 3. **Catch-Up Mode**:
    - If you miss days, increases daily target
-   - Caps increase to prevent overwhelming targets
+   - Caps increase to prevent overwhelming targets (default +5 pages/day)
    - Shows warnings if completion becomes unlikely
 
 ## Completion Score
