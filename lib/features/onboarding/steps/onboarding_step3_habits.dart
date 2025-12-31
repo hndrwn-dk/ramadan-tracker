@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 class OnboardingStep3Habits extends StatefulWidget {
   final OnboardingData data;
@@ -18,47 +19,44 @@ class OnboardingStep3Habits extends StatefulWidget {
 }
 
 class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
-  String _getQuranLabel() {
-    if (widget.data.quranGoal == '1_khatam') {
-      return 'Qur\'an (20 pages/day)';
-    } else if (widget.data.quranGoal == '2_khatam') {
-      return 'Qur\'an (40 pages/day)';
-    } else {
-      return 'Qur\'an (${widget.data.customQuranPages} pages/day)';
-    }
+  String _getQuranLabel(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // Just return "Al-Quran" without page details - details will be shown in next step
+    return l10n.habitQuran;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose What to Track',
+            l10n.chooseWhatToTrack,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Track only what helps. You can change anytime.',
+            l10n.trackOnlyWhatHelps,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 32),
-          _buildHabitCheckbox('fasting', 'Fasting', Icons.wb_sunny),
-          _buildHabitCheckbox('quran_pages', _getQuranLabel(), Icons.menu_book),
-          _buildHabitCheckbox('dhikr', 'Dhikr', Icons.favorite),
-          _buildHabitCheckbox('taraweeh', 'Taraweeh', Icons.nights_stay),
-          _buildHabitCheckbox('sedekah', 'Sedekah', Icons.volunteer_activism),
+          _buildHabitCheckbox(context, 'fasting', l10n.habitFasting, Icons.wb_sunny),
+          _buildHabitCheckbox(context, 'quran_pages', _getQuranLabel(context), Icons.menu_book),
+          _buildHabitCheckbox(context, 'dhikr', l10n.habitDhikr, Icons.favorite),
+          _buildHabitCheckbox(context, 'taraweeh', l10n.habitTaraweeh, Icons.nights_stay),
+          _buildHabitCheckbox(context, 'sedekah', l10n.habitSedekah, Icons.volunteer_activism),
           const SizedBox(height: 24),
           ExpansionTile(
-            title: const Text('Advanced'),
+            title: Text(l10n.advanced),
             initiallyExpanded: false,
             children: [
-              _buildHabitCheckbox('prayers', '5 Prayers (simple)', Icons.mosque),
-              _buildHabitCheckbox('itikaf', 'I\'tikaf', Icons.mosque),
+              _buildHabitCheckbox(context, 'prayers', l10n.habitPrayers, Icons.mosque),
+              _buildHabitCheckbox(context, 'itikaf', l10n.habitItikaf, Icons.mosque),
             ],
           ),
           const Spacer(),
@@ -67,14 +65,14 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: widget.onPrevious,
-                  child: const Text('Back'),
+                  child: Text(l10n.back),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
                   onPressed: widget.onNext,
-                  child: const Text('Continue'),
+                  child: Text(l10n.continueButton),
                 ),
               ),
             ],
@@ -84,7 +82,7 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
     );
   }
 
-  Widget _buildHabitCheckbox(String key, String label, IconData icon) {
+  Widget _buildHabitCheckbox(BuildContext context, String key, String label, IconData icon) {
     final isSelected = widget.data.selectedHabits.contains(key);
     return CheckboxListTile(
       value: isSelected,
