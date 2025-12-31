@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/app/app.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
+import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step1_welcome.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step2_season.dart';
@@ -19,37 +20,85 @@ class OnboardingFlow extends ConsumerStatefulWidget {
 
 class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _currentStep = 0;
-  final PageController _pageController = PageController();
+  int? _lastStep;
 
   OnboardingData _data = OnboardingData();
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return OnboardingStep1Welcome(
+          key: const ValueKey(0),
+          data: _data,
+          onNext: _nextStep,
+        );
+      case 1:
+        return OnboardingStep2Season(
+          key: const ValueKey(1),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 2:
+        return OnboardingStep3Habits(
+          key: const ValueKey(2),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 3:
+        return OnboardingStep4Goals(
+          key: const ValueKey(3),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 4:
+        return OnboardingStep5Reminders(
+          key: const ValueKey(4),
+          data: _data,
+          onPrevious: _previousStep,
+          onFinish: () async {
+            await _data.save(ref);
+            ref.invalidate(shouldShowOnboardingProvider);
+            if (mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => const MainScreen(),
+                ),
+                (route) => false,
+              );
+            }
+          },
+        );
+      default:
+        return OnboardingStep1Welcome(
+          key: const ValueKey(0),
+          data: _data,
+          onNext: _nextStep,
+        );
+    }
   }
 
   void _nextStep() {
     if (_currentStep < 4) {
+      final nextStep = _currentStep + 1;
+      // Update state - AnimatedSwitcher will handle the transition smoothly
       setState(() {
-        _currentStep++;
+        _lastStep = _currentStep;
+        _currentStep = nextStep;
       });
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
     }
   }
 
   void _previousStep() {
     if (_currentStep > 0) {
+      final prevStep = _currentStep - 1;
+      // Update state - AnimatedSwitcher will handle the transition smoothly
       setState(() {
-        _currentStep--;
+        _lastStep = _currentStep;
+        _currentStep = prevStep;
       });
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
     }
   }
 
@@ -79,44 +128,55 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                 ),
               ),
             Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  OnboardingStep1Welcome(
-                    data: _data,
-                    onNext: _nextStep,
-                  ),
-                  OnboardingStep2Season(
-                    data: _data,
-                    onNext: _nextStep,
-                    onPrevious: _previousStep,
-                  ),
-                  OnboardingStep3Habits(
-                    data: _data,
-                    onNext: _nextStep,
-                    onPrevious: _previousStep,
-                  ),
-                  OnboardingStep4Goals(
-                    data: _data,
-                    onNext: _nextStep,
-                    onPrevious: _previousStep,
-                  ),
-                  OnboardingStep5Reminders(
-                    data: _data,
-                    onPrevious: _previousStep,
-                    onFinish: () async {
-                      await _data.save(ref);
-                      if (mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (_) => const MainScreen(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ],
+              child: ClipRect(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  layoutBuilder: (currentChild, previousChildren) {
+                    return Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    final int? childStep = (child.key is ValueKey<int>)
+                        ? (child.key as ValueKey<int>).value
+                        : null;
+
+                    final bool isForward = _lastStep == null || _currentStep > _lastStep!;
+                    final bool isIncoming = childStep == _currentStep;
+
+                    // Very subtle slide - just enough to feel smooth, not dramatic
+                    final Animation<double> slideAnim =
+                        isIncoming ? animation : ReverseAnimation(animation);
+
+                    // Reduced offset for more subtle movement
+                    final Offset inBegin = Offset(isForward ? 0.15 : -0.15, 0.0);
+                    final Offset outEnd = Offset(isForward ? -0.15 : 0.15, 0.0);
+
+                    final Tween<Offset> tween = isIncoming
+                        ? Tween<Offset>(begin: inBegin, end: Offset.zero)
+                        : Tween<Offset>(begin: Offset.zero, end: outEnd);
+
+                    // Fast fade + minimal slide for instant feel
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: tween.animate(CurvedAnimation(
+                          parent: slideAnim,
+                          curve: Curves.easeOut,
+                        )),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _buildCurrentStep(),
+                ),
               ),
             ),
           ],
@@ -139,7 +199,7 @@ class OnboardingData {
   int dhikrTarget = 100;
   bool sedekahGoalEnabled = false;
   int sedekahAmount = 0;
-  String sedekahCurrency = 'Rp';
+  String sedekahCurrency = 'IDR';
   String autopilotIntensity = 'balanced';
   
   bool sahurEnabled = true;
@@ -186,8 +246,17 @@ class OnboardingData {
     await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
     await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
     
+    // Set prayers to detailed mode by default (track all prayers individually)
+    await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
+    
     if (selectedHabits.contains('sedekah')) {
       await database.kvSettingsDao.setValue('sedekah_currency', sedekahCurrency);
+      await database.kvSettingsDao.setValue('sedekah_goal_enabled', sedekahGoalEnabled.toString());
+      if (sedekahGoalEnabled && sedekahAmount > 0) {
+        await database.kvSettingsDao.setValue('sedekah_goal_amount', sedekahAmount.toString());
+      } else {
+        await database.kvSettingsDao.deleteValue('sedekah_goal_amount');
+      }
     }
 
     final habits = await database.habitsDao.getAllHabits();
@@ -242,22 +311,28 @@ class OnboardingData {
     );
 
     if (latitude != null && longitude != null) {
-      await NotificationService.scheduleAllReminders(
-        database: database,
-        seasonId: seasonId,
-        latitude: latitude!,
-        longitude: longitude!,
-        timezone: timezone,
-        method: calculationMethod,
-        highLatRule: highLatRule,
-        sahurEnabled: sahurEnabled,
-        sahurOffsetMinutes: sahurOffsetMinutes,
-        iftarEnabled: iftarEnabled,
-        iftarOffsetMinutes: iftarOffsetMinutes,
-        nightPlanEnabled: nightPlanEnabled,
-        fajrAdjust: fajrAdjust,
-        maghribAdjust: maghribAdjust,
-      );
+      try {
+        await NotificationService.scheduleAllReminders(
+          database: database,
+          seasonId: seasonId,
+          latitude: latitude!,
+          longitude: longitude!,
+          timezone: timezone,
+          method: calculationMethod,
+          highLatRule: highLatRule,
+          sahurEnabled: sahurEnabled,
+          sahurOffsetMinutes: sahurOffsetMinutes,
+          iftarEnabled: iftarEnabled,
+          iftarOffsetMinutes: iftarOffsetMinutes,
+          nightPlanEnabled: nightPlanEnabled,
+          fajrAdjust: fajrAdjust,
+          maghribAdjust: maghribAdjust,
+        );
+      } catch (e) {
+        // Log error but don't block onboarding completion
+        // Notifications can be set up later from settings
+        debugPrint('Warning: Failed to schedule reminders: $e');
+      }
     }
   }
 }

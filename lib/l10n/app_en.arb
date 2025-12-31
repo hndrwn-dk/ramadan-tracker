@@ -1,0 +1,2898 @@
+{
+  "@@locale": "en",
+  "appTitle": "Ramadan Tracker",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  
+  "today": "Today",
+  "@today": {
+    "description": "Navigation menu label for Today tab"
+  },
+  
+  "month": "Month",
+  "@month": {
+    "description": "Navigation menu label for Month tab"
+  },
+  
+  "plan": "Plan",
+  "@plan": {
+    "description": "Navigation menu label for Plan tab"
+  },
+  
+  "insights": "Insights",
+  "@insights": {
+    "description": "Navigation menu label for Insights tab"
+  },
+  
+  "settings": "Settings",
+  "@settings": {
+    "description": "Navigation menu label for Settings tab"
+  },
+  
+  "save": "Save",
+  "@save": {
+    "description": "Save button label"
+  },
+  
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button label"
+  },
+  
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button label"
+  },
+  
+  "create": "Create",
+  "@create": {
+    "description": "Create button label"
+  },
+  
+  "export": "Export",
+  "@export": {
+    "description": "Export button label"
+  },
+  
+  "import": "Import",
+  "@import": {
+    "description": "Import button label"
+  },
+  
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Settings screen title"
+  },
+  
+  "appearanceTitle": "Appearance",
+  "@appearanceTitle": {
+    "description": "Appearance section title"
+  },
+  
+  "appearanceSubtitle": "Theme and display settings",
+  "@appearanceSubtitle": {
+    "description": "Appearance section subtitle"
+  },
+  
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Light theme option"
+  },
+  
+  "themeLightDesc": "Always use light theme",
+  "@themeLightDesc": {
+    "description": "Light theme description"
+  },
+  
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Dark theme option"
+  },
+  
+  "themeDarkDesc": "Always use dark theme",
+  "@themeDarkDesc": {
+    "description": "Dark theme description"
+  },
+  
+  "themeAuto": "Auto",
+  "@themeAuto": {
+    "description": "Auto theme option"
+  },
+  
+  "themeAutoDesc": "Follow system theme (default)",
+  "@themeAutoDesc": {
+    "description": "Auto theme description"
+  },
+  
+  "seasonManagementTitle": "Season Management",
+  "@seasonManagementTitle": {
+    "description": "Season Management section title"
+  },
+  
+  "seasonManagementSubtitle": "Create, view, and delete Ramadan seasons",
+  "@seasonManagementSubtitle": {
+    "description": "Season Management section subtitle"
+  },
+  
+  "habitsTargetsTitle": "Habits & Targets",
+  "@habitsTargetsTitle": {
+    "description": "Habits & Targets section title"
+  },
+  
+  "habitsTargetsSubtitle": "Enable or disable habits to track",
+  "@habitsTargetsSubtitle": {
+    "description": "Habits & Targets section subtitle"
+  },
+  
+  "timesRemindersTitle": "Times & Reminders",
+  "@timesRemindersTitle": {
+    "description": "Times & Reminders section title"
+  },
+  
+  "timesRemindersSubtitle": "Configure prayer times and notification reminders",
+  "@timesRemindersSubtitle": {
+    "description": "Times & Reminders section subtitle"
+  },
+  
+  "backupRestoreTitle": "Backup & Restore",
+  "@backupRestoreTitle": {
+    "description": "Backup & Restore section title"
+  },
+  
+  "backupRestoreSubtitle": "Export or import your data",
+  "@backupRestoreSubtitle": {
+    "description": "Backup & Restore section subtitle"
+  },
+  
+  "aboutTitle": "About",
+  "@aboutTitle": {
+    "description": "About section title"
+  },
+  
+  "aboutSubtitle": "App information and settings",
+  "@aboutSubtitle": {
+    "description": "About section subtitle"
+  },
+  
+  "languageTitle": "Language",
+  "@languageTitle": {
+    "description": "Language section title"
+  },
+  
+  "languageSubtitle": "Choose your preferred language",
+  "@languageSubtitle": {
+    "description": "Language section subtitle"
+  },
+  
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  
+  "indonesian": "Indonesian",
+  "@indonesian": {
+    "description": "Indonesian language option"
+  },
+  
+  "insightsTitle": "Insights",
+  "@insightsTitle": {
+    "description": "Insights screen title"
+  },
+  
+  "insightsTodayTab": "Today",
+  "@insightsTodayTab": {
+    "description": "Insights Today tab label"
+  },
+  
+  "insights7DaysTab": "7 Days",
+  "@insights7DaysTab": {
+    "description": "Insights 7 Days tab label"
+  },
+  
+  "insightsSeasonTab": "Ramadan",
+  "@insightsSeasonTab": {
+    "description": "Insights Season tab label"
+  },
+  
+  "insightsTodayScore": "Today Score",
+  "@insightsTodayScore": {
+    "description": "Today score label"
+  },
+  
+  "insightsStreak": "Streak",
+  "@insightsStreak": {
+    "description": "Streak label"
+  },
+  
+  "insightsComplete": "Complete",
+  "@insightsComplete": {
+    "description": "Complete status label"
+  },
+  
+  "insightsDayProgress": "Day {day} of {total}",
+  "@insightsDayProgress": {
+    "description": "Day progress text with placeholders",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "insightsScoreDrivers": "Score Drivers",
+  "@insightsScoreDrivers": {
+    "description": "Score drivers section title"
+  },
+  
+  "insightsViewConsistency": "View Ramadan Consistency",
+  "@insightsViewConsistency": {
+    "description": "View consistency button label"
+  },
+  
+  "insightsHighlights": "Highlights",
+  "@insightsHighlights": {
+    "description": "Highlights section title"
+  },
+  
+  "insights7DayScore": "7-Day Score",
+  "@insights7DayScore": {
+    "description": "7-day score label"
+  },
+  
+  "insightsTotalScore": "Total",
+  "@insightsTotalScore": {
+    "description": "Total score label"
+  },
+  
+  "insightsBestStreak": "Best Streak",
+  "@insightsBestStreak": {
+    "description": "Best streak label"
+  },
+  
+  "insightsPerfectDays": "Perfect Days",
+  "@insightsPerfectDays": {
+    "description": "Perfect days label"
+  },
+  
+  "insightsMissedTasks": "Missed Tasks",
+  "@insightsMissedTasks": {
+    "description": "Missed tasks label"
+  },
+  
+  "insightsReviewMissedDays": "Review Missed Days",
+  "@insightsReviewMissedDays": {
+    "description": "Review missed days button label"
+  },
+  
+  "insightsWeeklyRhythm": "Weekly Rhythm",
+  "@insightsWeeklyRhythm": {
+    "description": "Weekly rhythm section title"
+  },
+  
+  "insightsSeasonScore": "Ramadan Score",
+  "@insightsSeasonScore": {
+    "description": "Season score label"
+  },
+  
+  "insightsPerfectDaysCount": "Perfect Days",
+  "@insightsPerfectDaysCount": {
+    "description": "Perfect days count label"
+  },
+  
+  "insightsMissedDaysCount": "Missed Days",
+  "@insightsMissedDaysCount": {
+    "description": "Missed days count label"
+  },
+  
+  "insightsSeasonAudit": "Season Audit",
+  "@insightsSeasonAudit": {
+    "description": "Season audit button label"
+  },
+  
+  "insightsSeasonTrend": "Completion Trend",
+  "@insightsSeasonTrend": {
+    "description": "Completion trend section title"
+  },
+  
+  "insightsSeasonHighlights": "Season Highlights",
+  "@insightsSeasonHighlights": {
+    "description": "Season highlights section title"
+  },
+  
+  "insightsBestDay": "Best Day",
+  "@insightsBestDay": {
+    "description": "Best day label"
+  },
+  
+  "insightsToughestDay": "Toughest Day",
+  "@insightsToughestDay": {
+    "description": "Toughest day label"
+  },
+  
+  "insightsMostConsistent": "Most Consistent Task",
+  "@insightsMostConsistent": {
+    "description": "Most consistent task label"
+  },
+  
+  "insightsBiggestComeback": "Biggest Comeback",
+  "@insightsBiggestComeback": {
+    "description": "Biggest comeback label"
+  },
+  
+  "monthViewTitle": "Month View",
+  "@monthViewTitle": {
+    "description": "Month view screen title"
+  },
+  
+  "monthViewLegend": "Legend",
+  "@monthViewLegend": {
+    "description": "Month view legend title"
+  },
+  
+  "monthViewRing": "Ring = Completion",
+  "@monthViewRing": {
+    "description": "Month view ring legend"
+  },
+  
+  "monthViewDot": "Dot = Tracked",
+  "@monthViewDot": {
+    "description": "Month view dot legend"
+  },
+  
+  "monthViewStar": "Star = Last 10",
+  "@monthViewStar": {
+    "description": "Month view star legend"
+  },
+  
+  "planTitle": "Ramadan Autopilot",
+  "@planTitle": {
+    "description": "Plan screen title"
+  },
+  
+  "planTodayTarget": "Today Target",
+  "@planTodayTarget": {
+    "description": "Today target label"
+  },
+  
+  "planTodayRemaining": "Today Remaining",
+  "@planTodayRemaining": {
+    "description": "Today remaining label"
+  },
+  
+  "planRecommended": "Recommended Plan",
+  "@planRecommended": {
+    "description": "Recommended plan label"
+  },
+  
+  "planPersonalizedGuide": "Your personalized daily guide",
+  "@planPersonalizedGuide": {
+    "description": "Personalized guide subtitle"
+  },
+  
+  "planTodaysPlan": "Today's Plan",
+  "@planTodaysPlan": {
+    "description": "Today's plan title"
+  },
+  
+  "planStartReading": "Start Reading",
+  "@planStartReading": {
+    "description": "Start reading button label"
+  },
+  
+  "planStartCounter": "Start Counter",
+  "@planStartCounter": {
+    "description": "Start counter button label"
+  },
+  
+  "planMorning": "Morning",
+  "@planMorning": {
+    "description": "Morning time label"
+  },
+  
+  "planDay": "Day",
+  "@planDay": {
+    "description": "Day time label"
+  },
+  
+  "planNight": "Night",
+  "@planNight": {
+    "description": "Night time label"
+  },
+  
+  "done": "Done",
+  "@done": {
+    "description": "Done status label"
+  },
+  
+  "miss": "Missed",
+  "@miss": {
+    "description": "Missed status label"
+  },
+  
+  "partial": "Partial",
+  "@partial": {
+    "description": "Partial status label"
+  },
+  
+  "over": "Over",
+  "@over": {
+    "description": "Over status label"
+  },
+  
+  "target": "Target",
+  "@target": {
+    "description": "Target label"
+  },
+  
+  "details": "Details",
+  "@details": {
+    "description": "Details label"
+  },
+  
+  "reason": "Reason",
+  "@reason": {
+    "description": "Reason label"
+  },
+  
+  "pointsEarned": "Points Earned",
+  "@pointsEarned": {
+    "description": "Points earned label"
+  },
+  
+  "trendPattern": "Trend & Pattern",
+  "@trendPattern": {
+    "description": "Trend and pattern section title"
+  },
+  
+  "bestStreak": "Best Streak",
+  "@bestStreak": {
+    "description": "Best streak label"
+  },
+  
+  "missCount": "Miss Count",
+  "@missCount": {
+    "description": "Miss count label"
+  },
+  
+  "lastUpdated": "Last Updated",
+  "@lastUpdated": {
+    "description": "Last updated label"
+  },
+  
+  "habitAnalytics": "Habit Analytics",
+  "@habitAnalytics": {
+    "description": "Habit analytics title"
+  },
+  
+  "ramadanProgress": "Ramadan Progress",
+  "@ramadanProgress": {
+    "description": "Ramadan progress label"
+  },
+  
+  "thisRamadan": "This Ramadan",
+  "@thisRamadan": {
+    "description": "This Ramadan label"
+  },
+  
+  "createNewSeason": "Create New Season",
+  "@createNewSeason": {
+    "description": "Create new season button label"
+  },
+  
+  "startNewRamadanTracking": "Start a new Ramadan tracking period",
+  "@startNewRamadanTracking": {
+    "description": "Create new season subtitle"
+  },
+  
+  "resetOnboarding": "Reset Onboarding",
+  "@resetOnboarding": {
+    "description": "Reset onboarding button label"
+  },
+  
+  "showSetupWizardAgain": "Show setup wizard again on next app launch",
+  "@showSetupWizardAgain": {
+    "description": "Reset onboarding subtitle"
+  },
+  
+  "deleteSeason": "Delete Season?",
+  "@deleteSeason": {
+    "description": "Delete season dialog title"
+  },
+  
+  "deleteSeasonWarning": "This action cannot be undone.",
+  "@deleteSeasonWarning": {
+    "description": "Delete season warning message"
+  },
+  
+  "testNotification": "Test Notification",
+  "goalRemindersTitle": "Goal Reminders",
+  "goalRemindersSubtitle": "Get notified when you haven't reached your daily goals",
+  "goalReminderQuran": "Quran Goal Reminder",
+  "goalReminderQuranDesc": "Remind me if Quran target not reached (2 PM, 6 PM, 8 PM)",
+  "goalReminderDhikr": "Dhikr Goal Reminder",
+  "goalReminderDhikrDesc": "Remind me if Dhikr target not reached (2 PM, 6 PM, 8 PM)",
+  "goalReminderSedekah": "Sedekah Goal Reminder",
+  "goalReminderSedekahDesc": "Remind me if Sedekah target not reached (4 PM)",
+  "goalReminderTaraweeh": "Taraweeh Reminder",
+  "goalReminderTaraweehDesc": "Remind me 15 minutes after Isha if Taraweeh not done",
+  "quranGoalReminderTitle": "Quran Goal Reminder",
+  "quranGoalReminderBody": "Haven't reached today's Quran target ({current}/{target} pages). Keep going!",
+  "@quranGoalReminderBody": {
+    "description": "Quran goal reminder notification body",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "dhikrGoalReminderTitle": "Dhikr Goal Reminder",
+  "dhikrGoalReminderBody": "Dhikr target not reached ({current}/{target}). Keep it up!",
+  "@dhikrGoalReminderBody": {
+    "description": "Dhikr goal reminder notification body",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "sedekahGoalReminderTitle": "Sedekah Goal Reminder",
+  "sedekahGoalReminderBody": "Today's Sedekah target not reached. Don't forget to share goodness!",
+  "taraweehReminderTitle": "Taraweeh Reminder",
+  "taraweehReminderBody": "Taraweeh time is approaching! Prepare yourself for night prayer.",
+  "@testNotification": {
+    "description": "Test notification button label"
+  },
+  
+  "sendTestNotification": "Send a test notification to verify settings",
+  "@sendTestNotification": {
+    "description": "Test notification subtitle"
+  },
+  
+  "testNotificationSent": "Test notification sent",
+  "@testNotificationSent": {
+    "description": "Test notification sent message"
+  },
+  
+  "habitFasting": "Fasting",
+  "@habitFasting": {
+    "description": "Fasting habit name"
+  },
+  
+  "habitQuran": "Quran",
+  "@habitQuran": {
+    "description": "Quran habit name"
+  },
+  
+  "habitDhikr": "Dhikr",
+  "@habitDhikr": {
+    "description": "Dhikr habit name"
+  },
+  
+  "habitTaraweeh": "Taraweeh",
+  "@habitTaraweeh": {
+    "description": "Taraweeh habit name"
+  },
+  
+  "habitSedekah": "Sedekah",
+  "@habitSedekah": {
+    "description": "Sedekah habit name"
+  },
+  
+  "habitItikaf": "I'tikaf",
+  "@habitItikaf": {
+    "description": "I'tikaf habit name"
+  },
+  
+  "habitPrayers": "5 Prayers",
+  "@habitPrayers": {
+    "description": "5 Prayers habit name"
+  },
+  
+  "habitPrayersDetailed": "5 Prayers (detailed)",
+  "@habitPrayersDetailed": {
+    "description": "5 Prayers detailed mode label"
+  },
+  
+  "trackEachPrayerIndividually": "Track each prayer individually",
+  "@trackEachPrayerIndividually": {
+    "description": "5 Prayers detailed mode subtitle"
+  },
+  
+  "days": "days",
+  "@days": {
+    "description": "Days label"
+  },
+  
+  "errorLoadingSeasons": "Error loading seasons",
+  "@errorLoadingSeasons": {
+    "description": "Error message when loading seasons"
+  },
+  
+  "resetOnboardingConfirm": "This will show the onboarding screen again when you restart the app. Continue?",
+  "@resetOnboardingConfirm": {
+    "description": "Reset onboarding confirmation message"
+  },
+  
+  "reset": "Reset",
+  "@reset": {
+    "description": "Reset button label"
+  },
+  
+  "onboardingWillShowOnRestart": "Onboarding will show on next app restart",
+  "@onboardingWillShowOnRestart": {
+    "description": "Onboarding reset success message"
+  },
+  
+  "sahurReminder": "Sahur reminder",
+  "@sahurReminder": {
+    "description": "Sahur reminder label"
+  },
+  
+  "minBeforeFajr": "{minutes} min before Fajr",
+  "@minBeforeFajr": {
+    "description": "Sahur reminder offset text",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "getNotifiedBeforeSuhoor": "Get notified before suhoor time",
+  "@getNotifiedBeforeSuhoor": {
+    "description": "Sahur reminder description"
+  },
+  
+  "iftarReminder": "Iftar reminder",
+  "@iftarReminder": {
+    "description": "Iftar reminder label"
+  },
+  
+  "minAfterMaghrib": "{minutes} min after Maghrib",
+  "@minAfterMaghrib": {
+    "description": "Iftar reminder offset text",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "getNotifiedWhenBreakFast": "Get notified when it's time to break fast",
+  "@getNotifiedWhenBreakFast": {
+    "description": "Iftar reminder description"
+  },
+  
+  "nightPlanReminder": "Night plan reminder",
+  "@nightPlanReminder": {
+    "description": "Night plan reminder label"
+  },
+  
+  "reminderToPlanNightActivities": "Reminder to plan your night activities",
+  "@reminderToPlanNightActivities": {
+    "description": "Night plan reminder description"
+  },
+  
+  "calculationMethod": "Calculation Method",
+  "@calculationMethod": {
+    "description": "Calculation method label"
+  },
+  
+  "choosePrayerTimeMethod": "Choose prayer time calculation method",
+  "@choosePrayerTimeMethod": {
+    "description": "Calculation method description"
+  },
+  
+  "fajrAdjustment": "Fajr Adjustment",
+  "@fajrAdjustment": {
+    "description": "Fajr adjustment label"
+  },
+  
+  "adjustFajrManually": "Adjust Fajr prayer time manually",
+  "@adjustFajrManually": {
+    "description": "Fajr adjustment description"
+  },
+  
+  "maghribAdjustment": "Maghrib Adjustment",
+  "@maghribAdjustment": {
+    "description": "Maghrib adjustment label"
+  },
+  
+  "adjustMaghribManually": "Adjust Maghrib prayer time manually",
+  "@adjustMaghribManually": {
+    "description": "Maghrib adjustment description"
+  },
+  
+  "minutesUnit": "minutes",
+  "@minutesUnit": {
+    "description": "Minutes unit label (non-parameterized)"
+  },
+  
+  "nextReminders": "Next Reminders",
+  "@nextReminders": {
+    "description": "Next reminders section title"
+  },
+  
+  "noTitle": "No title",
+  "@noTitle": {
+    "description": "No title placeholder"
+  },
+  
+  "noBody": "No body",
+  "@noBody": {
+    "description": "No body placeholder"
+  },
+  
+  "exportBackup": "Export Backup",
+  "@exportBackup": {
+    "description": "Export backup button label"
+  },
+  
+  "saveDataAsJson": "Save your data as JSON file",
+  "@saveDataAsJson": {
+    "description": "Export backup description"
+  },
+  
+  "importBackup": "Import Backup",
+  "@importBackup": {
+    "description": "Import backup button label"
+  },
+  
+  "restoreDataFromJson": "Restore data from JSON backup",
+  "@restoreDataFromJson": {
+    "description": "Import backup description"
+  },
+  
+  "version": "Version",
+  "@version": {
+    "description": "Version label"
+  },
+  
+  "supportDeveloper": "Support Developer",
+  "@supportDeveloper": {
+    "description": "Support developer label"
+  },
+  
+  "buyMeACoffee": "Buy me a coffee",
+  "@buyMeACoffee": {
+    "description": "Buy me a coffee label"
+  },
+  
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Privacy policy label"
+  },
+  
+  "readPrivacyPolicy": "Read our privacy policy",
+  "@readPrivacyPolicy": {
+    "description": "Privacy policy description"
+  },
+  
+  "termsOfService": "Terms of Service",
+  "@termsOfService": {
+    "description": "Terms of service label"
+  },
+  
+  "readTermsOfService": "Read our terms of service",
+  "@readTermsOfService": {
+    "description": "Terms of service description"
+  },
+  
+  "noSeasonFound": "No season found",
+  "@noSeasonFound": {
+    "description": "No season found message"
+  },
+  
+  "fajrAdjustmentTitle": "Fajr Adjustment",
+  "@fajrAdjustmentTitle": {
+    "description": "Fajr adjustment dialog title"
+  },
+  
+  "maghribAdjustmentTitle": "Maghrib Adjustment",
+  "@maghribAdjustmentTitle": {
+    "description": "Maghrib adjustment dialog title"
+  },
+  
+  "importFailed": "Import failed: {error}",
+  "@importFailed": {
+    "description": "Import failed error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "description": "Export failed error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "pasteBackupJson": "Paste your backup JSON below:",
+  "@pasteBackupJson": {
+    "description": "Import backup dialog instruction"
+  },
+  
+  "pasteJsonBackupData": "Paste JSON backup data...",
+  "@pasteJsonBackupData": {
+    "description": "Import backup text field hint"
+  },
+  
+  "import": "Import",
+  "@import": {
+    "description": "Import button label"
+  },
+  
+  "backupImportedSuccessfully": "Backup imported successfully",
+  "@backupImportedSuccessfully": {
+    "description": "Backup import success message"
+  },
+  
+  "error": "Error",
+  "@error": {
+    "description": "Generic error label"
+  },
+  
+  "errorOpeningUrl": "Error opening URL: {error}",
+  "@errorOpeningUrl": {
+    "description": "Error opening URL message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "focusMode": "Focus Mode",
+  "@focusMode": {
+    "description": "Focus mode tooltip"
+  },
+  
+  "preRamadan": "Pre-Ramadan",
+  "@preRamadan": {
+    "description": "Pre-Ramadan state label"
+  },
+  
+  "preRamadanSubtitle": "Season not started yet. Browse and plan ahead.",
+  "@preRamadanSubtitle": {
+    "description": "Pre-Ramadan subtitle message"
+  },
+  
+  "seasonEnded": "Season Ended",
+  "@seasonEnded": {
+    "description": "Season ended label"
+  },
+  
+  "seasonEndedMessage": "This Ramadan season has finished. Review your progress or create a new season.",
+  "@seasonEndedMessage": {
+    "description": "Season ended message"
+  },
+  
+  "dayOfSeason": "Day {dayIndex} of {totalDays}",
+  "@dayOfSeason": {
+    "description": "Day of season subtitle",
+    "placeholders": {
+      "dayIndex": {
+        "type": "int"
+      },
+      "totalDays": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "preRamadanWithDate": "Pre-Ramadan • {date}",
+  "@preRamadanWithDate": {
+    "description": "Pre-Ramadan with date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "seasonEndedWithDate": "Season Ended • {date}",
+  "@seasonEndedWithDate": {
+    "description": "Season ended with date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "errorMessage": "Error: {error}",
+  "@errorMessage": {
+    "description": "Error message with error text",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "lastDay": "Last Day!",
+  "@lastDay": {
+    "description": "Last day title"
+  },
+  
+  "lastDayMessage": "This is the final day of Ramadan. Finish strong and make it count!",
+  "@lastDayMessage": {
+    "description": "Last day message"
+  },
+  
+  "almostThere": "Almost There!",
+  "@almostThere": {
+    "description": "Almost there title"
+  },
+  
+  "almostThereMessage": "Only {days} days left. You've come so far - keep going!",
+  "@almostThereMessage": {
+    "description": "Almost there message",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "last10Days": "Last 10 Days",
+  "@last10Days": {
+    "description": "Last 10 days title"
+  },
+  
+  "last10DaysMessage": "These are the most blessed days. Maximize your ibadah and seek Laylatul Qadr!",
+  "@last10DaysMessage": {
+    "description": "Last 10 days message"
+  },
+  
+  "finalStretch": "Final Stretch",
+  "@finalStretch": {
+    "description": "Final stretch title"
+  },
+  
+  "finalStretchMessage": "You're in the last 10 days. Every moment counts - stay focused!",
+  "@finalStretchMessage": {
+    "description": "Final stretch message"
+  },
+  
+  "daysRemaining": "{days} days remaining",
+  "@daysRemaining": {
+    "description": "Days remaining label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "createNewSeasonMessage": "Create a new Ramadan season to start tracking",
+  "@createNewSeasonMessage": {
+    "description": "Create new season message"
+  },
+  
+  "startSetup": "Start Setup",
+  "@startSetup": {
+    "description": "Start setup button label"
+  },
+  
+  "newSeason": "New Season",
+  "@newSeason": {
+    "description": "New season button label"
+  },
+  
+  "viewInsights": "View Insights",
+  "@viewInsights": {
+    "description": "View insights button label"
+  },
+  
+  "enableLocationForSahurIftar": "Enable location for Sahur/Iftar",
+  "@enableLocationForSahurIftar": {
+    "description": "Enable location message"
+  },
+  
+  "enableLocation": "Enable Location",
+  "@enableLocation": {
+    "description": "Enable location button label"
+  },
+  
+  "times": "Times",
+  "@times": {
+    "description": "Times card title"
+  },
+  
+  "sahur": "Sahur",
+  "@sahur": {
+    "description": "Sahur label"
+  },
+  
+  "iftar": "Iftar",
+  "@iftar": {
+    "description": "Iftar label"
+  },
+  
+  "fajr": "Fajr",
+  "@fajr": {
+    "description": "Fajr prayer label"
+  },
+  
+  "maghrib": "Maghrib",
+  "@maghrib": {
+    "description": "Maghrib prayer label"
+  },
+  
+  "todayIn10Seconds": "Today in 10 seconds",
+  "@todayIn10Seconds": {
+    "description": "Today in 10 seconds card title"
+  },
+  
+  "todayIn10SecondsMessage": "Tap what you did. Add pages & dhikr. Done.",
+  "@todayIn10SecondsMessage": {
+    "description": "Today in 10 seconds message"
+  },
+  
+  "openOneTap": "Open One Tap",
+  "@openOneTap": {
+    "description": "Open one tap button label"
+  },
+  
+  "editGoals": "Edit Goals",
+  "@editGoals": {
+    "description": "Edit goals button label"
+  },
+  
+  "oneTapToday": "One Tap Today",
+  "@oneTapToday": {
+    "description": "One tap today card title"
+  },
+  
+  "reflection": "Reflection",
+  "@reflection": {
+    "description": "Reflection card title"
+  },
+  
+  "howWasToday": "How was today?",
+  "@howWasToday": {
+    "description": "Reflection text field hint"
+  },
+  
+  "streakDays": "Streak: {days} days",
+  "@streakDays": {
+    "description": "Streak label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "doneCount": "Done: {completed}/{total}",
+  "@doneCount": {
+    "description": "Done count label",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "errorLoadingEntries": "Error loading entries",
+  "@errorLoadingEntries": {
+    "description": "Error loading entries message"
+  },
+  
+  "errorLoadingHabits": "Error loading habits",
+  "@errorLoadingHabits": {
+    "description": "Error loading habits message"
+  },
+  
+  "moodExcellent": "Excellent",
+  "@moodExcellent": {
+    "description": "Excellent mood label"
+  },
+  
+  "moodGood": "Good",
+  "@moodGood": {
+    "description": "Good mood label"
+  },
+  
+  "moodOk": "Ok",
+  "@moodOk": {
+    "description": "Ok mood label"
+  },
+  
+  "moodDifficult": "Difficult",
+  "@moodDifficult": {
+    "description": "Difficult mood label"
+  },
+  
+  "monthViewTitle": "Month View",
+  "@monthViewTitle": {
+    "description": "Month view screen title"
+  },
+  
+  "errorLoadingSeason": "Error loading season",
+  "@errorLoadingSeason": {
+    "description": "Error loading season message"
+  },
+  
+  "outsideSeason": "Outside season",
+  "@outsideSeason": {
+    "description": "Outside season message"
+  },
+  
+  "legend": "Legend",
+  "@legend": {
+    "description": "Legend label"
+  },
+  
+  "ringEqualsCompletion": "Ring = completion",
+  "@ringEqualsCompletion": {
+    "description": "Ring equals completion legend"
+  },
+  
+  "dotEqualsTracked": "Dot = tracked",
+  "@dotEqualsTracked": {
+    "description": "Dot equals tracked legend"
+  },
+  
+  "starEqualsLast10": "Star = last 10",
+  "@starEqualsLast10": {
+    "description": "Star equals last 10 legend"
+  },
+  
+  "ringCompletionCompact": "Ring=Completion",
+  "@ringCompletionCompact": {
+    "description": "Ring completion compact legend"
+  },
+  
+  "dotTrackedCompact": "Dot=Tracked",
+  "@dotTrackedCompact": {
+    "description": "Dot tracked compact legend"
+  },
+  
+  "starLast10Compact": "Star=Last 10",
+  "@starLast10Compact": {
+    "description": "Star last 10 compact legend"
+  },
+  
+  "dayLabel": "Day {dayIndex}",
+  "@dayLabel": {
+    "description": "Day label",
+    "placeholders": {
+      "dayIndex": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "percentComplete": "{percent}% Complete",
+  "@percentComplete": {
+    "description": "Percent complete label",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "trackedHabits": "Tracked Habits",
+  "@trackedHabits": {
+    "description": "Tracked habits label"
+  },
+  
+  "close": "Close",
+  "@close": {
+    "description": "Close button label"
+  },
+  
+  "viewDayButton": "View Day",
+  "@viewDayButton": {
+    "description": "View day button label (non-parameterized)"
+  },
+  
+  "errorLoadingSeasonHabits": "Error loading season habits",
+  "@errorLoadingSeasonHabits": {
+    "description": "Error loading season habits message"
+  },
+  
+  "notDone": "Not done",
+  "@notDone": {
+    "description": "Not done status"
+  },
+  
+  "quranPagesFormat": "{pages} / {target} pages",
+  "@quranPagesFormat": {
+    "description": "Quran pages format",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "dhikrCountFormat": "{count} / {target}",
+  "@dhikrCountFormat": {
+    "description": "Dhikr count format",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "trackYourRamadanInSeconds": "Track your Ramadan in seconds",
+  "@trackYourRamadanInSeconds": {
+    "description": "Onboarding welcome subtitle"
+  },
+  
+  "noAccountNoAdsStored": "No account • No ads • Stored on your device",
+  "@noAccountNoAdsStored": {
+    "description": "Onboarding welcome privacy message"
+  },
+  
+  "oneTapDailyChecklist": "One tap daily checklist",
+  "@oneTapDailyChecklist": {
+    "description": "Onboarding feature description"
+  },
+  
+  "autopilotQuranPlan": "Autopilot Qur'an plan",
+  "@autopilotQuranPlan": {
+    "description": "Onboarding feature description"
+  },
+  
+  "sahurIftarRemindersAutomatic": "Sahur & Iftar reminders (automatic)",
+  "@sahurIftarRemindersAutomatic": {
+    "description": "Onboarding feature description"
+  },
+  
+  "takesAbout1Minute": "Takes about 1 minute",
+  "@takesAbout1Minute": {
+    "description": "Onboarding setup time estimate"
+  },
+  
+  "ramadanSeason": "Ramadan Season",
+  "@ramadanSeason": {
+    "description": "Onboarding step 2 title"
+  },
+  
+  "seasonLabel": "Season Label",
+  "@seasonLabel": {
+    "description": "Season label field"
+  },
+  
+  "ramadanYearHint": "Ramadan {year}",
+  "@ramadanYearHint": {
+    "description": "Season label hint",
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "days": "Days",
+  "@days": {
+    "description": "Days label"
+  },
+  
+  "daysCount": "{count} days",
+  "@daysCount": {
+    "description": "Days count label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "startDate": "Start Date",
+  "@startDate": {
+    "description": "Start date label"
+  },
+  
+  "preview": "Preview",
+  "@preview": {
+    "description": "Preview label"
+  },
+  
+  "day1StartsOn": "Day 1 starts on {date}.",
+  "@day1StartsOn": {
+    "description": "Day 1 preview message",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "last10NightsBeginOn": "Last 10 nights begin on Day {day} ({date}).",
+  "@last10NightsBeginOn": {
+    "description": "Last 10 nights preview message",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "chooseWhatToTrack": "Choose What to Track",
+  "@chooseWhatToTrack": {
+    "description": "Onboarding step 3 title"
+  },
+  
+  "trackOnlyWhatHelps": "Track only what helps. You can change anytime.",
+  "@trackOnlyWhatHelps": {
+    "description": "Onboarding step 3 subtitle"
+  },
+  
+  "quran20PagesPerDay": "Qur'an (20 pages/day)",
+  "@quran20PagesPerDay": {
+    "description": "Quran 20 pages per day label"
+  },
+  
+  "quran40PagesPerDay": "Qur'an (40 pages/day)",
+  "@quran40PagesPerDay": {
+    "description": "Quran 40 pages per day label"
+  },
+  
+  "quranCustomPagesPerDay": "Qur'an ({pages} pages/day)",
+  "@quranCustomPagesPerDay": {
+    "description": "Quran custom pages per day label",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "advanced": "Advanced",
+  "@advanced": {
+    "description": "Advanced section label"
+  },
+  
+  "prayersSimple": "5 Prayers (simple)",
+  "@prayersSimple": {
+    "description": "5 Prayers simple label"
+  },
+  
+  "setGoals": "Set Goals",
+  "@setGoals": {
+    "description": "Onboarding step 4 title"
+  },
+  
+  "gentleGoalsBeatPerfectStreaks": "Gentle goals beat perfect streaks.",
+  "@gentleGoalsBeatPerfectStreaks": {
+    "description": "Onboarding step 4 subtitle"
+  },
+  
+  "quranGoal": "Quran Goal",
+  "@quranGoal": {
+    "description": "Quran goal label"
+  },
+  
+  "oneKhatam20Pages": "1 Khatam (20 pages/day)",
+  "@oneKhatam20Pages": {
+    "description": "1 Khatam option"
+  },
+  
+  "twoKhatam40Pages": "2 Khatam (40 pages/day)",
+  "@twoKhatam40Pages": {
+    "description": "2 Khatam option"
+  },
+  
+  "custom": "Custom",
+  "@custom": {
+    "description": "Custom option"
+  },
+  
+  "pagesPerDay": "Pages per day",
+  "@pagesPerDay": {
+    "description": "Pages per day label"
+  },
+  
+  "enterPages": "Enter pages",
+  "@enterPages": {
+    "description": "Enter pages hint"
+  },
+  
+  "totalPagesCalculation": "{total} total pages → {daily} pages/day for {days} days",
+  "@totalPagesCalculation": {
+    "description": "Total pages calculation",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "daily": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "dhikrTarget": "Dhikr Target",
+  "@dhikrTarget": {
+    "description": "Dhikr target label"
+  },
+  
+  "setDailySedekahGoal": "Set a daily Sedekah goal",
+  "@setDailySedekahGoal": {
+    "description": "Set daily Sedekah goal label"
+  },
+  
+  "amount": "Amount",
+  "@amount": {
+    "description": "Amount label"
+  },
+  
+  "enterAmount": "Enter amount",
+  "@enterAmount": {
+    "description": "Enter amount hint"
+  },
+  
+  "currency": "Currency",
+  "@currency": {
+    "description": "Currency label"
+  },
+  
+  "idrRp": "IDR (Rp)",
+  "@idrRp": {
+    "description": "IDR currency label"
+  },
+  
+  "sgdSdollar": "SGD (S$)",
+  "@sgdSdollar": {
+    "description": "SGD currency label"
+  },
+  
+  "usdDollar": "USD ($)",
+  "@usdDollar": {
+    "description": "USD currency label"
+  },
+  
+  "myrRm": "MYR (RM)",
+  "@myrRm": {
+    "description": "MYR currency label"
+  },
+  
+  "autopilotIntensity": "Autopilot Intensity",
+  "@autopilotIntensity": {
+    "description": "Autopilot intensity label"
+  },
+  
+  "light": "Light",
+  "@light": {
+    "description": "Light intensity option"
+  },
+  
+  "balanced": "Balanced",
+  "@balanced": {
+    "description": "Balanced intensity option"
+  },
+  
+  "strong": "Strong",
+  "@strong": {
+    "description": "Strong intensity option"
+  },
+  
+  "gentleRemindersMinimalPressure": "Gentle reminders, minimal pressure",
+  "@gentleRemindersMinimalPressure": {
+    "description": "Light intensity description"
+  },
+  
+  "regularCheckInsSteadyProgress": "Regular check-ins, steady progress",
+  "@regularCheckInsSteadyProgress": {
+    "description": "Balanced intensity description"
+  },
+  
+  "frequentRemindersMaximumSupport": "Frequent reminders, maximum support",
+  "@frequentRemindersMaximumSupport": {
+    "description": "Strong intensity description"
+  },
+  
+  "smartReminders": "Smart Reminders",
+  "@smartReminders": {
+    "description": "Onboarding step 5 title"
+  },
+  
+  "getNotifiedForSahurIftar": "Get notified for Sahur, Iftar, and your daily plan.",
+  "@getNotifiedForSahurIftar": {
+    "description": "Onboarding step 5 subtitle"
+  },
+  
+  "sahurReminder": "Sahur reminder",
+  "@sahurReminder": {
+    "description": "Sahur reminder label"
+  },
+  
+  "offset": "Offset:",
+  "@offset": {
+    "description": "Offset label"
+  },
+  
+  "minutesShort": "{minutes} min",
+  "@minutesShort": {
+    "description": "Minutes short format",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "iftarReminder": "Iftar reminder",
+  "@iftarReminder": {
+    "description": "Iftar reminder label"
+  },
+  
+  "atMaghrib": "At Maghrib",
+  "@atMaghrib": {
+    "description": "At Maghrib label"
+  },
+  
+  "nightPlanReminder": "Night plan reminder",
+  "@nightPlanReminder": {
+    "description": "Night plan reminder label"
+  },
+  
+  "location": "Location",
+  "@location": {
+    "description": "Location label"
+  },
+  
+  "useMyLocation": "Use my location",
+  "@useMyLocation": {
+    "description": "Use my location button"
+  },
+  
+  "setCityManually": "Set city manually",
+  "@setCityManually": {
+    "description": "Set city manually button"
+  },
+  
+  "cityNameOptional": "City name (optional)",
+  "@cityNameOptional": {
+    "description": "City name label"
+  },
+  
+  "jakartaHint": "Jakarta",
+  "@jakartaHint": {
+    "description": "Jakarta hint"
+  },
+  
+  "latitude": "Latitude",
+  "@latitude": {
+    "description": "Latitude label"
+  },
+  
+  "latitudeHint": "-6.2088",
+  "@latitudeHint": {
+    "description": "Latitude hint"
+  },
+  
+  "longitude": "Longitude",
+  "@longitude": {
+    "description": "Longitude label"
+  },
+  
+  "longitudeHint": "106.8456",
+  "@longitudeHint": {
+    "description": "Longitude hint"
+  },
+  
+  "set": "Set",
+  "@set": {
+    "description": "Set button"
+  },
+  
+  "locationSet": "Location set",
+  "@locationSet": {
+    "description": "Location set label"
+  },
+  
+  "calculationMethod": "Calculation Method",
+  "@calculationMethod": {
+    "description": "Calculation method label"
+  },
+  
+  "mwlMuslimWorldLeague": "MWL (Muslim World League)",
+  "@mwlMuslimWorldLeague": {
+    "description": "MWL calculation method"
+  },
+  
+  "indonesiaKemenag": "Indonesia (Kemenag)",
+  "@indonesiaKemenag": {
+    "description": "Indonesia calculation method"
+  },
+  
+  "singapore": "Singapore",
+  "@singapore": {
+    "description": "Singapore calculation method"
+  },
+  
+  "ummAlQura": "Umm al-Qura",
+  "@ummAlQura": {
+    "description": "Umm al-Qura calculation method"
+  },
+  
+  "karachi": "Karachi",
+  "@karachi": {
+    "description": "Karachi calculation method"
+  },
+  
+  "egypt": "Egypt",
+  "@egypt": {
+    "description": "Egypt calculation method"
+  },
+  
+  "isnaNorthAmerica": "ISNA (North America)",
+  "@isnaNorthAmerica": {
+    "description": "ISNA calculation method"
+  },
+  
+  "prayerTimesPreview": "Prayer Times Preview",
+  "@prayerTimesPreview": {
+    "description": "Prayer times preview label"
+  },
+  
+  "test": "Test",
+  "@test": {
+    "description": "Test button"
+  },
+  
+  "sahurReminderLabel": "Sahur reminder",
+  "@sahurReminderLabel": {
+    "description": "Sahur reminder time label"
+  },
+  
+  "iftarReminderLabel": "Iftar reminder",
+  "@iftarReminderLabel": {
+    "description": "Iftar reminder time label"
+  },
+  
+  "finishAndStart": "Finish & Start",
+  "@finishAndStart": {
+    "description": "Finish and start button"
+  },
+  
+  "locationServicesDisabled": "Location services are disabled",
+  "@locationServicesDisabled": {
+    "description": "Location services disabled message"
+  },
+  
+  "locationPermissionsDenied": "Location permissions denied",
+  "@locationPermissionsDenied": {
+    "description": "Location permissions denied message"
+  },
+  
+  "locationPermissionsPermanentlyDenied": "Location permissions permanently denied",
+  "@locationPermissionsPermanentlyDenied": {
+    "description": "Location permissions permanently denied message"
+  },
+  
+  "pleaseEnterValidCoordinates": "Please enter valid coordinates",
+  "@pleaseEnterValidCoordinates": {
+    "description": "Invalid coordinates message"
+  },
+  
+  "testNotificationSent": "Test notification sent",
+  "@testNotificationSent": {
+    "description": "Test notification sent message"
+  },
+  
+  "back": "Back",
+  "@back": {
+    "description": "Back button label"
+  },
+  
+  "continueButton": "Continue",
+  "@continueButton": {
+    "description": "Continue button label"
+  },
+  
+  "juzProgress": "Juz: {progress}/{target}",
+  "@juzProgress": {
+    "description": "Juz progress label",
+    "placeholders": {
+      "progress": {
+        "type": "String"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "ofPages": "of {pages} pages",
+  "@ofPages": {
+    "description": "Pages count label",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "todayAmountGoal": "Today: {amount} / {goal}",
+  "@todayAmountGoal": {
+    "description": "Today amount and goal label",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "custom": "Custom",
+  "@custom": {
+    "description": "Custom button/label"
+  },
+  
+  "customAmount": "Custom Amount",
+  "@customAmount": {
+    "description": "Custom amount dialog title"
+  },
+  
+  "add": "Add",
+  "@add": {
+    "description": "Add button label"
+  },
+  
+  "prayerFajr": "Fajr",
+  "@prayerFajr": {
+    "description": "Fajr prayer name"
+  },
+  
+  "prayerDhuhr": "Dhuhr",
+  "@prayerDhuhr": {
+    "description": "Dhuhr prayer name"
+  },
+  
+  "prayerAsr": "Asr",
+  "@prayerAsr": {
+    "description": "Asr prayer name"
+  },
+  
+  "prayerIsha": "Isha",
+  "@prayerIsha": {
+    "description": "Isha prayer name"
+  },
+  
+  "ramadanAutopilot": "Ramadan Autopilot",
+  "@ramadanAutopilot": {
+    "description": "Plan screen title"
+  },
+  
+  "setupRamadanAutopilot": "Setup Ramadan Autopilot",
+  "@setupRamadanAutopilot": {
+    "description": "Setup wizard title"
+  },
+  
+  "setupRamadanAutopilotSubtitle": "Configure your goals and available time to generate a daily plan.",
+  "@setupRamadanAutopilotSubtitle": {
+    "description": "Setup wizard subtitle"
+  },
+  
+  "intensity": "Intensity",
+  "@intensity": {
+    "description": "Intensity section title"
+  },
+  
+  "availableTimeMinutes": "Available Time (minutes)",
+  "@availableTimeMinutes": {
+    "description": "Available time section title"
+  },
+  
+  "planMorning": "Morning",
+  "@planMorning": {
+    "description": "Morning time block label"
+  },
+  
+  "planDay": "Day",
+  "@planDay": {
+    "description": "Day time block label"
+  },
+  
+  "planNight": "Night",
+  "@planNight": {
+    "description": "Night time block label"
+  },
+  
+  "minutes": "{minutes} min",
+  "@minutes": {
+    "description": "Minutes display",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "quranGoal": "Quran Goal",
+  "@quranGoal": {
+    "description": "Quran goal section title"
+  },
+  
+  "totalPages": "Total Pages",
+  "@totalPages": {
+    "description": "Total pages label"
+  },
+  
+  "dhikrTarget": "Dhikr Target",
+  "@dhikrTarget": {
+    "description": "Dhikr target section title"
+  },
+  
+  "dailyTarget": "Daily Target",
+  "@dailyTarget": {
+    "description": "Daily target label"
+  },
+  
+  "savePlan": "Save Plan",
+  "@savePlan": {
+    "description": "Save plan button label"
+  },
+  
+  "seasonCompleted": "Season Completed",
+  "@seasonCompleted": {
+    "description": "Season completed message title"
+  },
+  
+  "seasonCompletedMessage": "Congratulations on completing Ramadan! Review your journey in the Insights tab.",
+  "@seasonCompletedMessage": {
+    "description": "Season completed message"
+  },
+  
+  "newSeasonCreationComingSoon": "New season creation coming soon",
+  "@newSeasonCreationComingSoon": {
+    "description": "New season creation message"
+  },
+  
+  "startNewSeason": "Start New Season",
+  "@startNewSeason": {
+    "description": "Start new season button label"
+  },
+  
+  "recommendedPlan": "Recommended Plan",
+  "@recommendedPlan": {
+    "description": "Recommended plan card title"
+  },
+  
+  "recommendedPlanSubtitle": "Your personalized daily guide",
+  "@recommendedPlanSubtitle": {
+    "description": "Recommended plan card subtitle"
+  },
+  
+  "todayTarget": "Today Target",
+  "@todayTarget": {
+    "description": "Today target section title"
+  },
+  
+  "todaysPlan": "Today's Plan",
+  "@todaysPlan": {
+    "description": "Today's plan card title"
+  },
+  
+  "progress": "Progress",
+  "@progress": {
+    "description": "Progress section title"
+  },
+  
+  "pagesRemaining": "{pages} pages remaining",
+  "@pagesRemaining": {
+    "description": "Pages remaining text",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "pagesPerDay": "{pages} pages/day",
+  "@pagesPerDay": {
+    "description": "Pages per day text",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "daysLeft": "Days left",
+  "@daysLeft": {
+    "description": "Days left label"
+  },
+  
+  "days": "{days} days",
+  "@days": {
+    "description": "Days text",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "dhikrTargetLabel": "Dhikr target",
+  "@dhikrTargetLabel": {
+    "description": "Dhikr target label"
+  },
+  
+  "daily": "daily",
+  "@daily": {
+    "description": "Daily unit label"
+  },
+  
+  "gentleCatchup": "Gentle catch-up",
+  "@gentleCatchup": {
+    "description": "Gentle catch-up title"
+  },
+  
+  "gentleCatchupMessage": "+{pages} pages/day for the next {days} days",
+  "@gentleCatchupMessage": {
+    "description": "Gentle catch-up message",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "afterFajr": "After Fajr",
+  "@afterFajr": {
+    "description": "After Fajr time window"
+  },
+  
+  "midday": "Midday",
+  "@midday": {
+    "description": "Midday time window"
+  },
+  
+  "afterIsha": "After Isha",
+  "@afterIsha": {
+    "description": "After Isha time window"
+  },
+  
+  "intensityLight": "Light",
+  "@intensityLight": {
+    "description": "Light intensity label"
+  },
+  
+  "intensityBalanced": "Balanced",
+  "@intensityBalanced": {
+    "description": "Balanced intensity label"
+  },
+  
+  "intensityStrong": "Strong",
+  "@intensityStrong": {
+    "description": "Strong intensity label"
+  },
+  
+  "quranGoal1Khatam": "1 Khatam",
+  "@quranGoal1Khatam": {
+    "description": "1 Khatam goal label"
+  },
+  
+  "quranGoal2Khatam": "2 Khatam",
+  "@quranGoal2Khatam": {
+    "description": "2 Khatam goal label"
+  },
+  
+  "quranGoalCustom": "Custom",
+  "@quranGoalCustom": {
+    "description": "Custom Quran goal label"
+  },
+  
+  "todayRemaining": "Today Remaining",
+  "@todayRemaining": {
+    "description": "Today remaining card title"
+  },
+  
+  "remaining": "{count} remaining",
+  "@remaining": {
+    "description": "Remaining count text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "allDone": "All done",
+  "@allDone": {
+    "description": "All done status"
+  },
+  
+  "notDone": "Not done",
+  "@notDone": {
+    "description": "Not done status"
+  },
+  
+  "noTasksScheduled": "No tasks scheduled",
+  "@noTasksScheduled": {
+    "description": "No tasks scheduled message"
+  },
+  
+  "startReading": "Start reading",
+  "@startReading": {
+    "description": "Start reading button label"
+  },
+  
+  "startCounter": "Start counter",
+  "@startCounter": {
+    "description": "Start counter button label"
+  },
+  
+  "markDone": "Mark done",
+  "@markDone": {
+    "description": "Mark done button label"
+  },
+  
+  "count": "{count} count",
+  "@count": {
+    "description": "Count text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "pages": "pages",
+  "@pages": {
+    "description": "Pages unit label"
+  },
+  
+  "pagesPerDayLabel": "Pages per day",
+  "@pagesPerDayLabel": {
+    "description": "Pages per day label"
+  },
+  
+  "daysLabel": "Days",
+  "@daysLabel": {
+    "description": "Days label"
+  },
+  
+  "taskQuranReading": "Quran Reading",
+  "@taskQuranReading": {
+    "description": "Quran reading task name"
+  },
+  
+  "taskQiyam": "Qiyam",
+  "@taskQiyam": {
+    "description": "Qiyam task name"
+  },
+  
+  "date": "Date",
+  "@date": {
+    "description": "Date label"
+  },
+  
+  "habits": "Habits",
+  "@habits": {
+    "description": "Habits label"
+  },
+  
+  "goals": "Goals",
+  "@goals": {
+    "description": "Goals label"
+  },
+  
+  "seasonCreatedSuccessfully": "Season Created Successfully",
+  "@seasonCreatedSuccessfully": {
+    "description": "Season created success dialog title"
+  },
+  
+  "seasonCreatedMessage": "Your new Ramadan season has been created and is ready to use!",
+  "@seasonCreatedMessage": {
+    "description": "Season created success message"
+  },
+  
+  "seasonCreatedError": "Error creating season: {error}",
+  "@seasonCreatedError": {
+    "description": "Season created error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "last7Days": "Last 7 days",
+  "@last7Days": {
+    "description": "Last 7 days label"
+  },
+  
+  "ramadanSeason": "Ramadan Season",
+  "@ramadanSeason": {
+    "description": "Ramadan Season label"
+  },
+  
+  "day1ToDay": "Day 1–Day {days}",
+  "@day1ToDay": {
+    "description": "Day range label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "sevenDays": "7 Days",
+  "@sevenDays": {
+    "description": "7 Days tab label"
+  },
+  
+  "changeDate": "Change date",
+  "@changeDate": {
+    "description": "Change date tooltip"
+  },
+  
+  "selectDayToAnalyze": "Select day to analyze",
+  "@selectDayToAnalyze": {
+    "description": "Date picker help text"
+  },
+  
+  "todayScore": "Today Score",
+  "@todayScore": {
+    "description": "Today Score title"
+  },
+  
+  "streakDays": "Streak: {days} days",
+  "@streakDays": {
+    "description": "Streak days label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "percentComplete": "{percent}% Complete",
+  "@percentComplete": {
+    "description": "Percent complete label",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "dayOfTotal": "Day {day} of {total}",
+  "@dayOfTotal": {
+    "description": "Day of total label",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "sevenDayAverageScore": "7-Day Average Score",
+  "@sevenDayAverageScore": {
+    "description": "7-Day Average Score title"
+  },
+  
+  "totalScore": "Total: {score}/{max}",
+  "@totalScore": {
+    "description": "Total score label",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "perfectDays": "Perfect days {done}/{total}",
+  "@perfectDays": {
+    "description": "Perfect days label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "currentStreak": "Current streak: {days} days",
+  "@currentStreak": {
+    "description": "Current streak label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "bestStreak": "Best streak: {days} days",
+  "@bestStreak": {
+    "description": "Best streak label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "seasonAverageScore": "Season Average Score",
+  "@seasonAverageScore": {
+    "description": "Season Average Score title"
+  },
+  
+  "daysCompleted": "Days completed {done}/{total}",
+  "@daysCompleted": {
+    "description": "Days completed label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "perfectDaysOnly": "Perfect days {count}",
+  "@perfectDaysOnly": {
+    "description": "Perfect days only label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "longestStreak": "Longest streak: {days} days",
+  "@longestStreak": {
+    "description": "Longest streak label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "viewDay": "View Day ({date})",
+  "@viewDay": {
+    "description": "View Day button label",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "reviewWhatsMissing": "Review what's missing",
+  "@reviewWhatsMissing": {
+    "description": "Review what's missing button label"
+  },
+  
+  "scrollDownToSeeHeatmaps": "Scroll down to see Ramadan consistency heatmaps",
+  "@scrollDownToSeeHeatmaps": {
+    "description": "Scroll down message"
+  },
+  
+  "viewRamadanConsistency": "View Ramadan consistency",
+  "@viewRamadanConsistency": {
+    "description": "View Ramadan consistency button label"
+  },
+  
+  "weeklyReview": "Weekly Review",
+  "@weeklyReview": {
+    "description": "Weekly Review button label"
+  },
+  
+  "seasonReport": "Season Report",
+  "@seasonReport": {
+    "description": "Season Report button label"
+  },
+  
+  "bestDayScore": "Best day score",
+  "@bestDayScore": {
+    "description": "Best day score highlight title"
+  },
+  
+  "tarawihProgress": "Tarawih progress",
+  "@tarawihProgress": {
+    "description": "Tarawih progress highlight title"
+  },
+  
+  "doneNights": "Done {done}/{total} nights",
+  "@doneNights": {
+    "description": "Done nights label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "itikafLast10Nights": "Itikaf last 10 nights",
+  "@itikafLast10Nights": {
+    "description": "Itikaf last 10 nights highlight title"
+  },
+  
+  "nights": "{count}/10 nights",
+  "@nights": {
+    "description": "Nights label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "sedekahTotalGiven": "Sedekah total given",
+  "@sedekahTotalGiven": {
+    "description": "Sedekah total given highlight title"
+  },
+  
+  "tapToViewDetails": "Tap to view details",
+  "@tapToViewDetails": {
+    "description": "Tap to view details label"
+  },
+  
+  "highlights": "Highlights",
+  "@highlights": {
+    "description": "Highlights section title"
+  },
+  
+  "habitAnalytics": "Habit analytics",
+  "@habitAnalytics": {
+    "description": "Habit analytics section title"
+  },
+  
+  "taskInsights": "Task Insights",
+  "@taskInsights": {
+    "description": "Task Insights section title"
+  },
+  
+  "analytics": "Analytics",
+  "@analytics": {
+    "description": "Analytics button label"
+  },
+  
+  "disabled": "Disabled",
+  "@disabled": {
+    "description": "Disabled status"
+  },
+  
+  "notEnabled": "Not enabled",
+  "@notEnabled": {
+    "description": "Not enabled status"
+  },
+  
+  "miss": "Miss",
+  "@miss": {
+    "description": "Miss status"
+  },
+  
+  "done": "Done",
+  "@done": {
+    "description": "Done status"
+  },
+  
+  "partial": "Partial",
+  "@partial": {
+    "description": "Partial status"
+  },
+  
+  "thisRamadan": "This Ramadan: {done}/{total} done",
+  "@thisRamadan": {
+    "description": "This Ramadan label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "doneItikaf": "Done {done}/10 (last 10 nights)",
+  "@doneItikaf": {
+    "description": "Done Itikaf label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "todayPagesAvg": "Today {pages}/{target} • Avg {avg}/{target} (last 7)",
+  "@todayPagesAvg": {
+    "description": "Today pages average label",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      },
+      "avg": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "todayCountAvg": "Today {count}/{target} • Avg {avg}/{target} (last 7)",
+  "@todayCountAvg": {
+    "description": "Today count average label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      },
+      "avg": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "todayAmountTotal": "Today {amount} / {target} • Total {total}",
+  "@todayAmountTotal": {
+    "description": "Today amount total label",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "todayPrayersPerfect": "Today {completed}/5 • Perfect days {perfect}/{total}",
+  "@todayPrayersPerfect": {
+    "description": "Today prayers perfect days label",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "perfect": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "prayersCompleted": "{completed} / {total} completed",
+  "@prayersCompleted": {
+    "description": "Prayers completed text",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "last7Days": "Last 7 days",
+  "@last7Days": {
+    "description": "Last 7 days label"
+  },
+  
+  "ramadanSeason": "Ramadan Season",
+  "@ramadanSeason": {
+    "description": "Ramadan Season label"
+  },
+  
+  "day1ToDay": "Day 1–Day {days}",
+  "@day1ToDay": {
+    "description": "Day range label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "sevenDays": "7 Days",
+  "@sevenDays": {
+    "description": "7 Days tab label"
+  },
+  
+  "changeDate": "Change date",
+  "@changeDate": {
+    "description": "Change date tooltip"
+  },
+  
+  "selectDayToAnalyze": "Select day to analyze",
+  "@selectDayToAnalyze": {
+    "description": "Date picker help text"
+  },
+  
+  "todayScore": "Today Score",
+  "@todayScore": {
+    "description": "Today Score title"
+  },
+  
+  "streakDays": "Streak: {days} days",
+  "@streakDays": {
+    "description": "Streak days label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "percentComplete": "{percent}% Complete",
+  "@percentComplete": {
+    "description": "Percent complete label",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "dayOfTotal": "Day {day} of {total}",
+  "@dayOfTotal": {
+    "description": "Day of total label",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "sevenDayAverageScore": "7-Day Average Score",
+  "@sevenDayAverageScore": {
+    "description": "7-Day Average Score title"
+  },
+  
+  "totalScore": "Total: {score}/{max}",
+  "@totalScore": {
+    "description": "Total score label",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "perfectDays": "Perfect days {done}/{total}",
+  "@perfectDays": {
+    "description": "Perfect days label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "currentStreak": "Current streak: {days} days",
+  "@currentStreak": {
+    "description": "Current streak label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "bestStreak": "Best streak: {days} days",
+  "@bestStreak": {
+    "description": "Best streak label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "seasonAverageScore": "Season Average Score",
+  "@seasonAverageScore": {
+    "description": "Season Average Score title"
+  },
+  
+  "daysCompleted": "Days completed {done}/{total}",
+  "@daysCompleted": {
+    "description": "Days completed label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "perfectDaysOnly": "Perfect days {count}",
+  "@perfectDaysOnly": {
+    "description": "Perfect days only label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "longestStreak": "Longest streak: {days} days",
+  "@longestStreak": {
+    "description": "Longest streak label",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "viewDay": "View Day ({date})",
+  "@viewDay": {
+    "description": "View Day button label",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "reviewWhatsMissing": "Review what's missing",
+  "@reviewWhatsMissing": {
+    "description": "Review what's missing button label"
+  },
+  
+  "scrollDownToSeeHeatmaps": "Scroll down to see Ramadan consistency heatmaps",
+  "@scrollDownToSeeHeatmaps": {
+    "description": "Scroll down message"
+  },
+  
+  "viewRamadanConsistency": "View Ramadan consistency",
+  "@viewRamadanConsistency": {
+    "description": "View Ramadan consistency button label"
+  },
+  
+  "weeklyReview": "Weekly Review",
+  "@weeklyReview": {
+    "description": "Weekly Review button label"
+  },
+  
+  "seasonReport": "Season Report",
+  "@seasonReport": {
+    "description": "Season Report button label"
+  },
+  
+  "bestDayScore": "Best day score",
+  "@bestDayScore": {
+    "description": "Best day score highlight title"
+  },
+  
+  "tarawihProgress": "Tarawih progress",
+  "@tarawihProgress": {
+    "description": "Tarawih progress highlight title"
+  },
+  
+  "doneNights": "Done {done}/{total} nights",
+  "@doneNights": {
+    "description": "Done nights label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "itikafLast10Nights": "Itikaf last 10 nights",
+  "@itikafLast10Nights": {
+    "description": "Itikaf last 10 nights highlight title"
+  },
+  
+  "nights": "{count}/10 nights",
+  "@nights": {
+    "description": "Nights label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "sedekahTotalGiven": "Sedekah total given",
+  "@sedekahTotalGiven": {
+    "description": "Sedekah total given highlight title"
+  },
+  
+  "tapToViewDetails": "Tap to view details",
+  "@tapToViewDetails": {
+    "description": "Tap to view details label"
+  },
+  
+  "highlights": "Highlights",
+  "@highlights": {
+    "description": "Highlights section title"
+  },
+  
+  "habitAnalytics": "Habit analytics",
+  "@habitAnalytics": {
+    "description": "Habit analytics section title"
+  },
+  
+  "taskInsights": "Task Insights",
+  "@taskInsights": {
+    "description": "Task Insights section title"
+  },
+  
+  "analytics": "Analytics",
+  "@analytics": {
+    "description": "Analytics button label"
+  },
+  
+  "disabled": "Disabled",
+  "@disabled": {
+    "description": "Disabled status"
+  },
+  
+  "notEnabled": "Not enabled",
+  "@notEnabled": {
+    "description": "Not enabled status"
+  },
+  
+  "miss": "Miss",
+  "@miss": {
+    "description": "Miss status"
+  },
+  
+  "partial": "Partial",
+  "@partial": {
+    "description": "Partial status"
+  },
+  
+  "thisRamadan": "This Ramadan: {done}/{total} done",
+  "@thisRamadan": {
+    "description": "This Ramadan label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "doneItikaf": "Done {done}/10 (last 10 nights)",
+  "@doneItikaf": {
+    "description": "Done Itikaf label",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "todayPagesAvg": "Today {pages}/{target} • Avg {avg}/{target} (last 7)",
+  "@todayPagesAvg": {
+    "description": "Today pages average label",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      },
+      "avg": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "todayCountAvg": "Today {count}/{target} • Avg {avg}/{target} (last 7)",
+  "@todayCountAvg": {
+    "description": "Today count average label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      },
+      "avg": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "todayAmountTotal": "Today {amount} / {target} • Total {total}",
+  "@todayAmountTotal": {
+    "description": "Today amount total label",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "todayPrayersPerfect": "Today {completed}/5 • Perfect days {perfect}/{total}",
+  "@todayPrayersPerfect": {
+    "description": "Today prayers perfect days label",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "perfect": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
+}
+
