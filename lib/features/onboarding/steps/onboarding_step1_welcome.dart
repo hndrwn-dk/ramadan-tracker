@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 class OnboardingStep1Welcome extends StatelessWidget {
   final OnboardingData data;
@@ -13,6 +14,7 @@ class OnboardingStep1Welcome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -21,31 +23,31 @@ class OnboardingStep1Welcome extends StatelessWidget {
           const Icon(Icons.nights_stay, size: 80, color: Colors.teal),
           const SizedBox(height: 32),
           Text(
-            'Ramadan Tracker',
+            l10n.appTitle,
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Track your Ramadan in seconds',
+            l10n.trackYourRamadanInSeconds,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Text(
-            'No account • No ads • Stored on your device',
+            l10n.noAccountNoAdsStored,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
           ),
           const SizedBox(height: 48),
-          _buildFeature(context, Icons.touch_app, 'One tap daily checklist'),
+          _buildFeature(context, Icons.touch_app, l10n.oneTapDailyChecklist),
           const SizedBox(height: 16),
-          _buildFeature(context, Icons.auto_awesome, 'Autopilot Qur\'an plan'),
+          _buildFeature(context, Icons.auto_awesome, l10n.autopilotQuranPlan),
           const SizedBox(height: 16),
-          _buildFeature(context, Icons.notifications_active, 'Sahur & Iftar reminders (automatic)'),
+          _buildFeature(context, Icons.notifications_active, l10n.sahurIftarRemindersAutomatic),
           const Spacer(),
           Column(
             children: [
@@ -56,12 +58,12 @@ class OnboardingStep1Welcome extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('Start Setup'),
+                  child: Text(l10n.startSetup),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Takes about 1 minute',
+                l10n.takesAbout1Minute,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),

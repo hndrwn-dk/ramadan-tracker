@@ -25,14 +25,23 @@ class SeasonModel {
     );
   }
 
+  /// Normalizes a DateTime to just the date part (midnight in local timezone)
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
   int getDayIndex(DateTime date) {
-    final diff = date.difference(startDate).inDays;
+    final normalizedDate = _normalizeDate(date);
+    final normalizedStartDate = _normalizeDate(startDate);
+    final diff = normalizedDate.difference(normalizedStartDate).inDays;
     final index = diff + 1;
     return index.clamp(1, days);
   }
 
   int getRawDayIndex(DateTime date) {
-    final diff = date.difference(startDate).inDays;
+    final normalizedDate = _normalizeDate(date);
+    final normalizedStartDate = _normalizeDate(startDate);
+    final diff = normalizedDate.difference(normalizedStartDate).inDays;
     return diff + 1;
   }
 
@@ -46,6 +55,10 @@ class SeasonModel {
   bool isDateInSeason(DateTime date) {
     final index = getDayIndex(date);
     return index >= 1 && index <= days;
+  }
+
+  DateTime getDateForDay(int dayIndex) {
+    return startDate.add(Duration(days: dayIndex - 1));
   }
 }
 

@@ -14,13 +14,29 @@ final seasonStateProvider = Provider<SeasonState>((ref) {
   );
 });
 
+// Provider to override selected day index (null means use current day)
+final selectedDayIndexProvider = StateProvider<int?>((ref) => null);
+
 final activeDayIndexForUIProvider = Provider<int>((ref) {
+  // Check if there's an override
+  final selectedDayIndex = ref.watch(selectedDayIndexProvider);
+  if (selectedDayIndex != null) {
+    return selectedDayIndex;
+  }
+  
+  // Otherwise use current day
   final seasonAsync = ref.watch(currentSeasonProvider);
   final state = ref.watch(seasonStateProvider);
   
   return seasonAsync.when(
     data: (season) {
       if (season == null) return 1;
+      
+      // If pre-Ramadan, return 1 (will be used for display but tracking won't be shown)
+      if (state == SeasonState.preRamadan) {
+        return 1;
+      }
+      
       final dayIndex = season.getDayIndex(DateTime.now());
       
       if (state == SeasonState.postRamadan) {

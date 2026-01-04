@@ -17,6 +17,7 @@ part 'daos.dart';
     QuranDaily,
     DhikrPlan,
     Notes,
+    PrayerDetails,
     KvSettings,
     PrayerTimesCache,
   ], daos: [
@@ -28,6 +29,7 @@ part 'daos.dart';
     QuranDailyDao,
     DhikrPlanDao,
     NotesDao,
+    PrayerDetailsDao,
     KvSettingsDao,
     PrayerTimesCacheDao,
   ])
@@ -35,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -57,6 +59,12 @@ class AppDatabase extends _$AppDatabase {
             // Column might not exist, ignore
           }
         }
+        if (from < 5) {
+          // Add mood column to Notes table
+          await migrator.addColumn(notes, notes.mood);
+          // Create PrayerDetails table
+          await migrator.createTable(prayerDetails);
+        }
       },
     );
   }
@@ -69,7 +77,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _seedDefaultHabits() async {
     final existingHabits = await habitsDao.getAllHabits();
-    if (existingHabits.isNotEmpty) return;
+    final existingKeys = existingHabits.map((h) => h.key).toSet();
 
     final defaultHabits = [
       HabitsCompanion.insert(
@@ -117,10 +125,20 @@ class AppDatabase extends _$AppDatabase {
         sortOrder: 6,
         isActiveDefault: false,
       ),
+      HabitsCompanion.insert(
+        key: 'prayers',
+        name: '5 Prayers',
+        type: 'bool',
+        sortOrder: 7,
+        isActiveDefault: false,
+      ),
     ];
 
+    // Only insert habits that don't exist yet
     for (final habit in defaultHabits) {
-      await into(habits).insert(habit);
+      if (!existingKeys.contains(habit.key.value)) {
+        await into(habits).insert(habit);
+      }
     }
   }
 

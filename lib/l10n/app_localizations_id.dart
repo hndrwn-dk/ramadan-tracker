@@ -282,6 +282,9 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get bestStreakLabel => 'Runtun Terbaik';
+
+  @override
   String get missCount => 'Jumlah Terlewat';
 
   @override
@@ -1220,9 +1223,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get markDone => 'Tandai selesai';
 
   @override
-  String count(int count) {
-    return '$count hitungan';
-  }
+  String get count => 'Jumlah';
 
   @override
   String get pages => 'halaman';
@@ -1408,7 +1409,179 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String prayersCompleted(int completed, int total) {
-    return '$completed / $total selesai';
+  String get prayersCompleted => 'Sholat selesai';
+
+  @override
+  String get todayBreakdown => 'Ringkasan Hari Ini';
+
+  @override
+  String get scoreBreakdown => 'Ringkasan Skor';
+
+  @override
+  String get goToToday => 'Ke Hari Ini';
+
+  @override
+  String auditDay(int dayIndex) {
+    return 'Audit hari (Hari $dayIndex)';
   }
+
+  @override
+  String get pagesRead => 'Halaman dibaca';
+
+  @override
+  String get amountGiven => 'Jumlah yang diberikan';
+
+  @override
+  String get noDonation => 'Tidak ada donasi';
+
+  @override
+  String given(String amount) {
+    return 'Diberikan: $amount';
+  }
+
+  @override
+  String get missedDays => 'Hari Terlewat';
+
+  @override
+  String get completed => 'Selesai';
+
+  @override
+  String get notCompleted => 'Belum selesai';
+
+  @override
+  String toImprove(String message) {
+    return 'Untuk meningkatkan: $message';
+  }
+
+  @override
+  String get fastingCompleted => 'Puasa selesai';
+
+  @override
+  String get fastingNotCompleted => 'Puasa belum selesai';
+
+  @override
+  String completeFastingToGain(int points) {
+    return 'Selesaikan puasa untuk mendapatkan $points poin';
+  }
+
+  @override
+  String get all5PrayersCompleted => 'Semua 5 sholat selesai';
+
+  @override
+  String onlyPrayersCompleted(int completed) {
+    return 'Hanya $completed/5 sholat selesai';
+  }
+
+  @override
+  String get noPrayersLogged => 'Tidak ada sholat yang dicatat';
+
+  @override
+  String completeRemainingPrayers(int remaining, int points) {
+    return 'Selesaikan $remaining sholat tersisa untuk mendapatkan $points poin';
+  }
+
+  @override
+  String logAll5Prayers(int points) {
+    return 'Catat semua 5 sholat untuk mendapatkan $points poin';
+  }
+
+  @override
+  String targetMetPages(int pages, int target) {
+    return 'Target tercapai ($pages/$target halaman)';
+  }
+
+  @override
+  String partialCompletionPages(int pages, int target) {
+    return 'Penyelesaian sebagian ($pages/$target halaman)';
+  }
+
+  @override
+  String targetNotMetPages(int target) {
+    return 'Target tidak tercapai (0/$target halaman)';
+  }
+
+  @override
+  String readMorePages(int remaining, int points) {
+    return 'Baca $remaining halaman lagi untuk mendapatkan $points poin';
+  }
+
+  @override
+  String readPagesToGain(int points) {
+    return 'Baca halaman untuk mendapatkan $points poin';
+  }
+
+  @override
+  String targetMetCount(int count, int target) {
+    return 'Target tercapai ($count/$target)';
+  }
+
+  @override
+  String partialCompletionCount(int count, int target) {
+    return 'Penyelesaian sebagian ($count/$target)';
+  }
+
+  @override
+  String targetNotMetCount(int target) {
+    return 'Target tidak tercapai (0/$target)';
+  }
+
+  @override
+  String completeMoreToGain(int remaining, int points) {
+    return 'Selesaikan $remaining lagi untuk mendapatkan $points poin';
+  }
+
+  @override
+  String get dhikrCompleted => 'Dzikir selesai';
+
+  @override
+  String get noDhikrLogged => 'Tidak ada dzikir yang dicatat';
+
+  @override
+  String completeDhikrToGain(int points) {
+    return 'Selesaikan dzikir untuk mendapatkan $points poin';
+  }
+
+  @override
+  String get taraweehCompleted => 'Tarawih selesai';
+
+  @override
+  String get taraweehNotCompleted => 'Tarawih belum selesai';
+
+  @override
+  String completeTaraweehToGain(int points) {
+    return 'Selesaikan tarawih untuk mendapatkan $points poin';
+  }
+
+  @override
+  String get goalMet => 'Target tercapai';
+
+  @override
+  String get partialGiving => 'Pemberian sebagian';
+
+  @override
+  String get noGiving => 'Tidak ada pemberian';
+
+  @override
+  String giveMoreToGain(String amount, int points) {
+    return 'Berikan $amount lagi untuk mendapatkan $points poin';
+  }
+
+  @override
+  String giveToGain(int points) {
+    return 'Berikan untuk mendapatkan $points poin';
+  }
+
+  @override
+  String get itikafCompleted => 'Itikaf selesai';
+
+  @override
+  String get itikafNotCompleted => 'Itikaf belum selesai';
+
+  @override
+  String completeItikafToGain(int points) {
+    return 'Selesaikan itikaf untuk mendapatkan $points poin';
+  }
+
+  @override
+  String get noPagesRead => 'Tidak ada halaman yang dibaca';
 }

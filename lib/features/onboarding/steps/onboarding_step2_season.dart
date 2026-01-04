@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 class OnboardingStep2Season extends StatefulWidget {
   final OnboardingData data;
@@ -41,21 +42,27 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
   }
 
   Future<void> _selectDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _startDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      setState(() {
-        _startDate = picked;
-      });
+    try {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: _startDate,
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+      );
+      if (picked != null && mounted) {
+        setState(() {
+          _startDate = picked;
+        });
+      }
+    } catch (e) {
+      // Handle date picker errors gracefully
+      debugPrint('Error selecting date: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final last10Start = _days - 9;
     final last10Date = _startDate.add(Duration(days: last10Start - 1));
 
@@ -65,55 +72,114 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Ramadan Season',
+            l10n.ramadanSeason,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 32),
-          TextField(
-            controller: _labelController,
-            decoration: const InputDecoration(
-              labelText: 'Season Label',
-              hintText: 'Ramadan 2025',
-            ),
-            onChanged: (value) {
-              widget.data.seasonLabel = value;
-            },
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.seasonLabel,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ) ?? const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _labelController,
+                decoration: InputDecoration(
+                  hintText: l10n.ramadanYearHint(DateTime.now().year),
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  widget.data.seasonLabel = value;
+                },
+                onTap: () {
+                  // Update hint when field is empty
+                  if (_labelController.text.isEmpty || _labelController.text == 'Ramadan ${DateTime.now().year}') {
+                    final now = DateTime.now();
+                    _labelController.text = l10n.ramadanYearHint(now.year);
+                    widget.data.seasonLabel = _labelController.text;
+                  }
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<int>(
-                  value: _days,
-                  decoration: const InputDecoration(
-                    labelText: 'Days',
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 29, child: Text('29 days')),
-                    DropdownMenuItem(value: 30, child: Text('30 days')),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.daysLabel,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ) ?? const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      value: _days,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        DropdownMenuItem(value: 29, child: Text(l10n.daysCount(29))),
+                        DropdownMenuItem(value: 30, child: Text(l10n.daysCount(30))),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _days = value;
+                            widget.data.days = value;
+                          });
+                        }
+                      },
+                    ),
                   ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _days = value;
-                        widget.data.days = value;
-                      });
-                    }
-                  },
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: InkWell(
-                  onTap: _selectDate,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Start Date',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.startDate,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ) ?? const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-                    child: Text(DateFormat('MMM d, yyyy').format(_startDate)),
-                  ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _selectDate,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(DateFormat('MMM d, yyyy').format(_startDate)),
+                            const Icon(Icons.calendar_today, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -126,17 +192,17 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Preview',
+                    l10n.preview,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Day 1 starts on ${DateFormat('MMM d, yyyy').format(_startDate)}.',
+                    l10n.day1StartsOn(DateFormat('MMM d, yyyy').format(_startDate)),
                   ),
                   Text(
-                    'Last 10 nights begin on Day $last10Start (${DateFormat('MMM d, yyyy').format(last10Date)}).',
+                    l10n.last10NightsBeginOn(last10Start, DateFormat('MMM d, yyyy').format(last10Date)),
                   ),
                 ],
               ),
@@ -148,7 +214,7 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: widget.onPrevious,
-                  child: const Text('Back'),
+                  child: Text(l10n.back),
                 ),
               ),
               const SizedBox(width: 16),
@@ -159,7 +225,7 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
                     widget.data.days = _days;
                     widget.onNext();
                   },
-                  child: const Text('Continue'),
+                  child: Text(l10n.continueButton),
                 ),
               ),
             ],

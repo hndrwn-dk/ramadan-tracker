@@ -453,6 +453,11 @@
     "description": "Best streak label"
   },
   
+  "bestStreakLabel": "Best Streak",
+  "@bestStreakLabel": {
+    "description": "Best streak label (without days)"
+  },
+  
   "missCount": "Miss Count",
   "@missCount": {
     "description": "Miss count label"
@@ -2893,6 +2898,375 @@
         "type": "int"
       }
     }
+  },
+  
+  "todayBreakdown": "Today Breakdown",
+  "@todayBreakdown": {
+    "description": "Today breakdown card title"
+  },
+  
+  "scoreBreakdown": "Score Breakdown",
+  "@scoreBreakdown": {
+    "description": "Score breakdown card title"
+  },
+  
+  "goToToday": "Go to Today",
+  "@goToToday": {
+    "description": "Go to today button label"
+  },
+  
+  "auditDay": "Audit day (Day {dayIndex})",
+  "@auditDay": {
+    "description": "Audit day button label",
+    "placeholders": {
+      "dayIndex": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "pagesRead": "Pages read",
+  "@pagesRead": {
+    "description": "Pages read label"
+  },
+  
+  "count": "Count",
+  "@count": {
+    "description": "Count label"
+  },
+  
+  "amountGiven": "Amount given",
+  "@amountGiven": {
+    "description": "Amount given label"
+  },
+  
+  "noDonation": "No donation",
+  "@noDonation": {
+    "description": "No donation label"
+  },
+  
+  "given": "Given: {amount}",
+  "@given": {
+    "description": "Given label",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "prayersCompleted": "Prayers completed",
+  "@prayersCompleted": {
+    "description": "Prayers completed label"
+  },
+  
+  "missedDays": "Missed Days",
+  "@missedDays": {
+    "description": "Missed days card title"
+  },
+  
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed status"
+  },
+  
+  "notCompleted": "Not completed",
+  "@notCompleted": {
+    "description": "Not completed status"
+  },
+  
+  "toImprove": "To improve: {message}",
+  "@toImprove": {
+    "description": "To improve label",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "selectDayToAnalyze": "Select day to analyze",
+  "@selectDayToAnalyze": {
+    "description": "Date picker help text"
+  },
+  
+  "noSeasonFound": "No season found",
+  "@noSeasonFound": {
+    "description": "No season found error message"
+  },
+  
+  "fastingCompleted": "Fasting completed",
+  "@fastingCompleted": {
+    "description": "Fasting completed reason"
+  },
+  
+  "fastingNotCompleted": "Fasting not completed",
+  "@fastingNotCompleted": {
+    "description": "Fasting not completed reason"
+  },
+  
+  "completeFastingToGain": "Complete fasting to gain {points} points",
+  "@completeFastingToGain": {
+    "description": "Complete fasting to improve message",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "all5PrayersCompleted": "All 5 prayers completed",
+  "@all5PrayersCompleted": {
+    "description": "All 5 prayers completed reason"
+  },
+  
+  "onlyPrayersCompleted": "Only {completed}/5 prayers completed",
+  "@onlyPrayersCompleted": {
+    "description": "Only some prayers completed reason",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "noPrayersLogged": "No prayers logged",
+  "@noPrayersLogged": {
+    "description": "No prayers logged reason"
+  },
+  
+  "completeRemainingPrayers": "Complete remaining {remaining} prayers to gain {points} points",
+  "@completeRemainingPrayers": {
+    "description": "Complete remaining prayers to improve message",
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "logAll5Prayers": "Log all 5 prayers to gain {points} points",
+  "@logAll5Prayers": {
+    "description": "Log all 5 prayers to improve message",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "targetMetPages": "Target met ({pages}/{target} pages)",
+  "@targetMetPages": {
+    "description": "Target met with pages reason",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "partialCompletionPages": "Partial completion ({pages}/{target} pages)",
+  "@partialCompletionPages": {
+    "description": "Partial completion with pages reason",
+    "placeholders": {
+      "pages": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "targetNotMetPages": "Target not met (0/{target} pages)",
+  "@targetNotMetPages": {
+    "description": "Target not met with pages reason",
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "readMorePages": "Read {remaining} more pages to gain {points} points",
+  "@readMorePages": {
+    "description": "Read more pages to improve message",
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "readPagesToGain": "Read pages to gain {points} points",
+  "@readPagesToGain": {
+    "description": "Read pages to gain points message",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "targetMetCount": "Target met ({count}/{target})",
+  "@targetMetCount": {
+    "description": "Target met with count reason",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "partialCompletionCount": "Partial completion ({count}/{target})",
+  "@partialCompletionCount": {
+    "description": "Partial completion with count reason",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "targetNotMetCount": "Target not met (0/{target})",
+  "@targetNotMetCount": {
+    "description": "Target not met with count reason",
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "completeMoreToGain": "Complete {remaining} more to gain {points} points",
+  "@completeMoreToGain": {
+    "description": "Complete more to improve message",
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "dhikrCompleted": "Dhikr completed",
+  "@dhikrCompleted": {
+    "description": "Dhikr completed reason"
+  },
+  
+  "noDhikrLogged": "No dhikr logged",
+  "@noDhikrLogged": {
+    "description": "No dhikr logged reason"
+  },
+  
+  "completeDhikrToGain": "Complete dhikr to gain {points} points",
+  "@completeDhikrToGain": {
+    "description": "Complete dhikr to gain points message",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "taraweehCompleted": "Taraweeh completed",
+  "@taraweehCompleted": {
+    "description": "Taraweeh completed reason"
+  },
+  
+  "taraweehNotCompleted": "Taraweeh not completed",
+  "@taraweehNotCompleted": {
+    "description": "Taraweeh not completed reason"
+  },
+  
+  "completeTaraweehToGain": "Complete taraweeh to gain {points} points",
+  "@completeTaraweehToGain": {
+    "description": "Complete taraweeh to gain points message",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "goalMet": "Goal met",
+  "@goalMet": {
+    "description": "Goal met reason"
+  },
+  
+  "partialGiving": "Partial giving",
+  "@partialGiving": {
+    "description": "Partial giving reason"
+  },
+  
+  "noGiving": "No giving",
+  "@noGiving": {
+    "description": "No giving reason"
+  },
+  
+  "giveMoreToGain": "Give {amount} more to gain {points} points",
+  "@giveMoreToGain": {
+    "description": "Give more to improve message",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "giveToGain": "Give to gain {points} points",
+  "@giveToGain": {
+    "description": "Give to gain points message",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "itikafCompleted": "Itikaf completed",
+  "@itikafCompleted": {
+    "description": "Itikaf completed reason"
+  },
+  
+  "itikafNotCompleted": "Itikaf not completed",
+  "@itikafNotCompleted": {
+    "description": "Itikaf not completed reason"
+  },
+  
+  "completeItikafToGain": "Complete itikaf to gain {points} points",
+  "@completeItikafToGain": {
+    "description": "Complete itikaf to gain points message",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  
+  "noPagesRead": "No pages read",
+  "@noPagesRead": {
+    "description": "No pages read reason"
   }
 }
 

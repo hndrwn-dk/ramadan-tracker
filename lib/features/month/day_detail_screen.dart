@@ -15,6 +15,8 @@ import 'package:ramadan_tracker/widgets/quran_tracker.dart';
 import 'package:ramadan_tracker/widgets/sedekah_tracker.dart';
 import 'package:ramadan_tracker/widgets/counter_widget.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
+import 'package:ramadan_tracker/domain/models/habit_model.dart';
 
 class DayDetailScreen extends ConsumerStatefulWidget {
   final int seasonId;
@@ -50,15 +52,20 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
       appBar: AppBar(
         title: Text('Day ${widget.dayIndex}'),
       ),
-      body: seasonAsync.when(
-        data: (season) {
-          if (season == null) {
-            return const Center(child: Text('No season found'));
-          }
-          return _buildContent(season.days, isInLast10 || showItikaf);
+      body: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        child: seasonAsync.when(
+          data: (season) {
+            if (season == null) {
+              return const Center(child: Text('No season found'));
+            }
+            return _buildContent(season.days, isInLast10 || showItikaf);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
+        ),
       ),
     );
   }
@@ -77,7 +84,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeroCard(seasonHabitsAsync, entriesAsync),
+            _buildHeroCard(habitsAsync, seasonHabitsAsync, entriesAsync),
             const SizedBox(height: 16),
             _buildOneTapCard(
               habitsAsync,
@@ -94,6 +101,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
   }
 
   Widget _buildHeroCard(
+    AsyncValue<List<dynamic>> habitsAsync,
     AsyncValue<List<dynamic>> seasonHabitsAsync,
     AsyncValue<List<dynamic>> entriesAsync,
   ) {
@@ -109,11 +117,20 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                   data: (seasonHabits) => entriesAsync.when(
                     data: (entries) {
                       final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
-                      final score = CompletionService.calculateCompletionScore(
-                        enabledHabits: enabledHabits.cast(),
-                        entries: entries.cast(),
+                      return FutureBuilder<double>(
+                        future: CompletionService.calculateCompletionScore(
+                          seasonId: widget.seasonId,
+                          dayIndex: widget.dayIndex,
+                          enabledHabits: enabledHabits.cast(),
+                          entries: entries.cast(),
+                          database: ref.read(databaseProvider),
+                          allHabits: habitsAsync.value,
+                        ),
+                        builder: (context, snapshot) {
+                          final score = snapshot.data ?? 0.0;
+                          return ScoreRing(score: score);
+                        },
                       );
-                      return ScoreRing(score: score);
                     },
                     loading: () => const ScoreRing(score: 0),
                     error: (_, __) => const ScoreRing(score: 0),
@@ -135,16 +152,30 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    seasonHabitsAsync.when(
-                      data: (seasonHabits) => entriesAsync.when(
-                        data: (entries) {
-                          final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
-                          final completed = (entries as List).where((e) => e.isCompleted).length;
-                          return Text(
-                            'Done: $completed/${enabledHabits.length}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          );
-                        },
+                    habitsAsync.when(
+                      data: (allHabits) => seasonHabitsAsync.when(
+                        data: (seasonHabits) => entriesAsync.when(
+                          data: (entries) {
+                            return FutureBuilder<Map<String, int>>(
+                              future: _calculateCompletedCount(
+                                seasonId: widget.seasonId,
+                                dayIndex: widget.dayIndex,
+                                enabledHabits: (seasonHabits as List).where((sh) => sh.isEnabled).toList(),
+                                entries: entries.cast(),
+                                allHabits: allHabits,
+                              ),
+                              builder: (context, snapshot) {
+                                final result = snapshot.data ?? {'completed': 0, 'total': 0};
+                                return Text(
+                                  'Done: ${result['completed']}/${result['total']}',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                );
+                              },
+                            );
+                          },
+                          loading: () => const Text('Done: 0/0'),
+                          error: (_, __) => const Text('Done: 0/0'),
+                        ),
                         loading: () => const Text('Done: 0/0'),
                         error: (_, __) => const Text('Done: 0/0'),
                       ),
@@ -205,29 +236,56 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
     List<dynamic> entries,
     bool showItikaf,
   ) {
-    final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
-    
-    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'itikaf'];
+    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'itikaf'];
     final sortedHabits = <Widget>[];
+
+    // Debug logging
+    debugPrint('=== DayDetailScreen._buildHabitsList: seasonId=${widget.seasonId}, dayIndex=${widget.dayIndex} ===');
+    debugPrint('  Total habits: ${habits.length}');
+    debugPrint('  Total seasonHabits: ${seasonHabits.length}');
+    debugPrint('  Total entries: ${entries.length}');
+    debugPrint('  showItikaf: $showItikaf');
 
     for (final habitKey in habitOrder) {
       final habit = (habits as List).where((h) => h.key == habitKey).firstOrNull;
-      if (habit == null) continue;
+      if (habit == null) {
+        debugPrint('  Habit not found: $habitKey');
+        continue;
+      }
 
-      final sh = enabledHabits.where((s) => s.habitId == habit.id).firstOrNull;
-      if (sh == null || !sh.isEnabled) continue;
+      // Find SeasonHabit from all seasonHabits, not just enabled ones
+      final sh = (seasonHabits as List).where((s) => s.habitId == habit.id).firstOrNull;
+      if (sh == null) {
+        debugPrint('  SeasonHabit not found for: $habitKey (habitId=${habit.id})');
+        continue;
+      }
+      
+      if (!sh.isEnabled) {
+        debugPrint('  Habit disabled: $habitKey');
+        continue;
+      }
 
-      if (habitKey == 'itikaf' && !showItikaf) continue;
+      if (habitKey == 'itikaf' && !showItikaf) {
+        debugPrint('  Itikaf skipped (not in last 10 days)');
+        continue;
+      }
 
       final entry = (entries as List).where((e) => e.habitId == habit.id).firstOrNull;
+      debugPrint('  Entry for $habitKey: ${entry != null ? "found (valueBool=${entry.valueBool}, valueInt=${entry.valueInt})" : "not found"}');
 
-      if (habit.type == 'bool') {
+      // Cast habit to HabitModel to access type enum properly
+      final habitModel = habit as HabitModel;
+      debugPrint('  Processing habit: $habitKey (type=${habitModel.type}, isEnabled=${sh.isEnabled})');
+
+      if (habitModel.type == HabitType.bool) {
         final value = entry?.valueBool ?? false;
         IconData? icon;
         if (habitKey == 'fasting') icon = Icons.wb_sunny;
         if (habitKey == 'taraweeh') icon = Icons.nights_stay;
         if (habitKey == 'itikaf') icon = Icons.mosque;
+        if (habitKey == 'prayers') icon = Icons.mosque;
 
+        debugPrint('  Adding bool habit to UI: $habitKey (value=$value)');
         sortedHabits.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -242,6 +300,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
           ),
         );
       } else if (habitKey == 'quran_pages') {
+        debugPrint('  Adding quran_pages to UI');
         sortedHabits.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -254,12 +313,14 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
         );
       } else if (habitKey == 'dhikr') {
         final value = entry?.valueInt ?? 0;
+        debugPrint('  Adding dhikr to UI (value=$value)');
         sortedHabits.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: CounterWidget(
               label: habit.name,
               value: value,
+              icon: Icons.favorite,
               quickAddChips: const [33, 100, 300],
               onDecrement: () {
                 if (value > 0) {
@@ -276,6 +337,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
           ),
         );
       } else if (habitKey == 'sedekah') {
+        debugPrint('  Adding sedekah to UI');
         sortedHabits.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -286,9 +348,13 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
             ),
           ),
         );
+      } else {
+        // Log if habit type is not handled
+        debugPrint('  Habit type not handled: $habitKey (type=${habitModel.type})');
       }
     }
 
+    debugPrint('  Total habits added to UI: ${sortedHabits.length}');
     return Column(children: sortedHabits);
   }
 
@@ -314,11 +380,15 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                 TextField(
                   controller: _reflectionController,
                   maxLines: 3,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     hintText: 'How was today?',
                   ),
                   onChanged: (text) {
                     _saveReflection(text.isEmpty ? null : text, note?.id);
+                  },
+                  onSubmitted: (_) {
+                    FocusScope.of(context).unfocus();
                   },
                 ),
               ],
@@ -327,6 +397,115 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
         );
       },
     );
+  }
+
+  Future<Map<String, int>> _calculateCompletedCount({
+    required int seasonId,
+    required int dayIndex,
+    required List enabledHabits,
+    required List entries,
+    List? allHabits,
+  }) async {
+    if (enabledHabits.isEmpty) return {'completed': 0, 'total': 0};
+
+    final database = ref.read(databaseProvider);
+    
+    // Load plans for count-based habits
+    final quranPlan = await database.quranPlanDao.getPlan(seasonId);
+    final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
+    final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled');
+    final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
+    
+    // Load Quran daily data (Quran uses separate table)
+    final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
+    
+    // Check if we're in the last 10 days (for Itikaf)
+    final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    final last10Start = season != null ? season.days - 9 : 0;
+    final isInLast10Days = dayIndex >= last10Start && dayIndex > 0;
+
+    int completedCount = 0;
+    int totalRelevantHabits = 0;
+
+    for (final habit in enabledHabits) {
+      // Get habit key to identify count habits and Itikaf
+      String? habitKey;
+      if (allHabits != null) {
+        try {
+          final fullHabit = allHabits.firstWhere((h) => h.id == habit.habitId);
+          habitKey = fullHabit.key;
+        } catch (e) {
+          habitKey = null;
+        }
+      }
+      
+      // Skip Itikaf if not in last 10 days
+      if (habitKey == 'itikaf' && !isInLast10Days) {
+        continue; // Don't count Itikaf in total if not in last 10 days
+      }
+      
+      // Count this habit in total relevant habits
+      totalRelevantHabits++;
+      
+      final entry = entries.where((e) => 
+        e.habitId == habit.habitId && 
+        e.seasonId == seasonId && 
+        e.dayIndex == dayIndex
+      ).firstOrNull ??
+          DailyEntryModel(
+            seasonId: seasonId,
+            dayIndex: dayIndex,
+            habitId: habit.habitId,
+            updatedAt: DateTime.now(),
+          );
+
+      bool isCompleted = false;
+      
+      // Count habits (quran_pages, dhikr, sedekah) should be checked based on target
+      if (habitKey == 'quran_pages') {
+        // Quran uses QuranDaily table, not DailyEntries
+        final target = quranPlan?.dailyTargetPages ?? 20;
+        if (target > 0) {
+          final currentValue = quranDaily?.pagesRead ?? 0;
+          isCompleted = currentValue >= target;
+        } else {
+          final currentValue = quranDaily?.pagesRead ?? 0;
+          isCompleted = currentValue > 0;
+        }
+      } else if (habitKey == 'dhikr') {
+        // Dhikr target from DhikrPlan
+        final target = dhikrPlan?.dailyTarget ?? 100;
+        if (target > 0) {
+          isCompleted = (entry.valueInt ?? 0) >= target;
+        } else {
+          isCompleted = (entry.valueInt ?? 0) > 0;
+        }
+      } else if (habitKey == 'sedekah') {
+        // Sedekah target from KvSettings
+        if (sedekahGoalEnabled == 'true' && sedekahGoalAmount != null) {
+          final target = double.tryParse(sedekahGoalAmount) ?? 0;
+          if (target > 0) {
+            // Convert valueInt to double for accurate comparison
+            final currentValue = (entry.valueInt ?? 0).toDouble();
+            isCompleted = currentValue >= target;
+          } else {
+            isCompleted = (entry.valueInt ?? 0) > 0;
+          }
+        } else {
+          // If sedekah goal disabled, consider completed if value > 0
+          isCompleted = (entry.valueInt ?? 0) > 0;
+        }
+      } else {
+        // Boolean habits (fasting, taraweeh, itikaf, prayers)
+        isCompleted = entry.isCompleted;
+      }
+
+      if (isCompleted) {
+        completedCount++;
+      }
+    }
+
+    return {'completed': completedCount, 'total': totalRelevantHabits};
   }
 
   Future<int> _calculateStreak() async {

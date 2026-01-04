@@ -168,6 +168,13 @@ class DailyEntriesDao extends DatabaseAccessor<AppDatabase>
       ),
     );
   }
+
+  Future<List<DailyEntry>> getAllSeasonEntries(int seasonId) {
+    return (select(dailyEntries)
+          ..where((e) => e.seasonId.equals(seasonId))
+          ..orderBy([(e) => OrderingTerm.asc(e.dayIndex)]))
+        .get();
+  }
 }
 
 @DriftAccessor(tables: [QuranPlan])
@@ -249,6 +256,7 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
     int? dayIndex,
     String? title,
     required String body,
+    String? mood,
   }) {
     return into(notes).insert(
       NotesCompanion.insert(
@@ -256,6 +264,7 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
         dayIndex: Value(dayIndex),
         title: Value(title),
         body: body,
+        mood: Value(mood),
         createdAt: DateTime.now().millisecondsSinceEpoch,
       ),
     );
@@ -311,6 +320,85 @@ class PrayerTimesCacheDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> clearCacheForSeason(int seasonId) async {
     await (delete(prayerTimesCache)..where((p) => p.seasonId.equals(seasonId))).go();
+  }
+}
+
+@DriftAccessor(tables: [PrayerDetails])
+class PrayerDetailsDao extends DatabaseAccessor<AppDatabase>
+    with _$PrayerDetailsDaoMixin {
+  PrayerDetailsDao(AppDatabase db) : super(db);
+
+  Future<PrayerDetail?> getPrayerDetails(int seasonId, int dayIndex) {
+    return (select(prayerDetails)
+          ..where((p) =>
+              p.seasonId.equals(seasonId) & p.dayIndex.equals(dayIndex)))
+        .getSingleOrNull();
+  }
+
+  Future<void> setPrayer(
+    int seasonId,
+    int dayIndex,
+    String prayerName,
+    bool completed,
+  ) async {
+    final existing = await getPrayerDetails(seasonId, dayIndex);
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    if (existing == null) {
+      await into(prayerDetails).insert(
+        PrayerDetailsCompanion.insert(
+          seasonId: seasonId,
+          dayIndex: dayIndex,
+          fajr: Value(prayerName == 'fajr' ? completed : false),
+          dhuhr: Value(prayerName == 'dhuhr' ? completed : false),
+          asr: Value(prayerName == 'asr' ? completed : false),
+          maghrib: Value(prayerName == 'maghrib' ? completed : false),
+          isha: Value(prayerName == 'isha' ? completed : false),
+          updatedAt: now,
+        ),
+      );
+    } else {
+      final companion = PrayerDetailsCompanion(
+        seasonId: Value(seasonId),
+        dayIndex: Value(dayIndex),
+        fajr: Value(prayerName == 'fajr' ? completed : existing.fajr),
+        dhuhr: Value(prayerName == 'dhuhr' ? completed : existing.dhuhr),
+        asr: Value(prayerName == 'asr' ? completed : existing.asr),
+        maghrib: Value(prayerName == 'maghrib' ? completed : existing.maghrib),
+        isha: Value(prayerName == 'isha' ? completed : existing.isha),
+        updatedAt: Value(now),
+      );
+      await update(prayerDetails).replace(
+        PrayerDetail(
+          seasonId: seasonId,
+          dayIndex: dayIndex,
+          fajr: companion.fajr.value ?? existing.fajr,
+          dhuhr: companion.dhuhr.value ?? existing.dhuhr,
+          asr: companion.asr.value ?? existing.asr,
+          maghrib: companion.maghrib.value ?? existing.maghrib,
+          isha: companion.isha.value ?? existing.isha,
+          updatedAt: companion.updatedAt.value ?? existing.updatedAt,
+        ),
+      );
+    }
+  }
+
+  Future<void> setPrayerDetails(PrayerDetail details) async {
+    await into(prayerDetails).insertOnConflictUpdate(details);
+  }
+
+  Future<List<PrayerDetail>> getPrayerDetailsRange(
+    int seasonId,
+    int startDayIndex,
+    int endDayIndex,
+  ) {
+    return (select(prayerDetails)
+          ..where((p) =>
+              p.seasonId.equals(seasonId) &
+              p.dayIndex.isBiggerOrEqualValue(startDayIndex) &
+              p.dayIndex.isSmallerOrEqualValue(endDayIndex))
+          ..orderBy([(p) => OrderingTerm.asc(p.dayIndex)]))
+        .get();
   }
 }
 

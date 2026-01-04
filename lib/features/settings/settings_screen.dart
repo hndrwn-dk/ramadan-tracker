@@ -847,7 +847,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: Text(l10n.testNotification),
                   subtitle: Text(l10n.sendTestNotification, style: const TextStyle(fontSize: 12)),
                   onTap: () async {
-                    await NotificationService.testNotification();
+                    await NotificationService.testNotification(
+                      title: l10n.testNotification,
+                      body: l10n.appTitle,
+                    );
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(l10n.testNotificationSent)),
@@ -908,7 +911,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _rescheduleReminders() async {
     try {
       final database = ref.read(databaseProvider);
-      await NotificationService.rescheduleAllReminders(database: database);
+      final l10n = AppLocalizations.of(context)!;
+      await NotificationService.rescheduleAllReminders(
+        database: database,
+        sahurTitle: l10n.sahurReminder,
+        sahurBody: l10n.getNotifiedBeforeSuhoor,
+        iftarTitle: l10n.iftarReminder,
+        iftarBody: l10n.getNotifiedWhenBreakFast,
+        nightPlanTitle: l10n.nightPlanReminder,
+        nightPlanBody: l10n.reminderToPlanNightActivities,
+      );
     } catch (e) {
       debugPrint('Error rescheduling reminders: $e');
     }
@@ -1086,31 +1098,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               },
                             );
                           }).toList(),
-                          // Prayer detailed mode setting (only show if prayers habit exists)
-                          if (habits.any((h) => h.key == 'prayers')) ...[
-                            const Divider(height: 24),
-                            FutureBuilder<String?>(
-                              future: ref.read(databaseProvider).kvSettingsDao.getValue('prayers_detailed_mode'),
-                              builder: (context, snapshot) {
-                                final isDetailed = snapshot.data == 'true';
-                                return SwitchListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text(l10n.habitPrayersDetailed),
-                                  subtitle: Text(l10n.trackEachPrayerIndividually, style: const TextStyle(fontSize: 12)),
-                                  value: isDetailed,
-                                  onChanged: (value) async {
-                                    await ref.read(databaseProvider).kvSettingsDao.setValue(
-                                      'prayers_detailed_mode',
-                                      value.toString(),
-                                    );
-                                    setState(() {});
-                                    // Invalidate daily entries to refresh Today screen
-                                    ref.invalidate(dailyEntriesProvider);
-                                  },
-                                );
-                              },
-                            ),
-                          ],
                         ],
                       );
                     },

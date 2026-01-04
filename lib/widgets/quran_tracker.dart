@@ -5,6 +5,8 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/quran_provider.dart';
 import 'package:ramadan_tracker/domain/services/quran_service.dart';
+import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 class QuranTracker extends ConsumerStatefulWidget {
   final int seasonId;
@@ -57,7 +59,7 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
                       const Icon(Icons.menu_book, size: 20),
                       const SizedBox(width: 12),
                       Text(
-                        'Quran',
+                        getHabitDisplayName(context, 'quran_pages'),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -71,7 +73,7 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'Juz: ${juzProgress.toStringAsFixed(1)}/$juzTarget',
+                          AppLocalizations.of(context)!.juzProgress(juzProgress.toStringAsFixed(1), juzTarget),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.bold,
@@ -111,7 +113,7 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                           Text(
-                            'of $dailyTargetPages pages',
+                            AppLocalizations.of(context)!.ofPages(dailyTargetPages),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],

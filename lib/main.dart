@@ -13,10 +13,14 @@ void main() async {
     await database.initialize();
     
     try {
+      debugPrint('=== STARTING NotificationService.initialize() ===');
       await NotificationService.initialize();
-    } catch (e) {
+      debugPrint('=== NotificationService.initialize() COMPLETED ===');
+    } catch (e, stackTrace) {
       // Notification initialization failed, but continue app
-      debugPrint('NotificationService initialization failed: $e');
+      debugPrint('=== NotificationService initialization FAILED ===');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
     
     runApp(

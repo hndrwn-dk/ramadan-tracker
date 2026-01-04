@@ -8,6 +8,7 @@ class CounterWidget extends StatefulWidget {
   final VoidCallback onIncrement;
   final List<int> quickAddChips;
   final ValueChanged<int>? onQuickAdd;
+  final IconData? icon;
 
   const CounterWidget({
     super.key,
@@ -17,6 +18,7 @@ class CounterWidget extends StatefulWidget {
     required this.onIncrement,
     this.quickAddChips = const [],
     this.onQuickAdd,
+    this.icon,
   });
 
   @override
@@ -31,9 +33,20 @@ class _CounterWidgetState extends State<CounterWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: Theme.of(context).textTheme.titleMedium,
+        Row(
+          children: [
+            if (widget.icon != null) ...[
+              Icon(
+                widget.icon,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+            ],
+            Text(
+              widget.label,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Row(

@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 
 class AutopilotService {
   static const double quranMinutesPerPage = 1.5;
   static const double dhikrMinutesPerCount = 0.02;
+  static const int quranTotalPages = 604; // Total pages of complete Quran
 
   static Future<AutopilotPlan> generatePlan({
     required int seasonId,
@@ -15,14 +17,33 @@ class AutopilotService {
     required AppDatabase database,
   }) async {
     final quranDaily = await database.quranDailyDao.getAllDaily(seasonId);
-    final totalPagesRead = quranDaily.fold<int>(
-      0,
-      (sum, entry) => sum + (entry.pagesRead as int),
-    );
+    // Only sum pages from days up to current day (don't count future days)
+    // Also only count entries that actually have pages read (exclude 0 or null)
+    final totalPagesRead = quranDaily
+        .where((entry) => entry.dayIndex <= currentDayIndex && (entry.pagesRead as int? ?? 0) > 0)
+        .fold<int>(
+          0,
+          (sum, entry) {
+            final pages = entry.pagesRead as int? ?? 0;
+            return sum + pages;
+          },
+        );
 
-    final totalPages = quranPlan?.totalPages ?? 600;
+    // Total Quran is always 604 pages regardless of goal (1 khatam, 2 khatam, or custom)
+    final totalPages = quranTotalPages;
     final remainingPages = (totalPages - totalPagesRead).clamp(0, totalPages);
-    final remainingDays = (totalDays - currentDayIndex + 1).clamp(1, totalDays);
+    
+    // Debug logging to verify calculation
+    debugPrint('AutopilotService.generatePlan:');
+    debugPrint('  quranTotalPages (constant) = $quranTotalPages');
+    debugPrint('  totalPagesRead = $totalPagesRead');
+    debugPrint('  remainingPages = $remainingPages');
+    debugPrint('  quranDaily entries (filtered): ${quranDaily.where((e) => e.dayIndex <= currentDayIndex && (e.pagesRead as int? ?? 0) > 0).length}');
+    for (final entry in quranDaily.where((e) => e.dayIndex <= currentDayIndex)) {
+      debugPrint('    Day ${entry.dayIndex}: ${entry.pagesRead} pages');
+    }
+    // Days left = total days minus current day (e.g., if day 1 of 29, then 28 days left)
+    final remainingDays = (totalDays - currentDayIndex).clamp(0, totalDays);
 
     final defaultDailyTarget = quranPlan?.dailyTargetPages ?? 20;
     

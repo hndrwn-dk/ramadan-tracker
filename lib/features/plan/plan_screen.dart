@@ -4,9 +4,18 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
+import 'package:ramadan_tracker/data/providers/tab_provider.dart';
+import 'package:ramadan_tracker/data/providers/quran_provider.dart';
+import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/domain/services/autopilot_service.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
+import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/features/plan/widgets/today_remaining_card.dart';
+import 'package:ramadan_tracker/features/plan/widgets/plan_block_card.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:intl/intl.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
   const PlanScreen({super.key});
@@ -31,17 +40,32 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ramadan Autopilot'),
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.arrow_back_ios_new,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          onPressed: () => ref.read(tabIndexProvider.notifier).state = 0,
+        ),
+        title: Text(AppLocalizations.of(context)!.ramadanAutopilot),
       ),
       body: seasonAsync.when(
         data: (season) {
           if (season == null) {
-            return const Center(child: Text('No season found'));
+            return Center(child: Text(AppLocalizations.of(context)!.noSeasonFound));
           }
           return _buildContent(season.id, season.days);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        error: (error, stack) => Center(child: Text('${AppLocalizations.of(context)!.error}: $error')),
       ),
     );
   }
@@ -55,7 +79,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
         }
 
         if (quranPlanSnapshot.hasError) {
-          return Center(child: Text('Error: ${quranPlanSnapshot.error}'));
+          return Center(child: Text('${AppLocalizations.of(context)!.error}: ${quranPlanSnapshot.error}'));
         }
 
         final quranPlan = quranPlanSnapshot.data;
@@ -83,12 +107,12 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Setup Ramadan Autopilot',
+                    AppLocalizations.of(context)!.setupRamadanAutopilot,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Configure your goals and available time to generate a daily plan.',
+                    AppLocalizations.of(context)!.setupRamadanAutopilotSubtitle,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -103,13 +127,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Intensity',
+                    AppLocalizations.of(context)!.intensity,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
                   ...AutopilotIntensity.values.map((intensity) {
                     return RadioListTile<AutopilotIntensity>(
-                      title: Text(_getIntensityLabel(intensity)),
+                      title: Text(_getIntensityLabel(context, intensity)),
                       value: intensity,
                       groupValue: _intensity,
                       onChanged: (value) {
@@ -131,21 +155,21 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Available Time (minutes)',
+                    AppLocalizations.of(context)!.availableTimeMinutes,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
-                  _buildTimeSlider('Morning', _morningMinutes, (value) {
+                  _buildTimeSlider(AppLocalizations.of(context)!.planMorning, _morningMinutes, (value) {
                     setState(() {
                       _morningMinutes = value;
                     });
                   }),
-                  _buildTimeSlider('Day', _dayMinutes, (value) {
+                  _buildTimeSlider(AppLocalizations.of(context)!.planDay, _dayMinutes, (value) {
                     setState(() {
                       _dayMinutes = value;
                     });
                   }),
-                  _buildTimeSlider('Night', _nightMinutes, (value) {
+                  _buildTimeSlider(AppLocalizations.of(context)!.planNight, _nightMinutes, (value) {
                     setState(() {
                       _nightMinutes = value;
                     });
@@ -162,13 +186,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Quran Goal',
+                    AppLocalizations.of(context)!.quranGoal,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
                   ...QuranGoalType.values.map((goal) {
                     return RadioListTile<QuranGoalType>(
-                      title: Text(_getQuranGoalLabel(goal)),
+                      title: Text(_getQuranGoalLabel(context, goal)),
                       value: goal,
                       groupValue: _quranGoal,
                       onChanged: (value) {
@@ -181,8 +205,8 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                   if (_quranGoal == QuranGoalType.custom) ...[
                     const SizedBox(height: 12),
                     TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'Total Pages',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.totalPages,
                         hintText: '604',
                       ),
                       keyboardType: TextInputType.number,
@@ -205,13 +229,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Dhikr Target',
+                    AppLocalizations.of(context)!.dhikrTarget,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Daily Target',
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.dailyTarget,
                       hintText: '100',
                     ),
                     keyboardType: TextInputType.number,
@@ -228,11 +252,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+              child: ElevatedButton(
               onPressed: _intensity != null && _quranGoal != null
                   ? () => _savePlan(seasonId, totalDays)
                   : null,
-              child: const Text('Save Plan'),
+              child: Text(AppLocalizations.of(context)!.savePlan),
             ),
           ),
         ],
@@ -250,7 +274,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(label),
-              Text('$value min'),
+              Text(AppLocalizations.of(context)!.minutes(value)),
             ],
           ),
           Slider(
@@ -266,7 +290,8 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   }
 
   Widget _buildPlanView(int seasonId, int totalDays, QuranPlanData quranPlan) {
-    final dayIndex = ref.watch(activeDayIndexForUIProvider);
+    // Use currentDayIndexProvider to match Today screen
+    final dayIndex = ref.watch(currentDayIndexProvider);
     final seasonState = ref.watch(seasonStateProvider);
     final dhikrPlanAsync = ref.watch(dhikrPlanProvider(seasonId));
 
@@ -275,20 +300,51 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
         padding: const EdgeInsets.all(16),
         child: Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, size: 48, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Text(
-                  'Season Ended',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  AppLocalizations.of(context)!.seasonCompleted,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'The Ramadan season has finished. You can review your progress in the Insights tab.',
+                  AppLocalizations.of(context)!.seasonCompletedMessage,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // TODO: Navigate to new season creation
+                    // For now, just show a message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(AppLocalizations.of(context)!.newSeasonCreationComingSoon)),
+                    );
+                  },
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: Text(AppLocalizations.of(context)!.startNewSeason),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
                 ),
               ],
             ),
@@ -299,243 +355,698 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 
     return dhikrPlanAsync.when(
       data: (dhikrPlan) {
-        final effectiveDayIndex = seasonState == SeasonState.preRamadan ? 1 : dayIndex;
-        return FutureBuilder<AutopilotPlan>(
-          future: AutopilotService.generatePlan(
-            seasonId: seasonId,
-            currentDayIndex: effectiveDayIndex,
-            totalDays: totalDays,
-            intensity: AutopilotIntensity.balanced,
-            timeBlocks: TimeBlocks(
-              morning: _morningMinutes,
-              day: _dayMinutes,
-              night: _nightMinutes,
-            ),
-            quranPlan: quranPlan,
-            dhikrPlan: dhikrPlan,
-            database: ref.read(databaseProvider),
-          ),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
-
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-        final plan = snapshot.data!;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Recommended Plan',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTodayTarget(context, plan),
-                      const SizedBox(height: 16),
-                      Text(
-                        'When to do it',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
+        // Use the actual current day index, same as Today screen
+        final effectiveDayIndex = dayIndex;
+        return FutureBuilder<AutopilotIntensity>(
+          future: _getAutopilotIntensity(),
+          builder: (context, intensitySnapshot) {
+            final intensity = intensitySnapshot.data ?? AutopilotIntensity.balanced;
+            
+            return FutureBuilder<AutopilotPlan>(
+              future: AutopilotService.generatePlan(
+                seasonId: seasonId,
+                currentDayIndex: effectiveDayIndex,
+                totalDays: totalDays,
+                intensity: intensity,
+                timeBlocks: TimeBlocks(
+                  morning: _morningMinutes,
+                  day: _dayMinutes,
+                  night: _nightMinutes,
                 ),
+                quranPlan: quranPlan,
+                dhikrPlan: dhikrPlan,
+                database: ref.read(databaseProvider),
               ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Today\'s Plan',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTimelineBlock('Morning', plan.morning),
-                      const SizedBox(height: 16),
-                      _buildTimelineBlock('Day', plan.day),
-                      const SizedBox(height: 16),
-                      _buildTimelineBlock('Night', plan.night),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Progress',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      if (plan.quranRemainingPages > 0 && plan.quranRemainingDays > 0 && plan.quranDailyTarget > 20)
-                        Card(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Gentle catch-up',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '+${(plan.quranDailyTarget - 20).clamp(0, 5)} pages/day for the next ${plan.quranRemainingDays} days',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ],
-                            ),
+              builder: (context, planSnapshot) {
+                if (planSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (planSnapshot.hasError) {
+                  return Center(child: Text('${AppLocalizations.of(context)!.error}: ${planSnapshot.error}'));
+                }
+
+                if (!planSnapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final plan = planSnapshot.data!;
+
+                return FutureBuilder<Map<String, String?>>(
+                  future: _getTimeWindows(context, seasonId, effectiveDayIndex),
+                  builder: (context, timeWindowsSnapshot) {
+                    final timeWindows = timeWindowsSnapshot.data ?? {};
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TodayRemainingCard(
+                            seasonId: seasonId,
+                            dayIndex: effectiveDayIndex,
                           ),
-                        )
-                      else
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Quran: ${plan.quranRemainingPages} pages remaining'),
-                            Text('Days left: ${plan.quranRemainingDays}'),
-                            Text('Daily target: ${plan.quranDailyTarget} pages'),
-                            Text('Dhikr target: ${plan.dhikrTarget}'),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+                          const SizedBox(height: 16),
+                          _buildRecommendedPlanCard(context, plan, seasonId, effectiveDayIndex),
+                          const SizedBox(height: 16),
+                          _buildTodaysPlanCard(context, plan, timeWindows, seasonId, effectiveDayIndex),
+                          const SizedBox(height: 16),
+                          _buildProgressCard(context, plan, seasonId, effectiveDayIndex),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            );
           },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error loading dhikr plan: $error')),
+      error: (error, stack) => Center(child: Text('${AppLocalizations.of(context)!.error} loading dhikr plan: $error')),
     );
   }
 
-  Widget _buildTodayTarget(BuildContext context, AutopilotPlan plan) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Today Target',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+  Widget _buildRecommendedPlanCard(BuildContext context, AutopilotPlan plan, int seasonId, int dayIndex) {
+    // Use providers for auto-refresh when data changes
+    final quranDailyAsync = ref.watch(quranDailyProvider((seasonId: seasonId, dayIndex: dayIndex)));
+    final entriesAsync = ref.watch(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+    final quranPlanAsync = ref.watch(quranPlanProvider(seasonId));
+    final dhikrPlanAsync = ref.watch(dhikrPlanProvider(seasonId));
+    
+    return quranDailyAsync.when(
+      data: (quranDaily) => entriesAsync.when(
+        data: (entries) => quranPlanAsync.when(
+          data: (quranPlan) => dhikrPlanAsync.when(
+            data: (dhikrPlan) {
+              final quranProgress = quranDaily?.pagesRead ?? 0;
+              final quranTarget = quranPlan?.dailyTargetPages ?? plan.quranDailyTarget;
+              
+              // Get dhikr entry - need to await the habit
+              return FutureBuilder(
+                future: ref.read(databaseProvider).habitsDao.getHabitByKey('dhikr'),
+                builder: (context, dhikrHabitSnapshot) {
+                  final dhikrHabit = dhikrHabitSnapshot.data;
+                  final dhikrEntry = dhikrHabit != null
+                      ? entries.where((e) => e.habitId == dhikrHabit.id).firstOrNull
+                      : null;
+                  final dhikrProgress = dhikrEntry?.valueInt ?? 0;
+                  final dhikrTarget = dhikrPlan?.dailyTarget ?? plan.dhikrTarget;
+                  
+                  final quranCompleted = quranProgress >= quranTarget;
+                  final dhikrCompleted = dhikrProgress >= dhikrTarget;
+
+                  return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primaryContainer,
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Quran',
-                  style: Theme.of(context).textTheme.bodySmall,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.recommendedPlan,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                ),
+                          ),
+                          Text(
+                            AppLocalizations.of(context)!.recommendedPlanSubtitle,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 24),
                 Text(
-                  '${plan.quranDailyTarget}/20 pages',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  AppLocalizations.of(context)!.todayTarget,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTargetCard(
+                        context,
+                        icon: Icons.menu_book,
+                        label: getHabitDisplayName(context, 'quran_pages'),
+                        current: quranProgress,
+                        target: quranTarget,
+                        unit: AppLocalizations.of(context)!.pages,
+                        isCompleted: quranCompleted,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildTargetCard(
+                        context,
+                        icon: Icons.favorite,
+                        label: getHabitDisplayName(context, 'dhikr'),
+                        current: dhikrProgress,
+                        target: dhikrTarget,
+                        unit: '',
+                        isCompleted: dhikrCompleted,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+          ),
+        );
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const SizedBox.shrink(),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Color _getIconColor(BuildContext context, int current, bool isCompleted) {
+    // Abu-abu: belum ada progress (0)
+    if (current == 0) {
+      return Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
+    }
+    // Hijau: sudah mencapai target
+    if (isCompleted) {
+      return Colors.green;
+    }
+    // Merah: belum mencapai target
+    return Colors.red;
+  }
+
+  Widget _buildTargetCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required int current,
+    required int target,
+    required String unit,
+    required bool isCompleted,
+  }) {
+    final progress = target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isCompleted
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          width: isCompleted ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: _getIconColor(context, current, isCompleted),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                ),
+              ),
+              if (isCompleted)
+                Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$current${unit.isNotEmpty ? '/$target $unit' : '/$target'}',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isCompleted
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              ),
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildTodaysPlanCard(BuildContext context, AutopilotPlan plan, Map<String, String?> timeWindows, int seasonId, int dayIndex) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(
-                  'Dhikr',
-                  style: Theme.of(context).textTheme.bodySmall,
+                Icon(
+                  Icons.calendar_today,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
                 ),
+                const SizedBox(width: 12),
                 Text(
-                  '${plan.dhikrTarget}/100',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  AppLocalizations.of(context)!.todaysPlan,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            PlanBlockCard(
+              label: AppLocalizations.of(context)!.planMorning,
+              block: plan.morning,
+              icon: Icons.wb_sunny,
+              timeWindow: timeWindows['morning'],
+              seasonId: seasonId,
+              dayIndex: dayIndex,
+            ),
+            const SizedBox(height: 16),
+            PlanBlockCard(
+              label: AppLocalizations.of(context)!.planDay,
+              block: plan.day,
+              icon: Icons.light_mode,
+              timeWindow: timeWindows['day'],
+              seasonId: seasonId,
+              dayIndex: dayIndex,
+            ),
+            const SizedBox(height: 16),
+            PlanBlockCard(
+              label: AppLocalizations.of(context)!.planNight,
+              block: plan.night,
+              icon: Icons.nights_stay,
+              timeWindow: timeWindows['night'],
+              seasonId: seasonId,
+              dayIndex: dayIndex,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressCard(BuildContext context, AutopilotPlan plan, int seasonId, int dayIndex) {
+    // Hide progress card if season is completed (days left == 0)
+    if (plan.quranRemainingDays <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  AppLocalizations.of(context)!.progress,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // Always show the 3 progress items
+            Column(
+              children: [
+                _buildProgressItem(
+                  context,
+                  icon: Icons.menu_book,
+                  label: getHabitDisplayName(context, 'quran_pages'),
+                  value: AppLocalizations.of(context)!.pagesRemaining(plan.quranRemainingPages),
+                  subtitle: AppLocalizations.of(context)!.pagesPerDay(plan.quranDailyTarget),
+                ),
+                const SizedBox(height: 16),
+                _buildProgressItem(
+                  context,
+                  icon: Icons.calendar_today,
+                  label: AppLocalizations.of(context)!.daysLeft,
+                  value: AppLocalizations.of(context)!.days(plan.quranRemainingDays),
+                  subtitle: null,
+                ),
+                const SizedBox(height: 16),
+                _buildProgressItem(
+                  context,
+                  icon: Icons.favorite,
+                  label: AppLocalizations.of(context)!.dhikrTargetLabel,
+                  value: '${plan.dhikrTarget} ${AppLocalizations.of(context)!.daily}',
+                  subtitle: null,
+                ),
+                // Show gentle catch-up as additional info if needed
+                if (plan.quranRemainingPages > 0 && plan.quranRemainingDays > 0 && plan.quranDailyTarget > 20) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.secondaryContainer,
+                          Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.tips_and_updates,
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)!.gentleCatchup,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                AppLocalizations.of(context)!.gentleCatchupMessage(
+                                  (plan.quranDailyTarget - 20).clamp(0, 5),
+                                  plan.quranRemainingDays,
+                                ),
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.8),
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildTimelineBlock(String label, TimelineBlock block) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildProgressItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    String? subtitle,
+  }) {
+    return Row(
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium,
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
-        const SizedBox(height: 8),
-        if (block.tasks.isEmpty)
-          Text(
-            'No tasks scheduled',
-            style: Theme.of(context).textTheme.bodyMedium,
-          )
-        else
-          ...block.tasks.map((task) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text('${task.name} - ${task.minutes} min'),
-                  ),
-                  if (task.pages != null) Text('${task.pages} pages'),
-                  if (task.count != null) Text('${task.count} count'),
-                ],
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),
               ),
-            );
-          }),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              if (subtitle != null)
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  String _getIntensityLabel(AutopilotIntensity intensity) {
-    switch (intensity) {
-      case AutopilotIntensity.light:
-        return 'Light';
-      case AutopilotIntensity.balanced:
-        return 'Balanced';
-      case AutopilotIntensity.strong:
-        return 'Strong';
+  Future<Map<String, dynamic>> _getTodayProgressWithTargets(int seasonId, int dayIndex, AutopilotPlan plan) async {
+    final database = ref.read(databaseProvider);
+    
+    // Use the same logic as Today screen for consistency
+    // Load plans to get targets (same as Today screen)
+    final quranPlan = await database.quranPlanDao.getPlan(seasonId);
+    final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
+    
+    // Load Quran daily data (Quran uses separate table)
+    final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
+    final quranPages = quranDaily?.pagesRead ?? 0;
+    
+    // Load entries for the day
+    final entries = await database.dailyEntriesDao.getDayEntries(seasonId, dayIndex);
+    
+    // Get dhikr entry - same logic as Today screen
+    final dhikrHabit = await database.habitsDao.getHabitByKey('dhikr');
+    final dhikrEntry = dhikrHabit != null
+        ? entries.where((e) => e.habitId == dhikrHabit.id).firstOrNull
+        : null;
+    final dhikrCount = dhikrEntry?.valueInt ?? 0;
+    
+    // Use targets from plans (same as Today screen), fallback to plan targets
+    final quranTarget = quranPlan?.dailyTargetPages ?? plan.quranDailyTarget;
+    final dhikrTarget = dhikrPlan?.dailyTarget ?? plan.dhikrTarget;
+    
+    return {
+      'quran': quranPages,
+      'dhikr': dhikrCount,
+      'quranTarget': quranTarget,
+      'dhikrTarget': dhikrTarget,
+    };
+  }
+
+  Future<AutopilotIntensity> _getAutopilotIntensity() async {
+    final database = ref.read(databaseProvider);
+    final intensityStr = await database.kvSettingsDao.getValue('autopilot_intensity') ?? 'balanced';
+    switch (intensityStr) {
+      case 'light':
+        return AutopilotIntensity.light;
+      case 'strong':
+        return AutopilotIntensity.strong;
+      default:
+        return AutopilotIntensity.balanced;
     }
   }
 
-  String _getQuranGoalLabel(QuranGoalType goal) {
+  Future<Map<String, String?>> _getTimeWindows(BuildContext context, int seasonId, int dayIndex) async {
+    final l10n = AppLocalizations.of(context)!;
+    final database = ref.read(databaseProvider);
+    final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    if (season == null) {
+      return {
+        'morning': l10n.afterFajr,
+        'day': l10n.midday,
+        'night': l10n.afterIsha,
+      };
+    }
+
+    final latStr = await database.kvSettingsDao.getValue('prayer_latitude');
+    final lonStr = await database.kvSettingsDao.getValue('prayer_longitude');
+    final tz = await database.kvSettingsDao.getValue('prayer_timezone') ?? 'UTC';
+    final method = await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl';
+    final highLatRule = await database.kvSettingsDao.getValue('prayer_high_lat_rule') ?? 'middle_of_night';
+    final fajrAdj = int.tryParse(await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0') ?? 0;
+    final maghribAdj = int.tryParse(await database.kvSettingsDao.getValue('prayer_maghrib_adj') ?? '0') ?? 0;
+
+    if (latStr == null || lonStr == null) {
+      return {
+        'morning': l10n.afterFajr,
+        'day': l10n.midday,
+        'night': l10n.afterIsha,
+      };
+    }
+
+    final lat = double.tryParse(latStr);
+    final lon = double.tryParse(lonStr);
+    if (lat == null || lon == null) {
+      return {
+        'morning': l10n.afterFajr,
+        'day': l10n.midday,
+        'night': l10n.afterIsha,
+      };
+    }
+
+    try {
+      final startDate = DateTime.parse(season.startDate);
+      final date = startDate.add(Duration(days: dayIndex - 1));
+      // Calculate all prayer times
+      final prayerTimes = PrayerTimeService.calculatePrayerTimes(
+        date: date,
+        latitude: lat,
+        longitude: lon,
+        timezone: tz,
+        method: method,
+        highLatRule: highLatRule,
+        fajrAdjust: fajrAdj,
+        maghribAdjust: maghribAdj,
+      );
+
+      final fajr = prayerTimes.fajr;
+      final dhuhr = prayerTimes.dhuhr;
+      final asr = prayerTimes.asr;
+      final isha = prayerTimes.isha;
+
+      return {
+        'morning': '${l10n.afterFajr} ${DateFormat('h:mm a').format(fajr)}',
+        'day': '${DateFormat('h:mm a').format(dhuhr)} - ${DateFormat('h:mm a').format(asr)}',
+        'night': '${l10n.afterIsha} ${DateFormat('h:mm a').format(isha)}',
+      };
+    } catch (e) {
+      return {
+        'morning': l10n.afterFajr,
+        'day': l10n.midday,
+        'night': l10n.afterIsha,
+      };
+    }
+  }
+
+  String _getIntensityLabel(BuildContext context, AutopilotIntensity intensity) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (intensity) {
+      case AutopilotIntensity.light:
+        return l10n.intensityLight;
+      case AutopilotIntensity.balanced:
+        return l10n.intensityBalanced;
+      case AutopilotIntensity.strong:
+        return l10n.intensityStrong;
+    }
+  }
+
+  String _getQuranGoalLabel(BuildContext context, QuranGoalType goal) {
+    final l10n = AppLocalizations.of(context)!;
     switch (goal) {
       case QuranGoalType.khatam1:
-        return '1 Khatam';
+        return l10n.quranGoal1Khatam;
       case QuranGoalType.khatam2:
-        return '2 Khatam';
+        return l10n.quranGoal2Khatam;
       case QuranGoalType.custom:
-        return 'Custom';
+        return l10n.quranGoalCustom;
     }
   }
 

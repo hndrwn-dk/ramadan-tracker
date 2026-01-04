@@ -1,41 +1,45 @@
-import 'package:adhan_dart/adhan_dart.dart';
+import 'package:adhan/adhan.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class PrayerTimeService {
   static CalculationParameters _getCalculationParameters(String method) {
+    // Use CalculationMethod from adhan package directly
     switch (method.toLowerCase()) {
+      case 'mwl':
+      case 'muslim_world_league':
+        return CalculationMethod.muslim_world_league.getParameters();
       case 'isna':
-        return CalculationParameters(
-          fajrAngle: 15.0,
-          ishaAngle: 15.0,
-          method: CalculationMethod.other,
-        );
+      case 'north_america':
+        return CalculationMethod.north_america.getParameters();
       case 'egypt':
-        return CalculationParameters(
-          fajrAngle: 19.5,
-          ishaAngle: 17.5,
-          method: CalculationMethod.other,
-        );
+      case 'egyptian':
+        return CalculationMethod.egyptian.getParameters();
       case 'umm_al_qura':
       case 'ummalqura':
-        return CalculationParameters(
-          fajrAngle: 18.5,
-          ishaAngle: 0.0,
-          ishaInterval: 90,
-          method: CalculationMethod.other,
-        );
+        return CalculationMethod.umm_al_qura.getParameters();
       case 'karachi':
-        return CalculationParameters(
-          fajrAngle: 18.0,
-          ishaAngle: 18.0,
-          method: CalculationMethod.other,
-        );
+        return CalculationMethod.karachi.getParameters();
+      case 'singapore':
+        return CalculationMethod.singapore.getParameters();
+      case 'indonesia':
+      case 'kemenag':
+        // Indonesia/Kemenag: MWL is most commonly used, closest to Ephemeris method
+        // Fajr 18°, Isha 17° (same as MWL)
+        return CalculationMethod.muslim_world_league.getParameters();
+      case 'dubai':
+        return CalculationMethod.dubai.getParameters();
+      case 'qatar':
+        return CalculationMethod.qatar.getParameters();
+      case 'kuwait':
+        return CalculationMethod.kuwait.getParameters();
+      case 'turkey':
+        return CalculationMethod.turkey.getParameters();
+      case 'tehran':
+        return CalculationMethod.tehran.getParameters();
       default:
-        return CalculationParameters(
-          fajrAngle: 18.0,
-          ishaAngle: 17.0,
-          method: CalculationMethod.other,
-        );
+        // Default to MWL
+        return CalculationMethod.muslim_world_league.getParameters();
     }
   }
 
@@ -52,10 +56,31 @@ class PrayerTimeService {
     final coordinates = Coordinates(latitude, longitude);
     final params = _getCalculationParameters(method);
     
+    // Convert DateTime to DateComponents
+    final dateComponents = DateComponents(
+      date.year,
+      date.month,
+      date.day,
+    );
+    
+    // Get UTC offset for the target timezone
+    tz.Location targetLocation;
+    Duration utcOffset;
+    try {
+      targetLocation = tz.getLocation(timezone);
+      final now = tz.TZDateTime.now(targetLocation);
+      utcOffset = now.timeZoneOffset;
+    } catch (e) {
+      // Fallback: use local timezone offset
+      utcOffset = DateTime.now().timeZoneOffset;
+    }
+    
+    // PrayerTimes constructor with utcOffset parameter
     final prayerTimes = PrayerTimes(
-      coordinates: coordinates,
-      date: date,
-      calculationParameters: params,
+      coordinates,
+      dateComponents,
+      params,
+      utcOffset: utcOffset,
     );
 
     return prayerTimes;
@@ -71,30 +96,60 @@ class PrayerTimeService {
     int fajrAdjust = 0,
     int maghribAdjust = 0,
   }) {
-    final prayerTimes = calculatePrayerTimes(
-      date: date,
-      latitude: latitude,
-      longitude: longitude,
-      timezone: timezone,
-      method: method,
-      highLatRule: highLatRule,
-      fajrAdjust: fajrAdjust,
-      maghribAdjust: maghribAdjust,
+    final coordinates = Coordinates(latitude, longitude);
+    final params = _getCalculationParameters(method);
+    
+    // Convert DateTime to DateComponents
+    final dateComponents = DateComponents(
+      date.year,
+      date.month,
+      date.day,
+    );
+    
+    // Get UTC offset for the target timezone
+    tz.Location targetLocation;
+    Duration utcOffset;
+    try {
+      targetLocation = tz.getLocation(timezone);
+      final now = tz.TZDateTime.now(targetLocation);
+      utcOffset = now.timeZoneOffset;
+    } catch (e) {
+      // Fallback: use local timezone offset
+      utcOffset = DateTime.now().timeZoneOffset;
+    }
+    
+    // PrayerTimes constructor with utcOffset parameter
+    // According to adhan package docs, this returns times in the specified timezone
+    final prayerTimes = PrayerTimes(
+      coordinates,
+      dateComponents,
+      params,
+      utcOffset: utcOffset,
     );
 
-    var fajr = prayerTimes.fajr;
-    var maghrib = prayerTimes.maghrib;
+    // adhan v2.0 returns times as DateTime objects in the specified timezone (via utcOffset)
+    // Apply adjustments directly
+    final fajr = prayerTimes.fajr.add(Duration(minutes: fajrAdjust));
+    final maghrib = prayerTimes.maghrib.add(Duration(minutes: maghribAdjust));
 
-    if (fajrAdjust != 0) {
-      fajr = fajr.add(Duration(minutes: fajrAdjust));
-    }
-    if (maghribAdjust != 0) {
-      maghrib = maghrib.add(Duration(minutes: maghribAdjust));
-    }
-
+    // Return as DateTime (already in correct timezone)
     return {
-      'fajr': fajr,
-      'maghrib': maghrib,
+      'fajr': DateTime(
+        fajr.year,
+        fajr.month,
+        fajr.day,
+        fajr.hour,
+        fajr.minute,
+        fajr.second,
+      ),
+      'maghrib': DateTime(
+        maghrib.year,
+        maghrib.month,
+        maghrib.day,
+        maghrib.hour,
+        maghrib.minute,
+        maghrib.second,
+      ),
     };
   }
 
