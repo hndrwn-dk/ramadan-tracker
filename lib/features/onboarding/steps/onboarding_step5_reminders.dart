@@ -3,8 +3,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
+import 'package:ramadan_tracker/utils/location_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'dart:io';
 
 class OnboardingStep5Reminders extends ConsumerStatefulWidget {
@@ -74,11 +76,12 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
     });
 
     try {
+      final l10n = AppLocalizations.of(context)!;
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location services are disabled')),
+            SnackBar(content: Text(l10n.locationServicesDisabled)),
           );
         }
         return;
@@ -90,7 +93,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
         if (permission == LocationPermission.denied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location permissions denied')),
+              SnackBar(content: Text(l10n.locationPermissionsDenied)),
             );
           }
           return;
@@ -100,27 +103,41 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permissions permanently denied')),
+            SnackBar(content: Text(l10n.locationPermissionsPermanentlyDenied)),
           );
         }
         return;
       }
 
       Position position = await Geolocator.getCurrentPosition();
+      
+      // Auto-detect calculation method and timezone based on location
+      final detectedMethod = LocationHelper.detectCalculationMethod(
+        position.latitude,
+        position.longitude,
+      );
+      final detectedTimezone = LocationHelper.detectTimezone(
+        position.latitude,
+        position.longitude,
+      );
+      
       setState(() {
         widget.data.latitude = position.latitude;
         widget.data.longitude = position.longitude;
+        widget.data.calculationMethod = detectedMethod;
+        widget.data.timezone = detectedTimezone;
         _loadingLocation = false;
         _showManualLocation = false;
       });
       _updatePreview();
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _loadingLocation = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(l10n.errorMessage(e.toString()))),
         );
       }
     }
@@ -130,15 +147,22 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
     final lat = double.tryParse(_latitudeController.text);
     final lon = double.tryParse(_longitudeController.text);
     if (lat != null && lon != null) {
+      // Auto-detect calculation method and timezone based on location
+      final detectedMethod = LocationHelper.detectCalculationMethod(lat, lon);
+      final detectedTimezone = LocationHelper.detectTimezone(lat, lon);
+      
       setState(() {
         widget.data.latitude = lat;
         widget.data.longitude = lon;
+        widget.data.calculationMethod = detectedMethod;
+        widget.data.timezone = detectedTimezone;
         _showManualLocation = false;
       });
       _updatePreview();
     } else {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid coordinates')),
+        SnackBar(content: Text(l10n.pleaseEnterValidCoordinates)),
       );
     }
   }
@@ -168,16 +192,21 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
 
   Future<void> _testNotification() async {
     try {
-      await NotificationService.testNotification();
+      final l10n = AppLocalizations.of(context)!;
+      await NotificationService.testNotification(
+        title: l10n.testNotification,
+        body: l10n.appTitle,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Test notification sent')),
+          SnackBar(content: Text(l10n.testNotificationSent)),
         );
       }
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(l10n.errorMessage(e.toString()))),
         );
       }
     }
@@ -185,26 +214,29 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           Text(
-            'Smart Reminders',
+            l10n.smartReminders,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Get notified for Sahur, Iftar, and your daily plan.',
+            l10n.getNotifiedForSahurIftar,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 32),
           SwitchListTile(
-            title: const Text('Sahur reminder'),
-            subtitle: Text('${widget.data.sahurOffsetMinutes} min before Fajr'),
+            title: Text(l10n.sahurReminder),
+            subtitle: Text(l10n.minBeforeFajr(widget.data.sahurOffsetMinutes)),
             value: widget.data.sahurEnabled,
             onChanged: (value) {
               setState(() {
@@ -218,16 +250,16 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
               child: Row(
                 children: [
                   Text(
-                    'Offset:',
+                    l10n.offset,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: SegmentedButton<int>(
-                      segments: const [
-                        ButtonSegment(value: 15, label: Text('15 min')),
-                        ButtonSegment(value: 30, label: Text('30 min')),
-                        ButtonSegment(value: 45, label: Text('45 min')),
+                      segments: [
+                        ButtonSegment(value: 15, label: Text(l10n.minutesShort(15))),
+                        ButtonSegment(value: 30, label: Text(l10n.minutesShort(30))),
+                        ButtonSegment(value: 45, label: Text(l10n.minutesShort(45))),
                       ],
                       selected: {widget.data.sahurOffsetMinutes},
                       onSelectionChanged: (Set<int> newSelection) {
@@ -244,8 +276,8 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
             const SizedBox(height: 8),
           ],
           SwitchListTile(
-            title: const Text('Iftar reminder'),
-            subtitle: const Text('At Maghrib'),
+            title: Text(l10n.iftarReminder),
+            subtitle: Text(l10n.atMaghrib),
             value: widget.data.iftarEnabled,
             onChanged: (value) {
               setState(() {
@@ -254,7 +286,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
             },
           ),
           SwitchListTile(
-            title: const Text('Night plan reminder'),
+            title: Text(l10n.nightPlanReminder),
             subtitle: const Text('21:00'),
             value: widget.data.nightPlanEnabled,
             onChanged: (value) {
@@ -265,7 +297,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
           ),
           const SizedBox(height: 24),
           Text(
-            'Location',
+            l10n.location,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -279,7 +311,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.location_on),
-              label: const Text('Use my location'),
+              label: Text(l10n.useMyLocation),
             ),
             const SizedBox(height: 8),
             TextButton.icon(
@@ -289,14 +321,14 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                 });
               },
               icon: const Icon(Icons.edit_location_alt),
-              label: const Text('Set city manually'),
+              label: Text(l10n.setCityManually),
             ),
           ] else if (_showManualLocation) ...[
             TextField(
               controller: _cityController,
-              decoration: const InputDecoration(
-                labelText: 'City name (optional)',
-                hintText: 'Jakarta',
+              decoration: InputDecoration(
+                labelText: l10n.cityNameOptional,
+                hintText: l10n.jakartaHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -306,9 +338,9 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                   child: TextField(
                     controller: _latitudeController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Latitude',
-                      hintText: '-6.2088',
+                    decoration: InputDecoration(
+                      labelText: l10n.latitude,
+                      hintText: l10n.latitudeHint,
                     ),
                   ),
                 ),
@@ -317,9 +349,9 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                   child: TextField(
                     controller: _longitudeController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Longitude',
-                      hintText: '106.8456',
+                    decoration: InputDecoration(
+                      labelText: l10n.longitude,
+                      hintText: l10n.longitudeHint,
                     ),
                   ),
                 ),
@@ -338,14 +370,14 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                         _longitudeController.clear();
                       });
                     },
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _setManualLocation,
-                    child: const Text('Set'),
+                    child: Text(l10n.set),
                   ),
                 ),
               ],
@@ -365,7 +397,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Location set',
+                                l10n.locationSet,
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                               Text(
@@ -395,15 +427,17 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: widget.data.calculationMethod,
-            decoration: const InputDecoration(
-              labelText: 'Calculation Method',
+            decoration: InputDecoration(
+              labelText: l10n.calculationMethod,
             ),
-            items: const [
-              DropdownMenuItem(value: 'mwl', child: Text('MWL')),
-              DropdownMenuItem(value: 'isna', child: Text('ISNA')),
-              DropdownMenuItem(value: 'egypt', child: Text('Egypt')),
-              DropdownMenuItem(value: 'umm_al_qura', child: Text('Umm al-Qura')),
-              DropdownMenuItem(value: 'karachi', child: Text('Karachi')),
+            items: [
+              DropdownMenuItem(value: 'mwl', child: Text(l10n.mwlMuslimWorldLeague)),
+              DropdownMenuItem(value: 'indonesia', child: Text(l10n.indonesiaKemenag)),
+              DropdownMenuItem(value: 'singapore', child: Text(l10n.singapore)),
+              DropdownMenuItem(value: 'umm_al_qura', child: Text(l10n.ummAlQura)),
+              DropdownMenuItem(value: 'karachi', child: Text(l10n.karachi)),
+              DropdownMenuItem(value: 'egypt', child: Text(l10n.egypt)),
+              DropdownMenuItem(value: 'isna', child: Text(l10n.isnaNorthAmerica)),
             ],
             onChanged: (value) {
               if (value != null) {
@@ -427,7 +461,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Prayer Times Preview',
+                          l10n.prayerTimesPreview,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -435,23 +469,25 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                         TextButton.icon(
                           onPressed: _testNotification,
                           icon: const Icon(Icons.notifications_active, size: 18),
-                          label: const Text('Test'),
+                          label: Text(l10n.test),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildTimeRow('Fajr', _previewTimes!['fajr']!),
+                    _buildTimeRow(context, l10n.fajr, _previewTimes!['fajr']!),
                     if (widget.data.sahurEnabled)
                       _buildTimeRow(
-                        'Sahur reminder',
+                        context,
+                        l10n.sahurReminderLabel,
                         _previewTimes!['fajr']!.subtract(Duration(minutes: widget.data.sahurOffsetMinutes)),
                         isReminder: true,
                       ),
                     const SizedBox(height: 8),
-                    _buildTimeRow('Maghrib', _previewTimes!['maghrib']!),
+                    _buildTimeRow(context, l10n.maghrib, _previewTimes!['maghrib']!),
                     if (widget.data.iftarEnabled)
                       _buildTimeRow(
-                        'Iftar reminder',
+                        context,
+                        l10n.iftarReminderLabel,
                         _previewTimes!['maghrib']!.add(Duration(minutes: widget.data.iftarOffsetMinutes)),
                         isReminder: true,
                       ),
@@ -460,33 +496,36 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
               ),
             ),
           ],
-          const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: widget.onPrevious,
-                  child: const Text('Back'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: widget.onFinish,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: widget.onPrevious,
+                      child: Text(l10n.back),
+                    ),
                   ),
-                  child: const Text('Finish & Start'),
-                ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: widget.onFinish,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(l10n.finishAndStart),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 16),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTimeRow(String label, DateTime time, {bool isReminder = false}) {
+  Widget _buildTimeRow(BuildContext context, String label, DateTime time, {bool isReminder = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(

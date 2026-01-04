@@ -632,6 +632,12 @@ abstract class AppLocalizations {
   /// **'Best streak: {days} days'**
   String bestStreak(int days);
 
+  /// Best streak label (without days)
+  ///
+  /// In en, this message translates to:
+  /// **'Best Streak'**
+  String get bestStreakLabel;
+
   /// Miss count label
   ///
   /// In en, this message translates to:
@@ -1082,7 +1088,7 @@ abstract class AppLocalizations {
   /// **'Read our terms of service'**
   String get readTermsOfService;
 
-  /// No season found message
+  /// No season found error message
   ///
   /// In en, this message translates to:
   /// **'No season found'**
@@ -2288,11 +2294,11 @@ abstract class AppLocalizations {
   /// **'Mark done'**
   String get markDone;
 
-  /// Count text
+  /// Count label
   ///
   /// In en, this message translates to:
-  /// **'{count} count'**
-  String count(int count);
+  /// **'Count'**
+  String get count;
 
   /// Pages unit label
   ///
@@ -2588,11 +2594,275 @@ abstract class AppLocalizations {
   /// **'Today {completed}/5 • Perfect days {perfect}/{total}'**
   String todayPrayersPerfect(int completed, int perfect, int total);
 
-  /// Prayers completed text
+  /// Prayers completed label
   ///
   /// In en, this message translates to:
-  /// **'{completed} / {total} completed'**
-  String prayersCompleted(int completed, int total);
+  /// **'Prayers completed'**
+  String get prayersCompleted;
+
+  /// Today breakdown card title
+  ///
+  /// In en, this message translates to:
+  /// **'Today Breakdown'**
+  String get todayBreakdown;
+
+  /// Score breakdown card title
+  ///
+  /// In en, this message translates to:
+  /// **'Score Breakdown'**
+  String get scoreBreakdown;
+
+  /// Go to today button label
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Today'**
+  String get goToToday;
+
+  /// Audit day button label
+  ///
+  /// In en, this message translates to:
+  /// **'Audit day (Day {dayIndex})'**
+  String auditDay(int dayIndex);
+
+  /// Pages read label
+  ///
+  /// In en, this message translates to:
+  /// **'Pages read'**
+  String get pagesRead;
+
+  /// Amount given label
+  ///
+  /// In en, this message translates to:
+  /// **'Amount given'**
+  String get amountGiven;
+
+  /// No donation label
+  ///
+  /// In en, this message translates to:
+  /// **'No donation'**
+  String get noDonation;
+
+  /// Given label
+  ///
+  /// In en, this message translates to:
+  /// **'Given: {amount}'**
+  String given(String amount);
+
+  /// Missed days card title
+  ///
+  /// In en, this message translates to:
+  /// **'Missed Days'**
+  String get missedDays;
+
+  /// Completed status
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completed;
+
+  /// Not completed status
+  ///
+  /// In en, this message translates to:
+  /// **'Not completed'**
+  String get notCompleted;
+
+  /// To improve label
+  ///
+  /// In en, this message translates to:
+  /// **'To improve: {message}'**
+  String toImprove(String message);
+
+  /// Fasting completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Fasting completed'**
+  String get fastingCompleted;
+
+  /// Fasting not completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Fasting not completed'**
+  String get fastingNotCompleted;
+
+  /// Complete fasting to improve message
+  ///
+  /// In en, this message translates to:
+  /// **'Complete fasting to gain {points} points'**
+  String completeFastingToGain(int points);
+
+  /// All 5 prayers completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'All 5 prayers completed'**
+  String get all5PrayersCompleted;
+
+  /// Only some prayers completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Only {completed}/5 prayers completed'**
+  String onlyPrayersCompleted(int completed);
+
+  /// No prayers logged reason
+  ///
+  /// In en, this message translates to:
+  /// **'No prayers logged'**
+  String get noPrayersLogged;
+
+  /// Complete remaining prayers to improve message
+  ///
+  /// In en, this message translates to:
+  /// **'Complete remaining {remaining} prayers to gain {points} points'**
+  String completeRemainingPrayers(int remaining, int points);
+
+  /// Log all 5 prayers to improve message
+  ///
+  /// In en, this message translates to:
+  /// **'Log all 5 prayers to gain {points} points'**
+  String logAll5Prayers(int points);
+
+  /// Target met with pages reason
+  ///
+  /// In en, this message translates to:
+  /// **'Target met ({pages}/{target} pages)'**
+  String targetMetPages(int pages, int target);
+
+  /// Partial completion with pages reason
+  ///
+  /// In en, this message translates to:
+  /// **'Partial completion ({pages}/{target} pages)'**
+  String partialCompletionPages(int pages, int target);
+
+  /// Target not met with pages reason
+  ///
+  /// In en, this message translates to:
+  /// **'Target not met (0/{target} pages)'**
+  String targetNotMetPages(int target);
+
+  /// Read more pages to improve message
+  ///
+  /// In en, this message translates to:
+  /// **'Read {remaining} more pages to gain {points} points'**
+  String readMorePages(int remaining, int points);
+
+  /// Read pages to gain points message
+  ///
+  /// In en, this message translates to:
+  /// **'Read pages to gain {points} points'**
+  String readPagesToGain(int points);
+
+  /// Target met with count reason
+  ///
+  /// In en, this message translates to:
+  /// **'Target met ({count}/{target})'**
+  String targetMetCount(int count, int target);
+
+  /// Partial completion with count reason
+  ///
+  /// In en, this message translates to:
+  /// **'Partial completion ({count}/{target})'**
+  String partialCompletionCount(int count, int target);
+
+  /// Target not met with count reason
+  ///
+  /// In en, this message translates to:
+  /// **'Target not met (0/{target})'**
+  String targetNotMetCount(int target);
+
+  /// Complete more to improve message
+  ///
+  /// In en, this message translates to:
+  /// **'Complete {remaining} more to gain {points} points'**
+  String completeMoreToGain(int remaining, int points);
+
+  /// Dhikr completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Dhikr completed'**
+  String get dhikrCompleted;
+
+  /// No dhikr logged reason
+  ///
+  /// In en, this message translates to:
+  /// **'No dhikr logged'**
+  String get noDhikrLogged;
+
+  /// Complete dhikr to gain points message
+  ///
+  /// In en, this message translates to:
+  /// **'Complete dhikr to gain {points} points'**
+  String completeDhikrToGain(int points);
+
+  /// Taraweeh completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Taraweeh completed'**
+  String get taraweehCompleted;
+
+  /// Taraweeh not completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Taraweeh not completed'**
+  String get taraweehNotCompleted;
+
+  /// Complete taraweeh to gain points message
+  ///
+  /// In en, this message translates to:
+  /// **'Complete taraweeh to gain {points} points'**
+  String completeTaraweehToGain(int points);
+
+  /// Goal met reason
+  ///
+  /// In en, this message translates to:
+  /// **'Goal met'**
+  String get goalMet;
+
+  /// Partial giving reason
+  ///
+  /// In en, this message translates to:
+  /// **'Partial giving'**
+  String get partialGiving;
+
+  /// No giving reason
+  ///
+  /// In en, this message translates to:
+  /// **'No giving'**
+  String get noGiving;
+
+  /// Give more to improve message
+  ///
+  /// In en, this message translates to:
+  /// **'Give {amount} more to gain {points} points'**
+  String giveMoreToGain(String amount, int points);
+
+  /// Give to gain points message
+  ///
+  /// In en, this message translates to:
+  /// **'Give to gain {points} points'**
+  String giveToGain(int points);
+
+  /// Itikaf completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Itikaf completed'**
+  String get itikafCompleted;
+
+  /// Itikaf not completed reason
+  ///
+  /// In en, this message translates to:
+  /// **'Itikaf not completed'**
+  String get itikafNotCompleted;
+
+  /// Complete itikaf to gain points message
+  ///
+  /// In en, this message translates to:
+  /// **'Complete itikaf to gain {points} points'**
+  String completeItikafToGain(int points);
+
+  /// No pages read reason
+  ///
+  /// In en, this message translates to:
+  /// **'No pages read'**
+  String get noPagesRead;
 }
 
 class _AppLocalizationsDelegate

@@ -282,6 +282,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get bestStreakLabel => 'Best Streak';
+
+  @override
   String get missCount => 'Miss Count';
 
   @override
@@ -1213,9 +1216,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markDone => 'Mark done';
 
   @override
-  String count(int count) {
-    return '$count count';
-  }
+  String get count => 'Count';
 
   @override
   String get pages => 'pages';
@@ -1401,7 +1402,179 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String prayersCompleted(int completed, int total) {
-    return '$completed / $total completed';
+  String get prayersCompleted => 'Prayers completed';
+
+  @override
+  String get todayBreakdown => 'Today Breakdown';
+
+  @override
+  String get scoreBreakdown => 'Score Breakdown';
+
+  @override
+  String get goToToday => 'Go to Today';
+
+  @override
+  String auditDay(int dayIndex) {
+    return 'Audit day (Day $dayIndex)';
   }
+
+  @override
+  String get pagesRead => 'Pages read';
+
+  @override
+  String get amountGiven => 'Amount given';
+
+  @override
+  String get noDonation => 'No donation';
+
+  @override
+  String given(String amount) {
+    return 'Given: $amount';
+  }
+
+  @override
+  String get missedDays => 'Missed Days';
+
+  @override
+  String get completed => 'Completed';
+
+  @override
+  String get notCompleted => 'Not completed';
+
+  @override
+  String toImprove(String message) {
+    return 'To improve: $message';
+  }
+
+  @override
+  String get fastingCompleted => 'Fasting completed';
+
+  @override
+  String get fastingNotCompleted => 'Fasting not completed';
+
+  @override
+  String completeFastingToGain(int points) {
+    return 'Complete fasting to gain $points points';
+  }
+
+  @override
+  String get all5PrayersCompleted => 'All 5 prayers completed';
+
+  @override
+  String onlyPrayersCompleted(int completed) {
+    return 'Only $completed/5 prayers completed';
+  }
+
+  @override
+  String get noPrayersLogged => 'No prayers logged';
+
+  @override
+  String completeRemainingPrayers(int remaining, int points) {
+    return 'Complete remaining $remaining prayers to gain $points points';
+  }
+
+  @override
+  String logAll5Prayers(int points) {
+    return 'Log all 5 prayers to gain $points points';
+  }
+
+  @override
+  String targetMetPages(int pages, int target) {
+    return 'Target met ($pages/$target pages)';
+  }
+
+  @override
+  String partialCompletionPages(int pages, int target) {
+    return 'Partial completion ($pages/$target pages)';
+  }
+
+  @override
+  String targetNotMetPages(int target) {
+    return 'Target not met (0/$target pages)';
+  }
+
+  @override
+  String readMorePages(int remaining, int points) {
+    return 'Read $remaining more pages to gain $points points';
+  }
+
+  @override
+  String readPagesToGain(int points) {
+    return 'Read pages to gain $points points';
+  }
+
+  @override
+  String targetMetCount(int count, int target) {
+    return 'Target met ($count/$target)';
+  }
+
+  @override
+  String partialCompletionCount(int count, int target) {
+    return 'Partial completion ($count/$target)';
+  }
+
+  @override
+  String targetNotMetCount(int target) {
+    return 'Target not met (0/$target)';
+  }
+
+  @override
+  String completeMoreToGain(int remaining, int points) {
+    return 'Complete $remaining more to gain $points points';
+  }
+
+  @override
+  String get dhikrCompleted => 'Dhikr completed';
+
+  @override
+  String get noDhikrLogged => 'No dhikr logged';
+
+  @override
+  String completeDhikrToGain(int points) {
+    return 'Complete dhikr to gain $points points';
+  }
+
+  @override
+  String get taraweehCompleted => 'Taraweeh completed';
+
+  @override
+  String get taraweehNotCompleted => 'Taraweeh not completed';
+
+  @override
+  String completeTaraweehToGain(int points) {
+    return 'Complete taraweeh to gain $points points';
+  }
+
+  @override
+  String get goalMet => 'Goal met';
+
+  @override
+  String get partialGiving => 'Partial giving';
+
+  @override
+  String get noGiving => 'No giving';
+
+  @override
+  String giveMoreToGain(String amount, int points) {
+    return 'Give $amount more to gain $points points';
+  }
+
+  @override
+  String giveToGain(int points) {
+    return 'Give to gain $points points';
+  }
+
+  @override
+  String get itikafCompleted => 'Itikaf completed';
+
+  @override
+  String get itikafNotCompleted => 'Itikaf not completed';
+
+  @override
+  String completeItikafToGain(int points) {
+    return 'Complete itikaf to gain $points points';
+  }
+
+  @override
+  String get noPagesRead => 'No pages read';
 }

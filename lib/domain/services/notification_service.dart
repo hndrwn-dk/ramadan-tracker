@@ -26,13 +26,53 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _notifications.initialize(
+    debugPrint('Calling _notifications.initialize()...');
+    final initialized = await _notifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
+    
+    debugPrint('NotificationService initialized: $initialized');
 
+    debugPrint('Creating notification channels...');
     await _createChannels();
+    debugPrint('Notification channels created');
+    
+    debugPrint('Setting timezone...');
     await _setTimezone();
+    debugPrint('Timezone set');
+    
+    // Immediately request permissions and test
+    if (Platform.isAndroid) {
+      debugPrint('Platform is Android, checking permissions...');
+      final androidImpl = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImpl != null) {
+        debugPrint('Android implementation found, requesting permission...');
+        final permissionGranted = await androidImpl.requestNotificationsPermission();
+        debugPrint('Initial permission check result: $permissionGranted');
+        
+        // Check current permission status
+        final hasPermission = await androidImpl.areNotificationsEnabled();
+        debugPrint('Current notification permission status: $hasPermission');
+        
+        // Check exact alarms
+        try {
+          debugPrint('Checking exact alarms permission...');
+          final canExact = await androidImpl.canScheduleExactNotifications();
+          debugPrint('Can schedule exact alarms: $canExact');
+        } catch (e, stackTrace) {
+          debugPrint('Error checking exact alarms: $e');
+          debugPrint('Stack trace: $stackTrace');
+        }
+      } else {
+        debugPrint('WARNING: Android implementation is NULL!');
+      }
+    } else {
+      debugPrint('Platform is not Android, skipping Android-specific checks');
+    }
+    
+    debugPrint('=== NotificationService.initialize() FINISHED ===');
   }
 
   static Future<void> _createChannels() async {
@@ -41,24 +81,34 @@ class NotificationService {
       'Ramadan Reminders',
       description: 'Sahur and Iftar reminders',
       importance: Importance.high,
+      enableVibration: true,
+      playSound: true,
+      showBadge: true,
     );
 
     const gentleChannel = AndroidNotificationChannel(
       'gentle_reminders',
       'Gentle Reminders',
       description: 'Quran, Dhikr, and other gentle reminders',
-      importance: Importance.defaultImportance,
+      importance: Importance.high,
+      enableVibration: true,
+      playSound: true,
+      showBadge: true,
     );
 
-    await _notifications
+    final androidImpl = _notifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(ramadanChannel);
-
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(gentleChannel);
+            AndroidFlutterLocalNotificationsPlugin>();
+    
+    if (androidImpl != null) {
+      await androidImpl.createNotificationChannel(ramadanChannel);
+      debugPrint('✓ Ramadan channel created (importance: high)');
+      
+      await androidImpl.createNotificationChannel(gentleChannel);
+      debugPrint('✓ Gentle channel created (importance: high)');
+    } else {
+      debugPrint('ERROR: Android implementation is NULL when creating channels!');
+    }
   }
 
   static Future<void> _setTimezone() async {
@@ -97,11 +147,34 @@ class NotificationService {
     // Handle notification tap
   }
 
-  static Future<void> requestPermissions() async {
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+  static Future<bool> requestPermissions() async {
+    if (Platform.isAndroid) {
+      final androidImplementation = _notifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      
+      if (androidImplementation != null) {
+        // Check current permission status
+        final granted = await androidImplementation.requestNotificationsPermission();
+        debugPrint('Notification permission requested. Granted: $granted');
+        
+        // Check exact alarms permission (Android 12+)
+        if (Platform.isAndroid) {
+          try {
+            final canScheduleExactAlarms = await androidImplementation.canScheduleExactNotifications();
+            debugPrint('Can schedule exact alarms: $canScheduleExactAlarms');
+            if (canScheduleExactAlarms != true) {
+              debugPrint('WARNING: Exact alarms permission not granted. Notifications may be delayed.');
+            }
+          } catch (e) {
+            debugPrint('Error checking exact alarms permission: $e');
+          }
+        }
+        
+        return granted ?? false;
+      }
+    }
+    return false;
   }
 
   static Future<void> scheduleSahurReminder({
@@ -215,55 +288,21 @@ class NotificationService {
   }) async {
     var reminderTime = maghribTime.add(Duration(minutes: offsetMinutes));
     final now = DateTime.now();
-    
-    // Check if reminder time is very close (within 15 minutes) - schedule it anyway
     final timeUntilReminder = reminderTime.difference(now);
-    final isVeryClose = timeUntilReminder.inMinutes >= 0 && timeUntilReminder.inMinutes <= 15;
     
-    // If reminder time has passed today (more than 1 minute), schedule for tomorrow
-    // But if it's within 1 minute, keep it for today so we can send immediate notification
+    // Iftar notification hanya muncul 1 kali sehari di waktu Maghrib
+    // Jika waktu Iftar hari ini sudah lewat lebih dari 1 menit, schedule untuk besok
+    // Jika waktu Iftar belum lewat atau baru lewat ≤1 menit, schedule untuk hari ini
     if (reminderTime.isBefore(now) && timeUntilReminder.inMinutes < -1) {
       reminderTime = reminderTime.add(const Duration(days: 1));
-      debugPrint('Iftar reminder time passed, scheduling for tomorrow: $reminderTime');
+      debugPrint('Iftar reminder time passed today (${timeUntilReminder.inMinutes.abs()} min ago), scheduling for tomorrow: $reminderTime');
+    } else {
+      debugPrint('Iftar reminder time is in the future today or just passed (${timeUntilReminder.inMinutes} min), scheduling for today: $reminderTime');
     }
     
+    final finalTimeUntilReminder = reminderTime.difference(now);
     debugPrint('Scheduling Iftar reminder for: $reminderTime (Maghrib: $maghribTime, offset: $offsetMinutes)');
-    debugPrint('  Time until reminder: ${timeUntilReminder.inMinutes} minutes');
-    debugPrint('  Is very close: $isVeryClose');
-    
-    // If reminder time is very close (within 1 minute), send immediate notification as backup
-    // This ensures notification appears even if scheduled notification is delayed
-    if (timeUntilReminder.inMinutes >= 0 && timeUntilReminder.inMinutes <= 1) {
-      debugPrint('  Iftar is very close (${timeUntilReminder.inMinutes} min), will send immediate backup at exact time');
-      // Don't send immediately, but schedule a backup notification at exact time
-      try {
-        final backupTime = reminderTime;
-        final backupScheduledTime = tz.TZDateTime.from(backupTime, tz.local);
-        await _notifications.zonedSchedule(
-          _getNotificationId('iftar_backup_exact', backupTime),
-          title,
-          body,
-          backupScheduledTime,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'ramadan_reminders',
-              'Ramadan Reminders',
-              channelDescription: 'Sahur and Iftar reminders',
-              importance: Importance.high,
-              priority: Priority.high,
-            ),
-            iOS: DarwinNotificationDetails(),
-          ),
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: null, // Exact time, no recurring
-        );
-        debugPrint('  ✓ Backup notification scheduled for exact Iftar time: $backupScheduledTime');
-      } catch (e) {
-        debugPrint('  ✗ Error scheduling backup notification: $e');
-      }
-    }
+    debugPrint('  Time until reminder: ${finalTimeUntilReminder.inMinutes} minutes');
 
     try {
       final scheduledTime = tz.TZDateTime.from(reminderTime, tz.local);
@@ -287,15 +326,22 @@ class NotificationService {
             channelDescription: 'Sahur and Iftar reminders',
             importance: Importance.high,
             priority: Priority.high,
+            showWhen: true,
+            enableVibration: true,
+            playSound: true,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: useTimeMatch ? DateTimeComponents.time : null,
       );
-      debugPrint('✓ Iftar notification scheduled successfully');
+      debugPrint('✓ Iftar notification scheduled successfully at $scheduledTime');
     } catch (e) {
       debugPrint('Error scheduling Iftar notification (exact): $e');
       // Fallback to inexact scheduling if exact alarms not permitted
@@ -450,8 +496,17 @@ class NotificationService {
     required bool nightPlanEnabled,
     int fajrAdjust = 0,
     int maghribAdjust = 0,
+    String? sahurTitle,
+    String? sahurBody,
+    String? iftarTitle,
+    String? iftarBody,
+    String? nightPlanTitle,
+    String? nightPlanBody,
   }) async {
-    await NotificationService.requestPermissions();
+    final permissionGranted = await NotificationService.requestPermissions();
+    if (!permissionGranted) {
+      debugPrint('WARNING: Notification permission not granted. Notifications may not appear.');
+    }
     
     await PrayerTimeService.ensureTodayAndTomorrowCached(
       database: database,
@@ -495,8 +550,8 @@ class NotificationService {
         await scheduleSahurReminder(
           fajrTime: times['fajr']!,
           offsetMinutes: sahurOffsetMinutes,
-          title: 'Sahur Reminder',
-          body: 'Time to prepare for Sahur',
+          title: sahurTitle ?? 'Sahur Reminder',
+          body: sahurBody ?? 'Time to prepare for Sahur',
         );
       } else {
         debugPrint('Sahur reminder disabled');
@@ -506,52 +561,16 @@ class NotificationService {
         await scheduleIftarReminder(
           maghribTime: times['maghrib']!,
           offsetMinutes: iftarOffsetMinutes,
-          title: 'Iftar Reminder',
-          body: 'Time for Iftar',
+          title: iftarTitle ?? 'Iftar Reminder',
+          body: iftarBody ?? 'Time for Iftar',
         );
         
-        // For today's Iftar, also set up a backup immediate notification if very close
-        if (date == today && times['maghrib'] != null) {
-          final iftarTime = times['maghrib']!.add(Duration(minutes: iftarOffsetMinutes));
-          final timeUntilIftar = iftarTime.difference(now);
-          // If Iftar is within 10 minutes, also schedule an immediate notification as backup
-          if (timeUntilIftar.inMinutes <= 10 && timeUntilIftar.inMinutes > 0) {
-            debugPrint('Iftar is very close (${timeUntilIftar.inMinutes} min), scheduling backup immediate notification');
-            // Schedule immediate notification to fire at Iftar time
-            try {
-              final scheduledTime = tz.TZDateTime.from(iftarTime, tz.local);
-              await _notifications.zonedSchedule(
-                _getNotificationId('iftar_backup', iftarTime),
-                'Iftar Reminder',
-                'Time for Iftar',
-                scheduledTime,
-                const NotificationDetails(
-                  android: AndroidNotificationDetails(
-                    'ramadan_reminders',
-                    'Ramadan Reminders',
-                    channelDescription: 'Sahur and Iftar reminders',
-                    importance: Importance.high,
-                    priority: Priority.high,
-                  ),
-                  iOS: DarwinNotificationDetails(),
-                ),
-                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-                uiLocalNotificationDateInterpretation:
-                    UILocalNotificationDateInterpretation.absoluteTime,
-                matchDateTimeComponents: null, // No recurring for backup
-              );
-              debugPrint('Backup Iftar notification scheduled for: $scheduledTime');
-            } catch (e) {
-              debugPrint('Error scheduling backup Iftar notification: $e');
-            }
-          }
-        }
       } else {
         debugPrint('Iftar reminder disabled');
       }
     }
     
-    // Check if we should send immediate notification for today's missed times
+    // Check today's Iftar time (for logging only, no immediate notification)
     final todayTimes = await PrayerTimeService.getCachedOrCalculate(
       database: database,
       seasonId: seasonId,
@@ -565,97 +584,66 @@ class NotificationService {
       maghribAdjust: maghribAdjust,
     );
     
-    // Send immediate notification if iftar time passed recently (within last 2 hours)
-    // OR if Iftar time is very close (within 1 minute) - send immediately to ensure it appears
+    // Iftar notification hanya muncul 1 kali sehari di waktu Maghrib
+    // Jika waktu Iftar sudah lewat atau sangat dekat (≤1 menit), kirim immediate notification
+    // Jika sudah lewat lebih dari 1 menit, skip (besok sudah di-schedule)
     if (iftarEnabled && todayTimes['maghrib'] != null) {
       final iftarTime = todayTimes['maghrib']!.add(Duration(minutes: iftarOffsetMinutes));
-      final timeSinceIftar = now.difference(iftarTime);
       final timeUntilIftar = iftarTime.difference(now);
+      final timeSinceIftar = now.difference(iftarTime);
       
-      debugPrint('=== Checking immediate Iftar notification ===');
+      debugPrint('=== Checking today\'s Iftar notification ===');
       debugPrint('  Current time: $now');
-      debugPrint('  Maghrib time: ${todayTimes['maghrib']}');
-      debugPrint('  Iftar offset: $iftarOffsetMinutes minutes');
-      debugPrint('  Iftar time (maghrib + offset): $iftarTime');
-      debugPrint('  Time since Iftar: ${timeSinceIftar.inMinutes} minutes (${timeSinceIftar.inHours} hours)');
+      debugPrint('  Iftar time: $iftarTime');
       debugPrint('  Time until Iftar: ${timeUntilIftar.inMinutes} minutes');
+      debugPrint('  Time since Iftar: ${timeSinceIftar.inMinutes} minutes');
       debugPrint('  Iftar passed: ${iftarTime.isBefore(now)}');
-      debugPrint('  Within 2 hours: ${timeSinceIftar.inHours < 2}');
       
-      // Send notification if:
-      // 1. Iftar time has passed and it's within last 2 hours, OR
-      // 2. Iftar time is very close (within 1 minute) - send immediately to ensure it appears
-      final shouldSendImmediate = (iftarTime.isBefore(now) && 
-                                  timeSinceIftar.inHours < 2 && 
-                                  timeSinceIftar.inMinutes >= 0) ||
-                                  (iftarTime.isAfter(now) && 
-                                  timeUntilIftar.inMinutes <= 1 && 
-                                  timeUntilIftar.inMinutes >= 0);
+      // Kirim immediate notification jika:
+      // 1. Waktu Iftar sudah lewat tapi masih dalam 1 menit (baru lewat), ATAU
+      // 2. Waktu Iftar sangat dekat (≤1 menit dari sekarang)
+      // Ini untuk memastikan notification muncul meskipun scheduled notification tidak trigger tepat waktu
+      final shouldSendImmediate = (iftarTime.isBefore(now) && timeSinceIftar.inMinutes <= 1) ||
+                                  (iftarTime.isAfter(now) && timeUntilIftar.inMinutes <= 1);
       
       if (shouldSendImmediate) {
-        debugPrint('Iftar time condition met, sending immediate notification');
-        debugPrint('  - Time until Iftar: ${timeUntilIftar.inMinutes} minutes');
+        debugPrint('Iftar time is very close or just passed (${timeUntilIftar.inMinutes} min until, ${timeSinceIftar.inMinutes} min since), sending immediate notification');
         try {
-          // Send immediate notification now
           await _notifications.show(
             _getNotificationId('iftar_immediate', now),
-            'Iftar Reminder',
-            'Time for Iftar',
-            const NotificationDetails(
+            iftarTitle ?? 'Iftar Reminder',
+            iftarBody ?? 'Time for Iftar',
+            NotificationDetails(
               android: AndroidNotificationDetails(
                 'ramadan_reminders',
                 'Ramadan Reminders',
                 channelDescription: 'Sahur and Iftar reminders',
-                importance: Importance.high,
-                priority: Priority.high,
+                importance: Importance.max,
+                priority: Priority.max,
+                showWhen: true,
+                enableVibration: true,
+                playSound: true,
+                visibility: NotificationVisibility.public,
+                channelAction: AndroidNotificationChannelAction.createIfNotExists,
               ),
-              iOS: DarwinNotificationDetails(),
+              iOS: const DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+              ),
             ),
           );
           debugPrint('✓ Immediate Iftar notification sent successfully');
-          
-          // Also schedule a backup notification at exact Iftar time if still in future (within 1 minute)
-          if (iftarTime.isAfter(now) && timeUntilIftar.inMinutes > 0 && timeUntilIftar.inMinutes <= 1) {
-            debugPrint('  Scheduling backup notification at exact Iftar time');
-            try {
-              final backupScheduledTime = tz.TZDateTime.from(iftarTime, tz.local);
-              await _notifications.zonedSchedule(
-                _getNotificationId('iftar_immediate_backup', iftarTime),
-                'Iftar Reminder',
-                'Time for Iftar',
-                backupScheduledTime,
-                const NotificationDetails(
-                  android: AndroidNotificationDetails(
-                    'ramadan_reminders',
-                    'Ramadan Reminders',
-                    channelDescription: 'Sahur and Iftar reminders',
-                    importance: Importance.high,
-                    priority: Priority.high,
-                  ),
-                  iOS: DarwinNotificationDetails(),
-                ),
-                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-                uiLocalNotificationDateInterpretation:
-                    UILocalNotificationDateInterpretation.absoluteTime,
-                matchDateTimeComponents: null,
-              );
-              debugPrint('  ✓ Backup notification scheduled for: $backupScheduledTime');
-            } catch (e) {
-              debugPrint('  ✗ Error scheduling backup: $e');
-            }
-          }
         } catch (e) {
-          debugPrint('✗ Error showing immediate iftar notification: $e');
+          debugPrint('✗ Error showing immediate Iftar notification: $e');
         }
+      } else if (iftarTime.isAfter(now)) {
+        debugPrint('Iftar time is in the future today (${timeUntilIftar.inMinutes} min), scheduled notification will handle it');
       } else {
-        debugPrint('Iftar notification not sent: conditions not met');
-        debugPrint('  - Iftar passed: ${iftarTime.isBefore(now)}');
-        debugPrint('  - Time since: ${timeSinceIftar.inMinutes} min');
-        debugPrint('  - Time until: ${timeUntilIftar.inMinutes} min');
-        debugPrint('  - Within 2h: ${timeSinceIftar.inHours < 2}');
+        debugPrint('Iftar time has passed more than 1 minute ago (${timeSinceIftar.inMinutes} min), skipping (will use tomorrow\'s scheduled notification)');
       }
     } else {
-      debugPrint('Iftar immediate notification check skipped:');
+      debugPrint('Iftar notification check skipped:');
       debugPrint('  - Iftar enabled: $iftarEnabled');
       debugPrint('  - Maghrib time: ${todayTimes['maghrib']}');
     }
@@ -664,36 +652,122 @@ class NotificationService {
       await scheduleNightPlanReminder(
         hour: 21,
         minute: 0,
-        title: 'Night Plan',
-        body: 'Review your plan for tonight',
+        title: nightPlanTitle ?? 'Night Plan',
+        body: nightPlanBody ?? 'Review your plan for tonight',
       );
     }
   }
 
-  static Future<void> testNotification() async {
-    await _notifications.show(
-      999999,
-      'Test Notification',
-      'This is a test notification from Ramadan Offline',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'gentle_reminders',
-          'Gentle Reminders',
-          channelDescription: 'Test notifications',
-          importance: Importance.defaultImportance,
+  static Future<void> testNotification({
+    required String title,
+    required String body,
+  }) async {
+    debugPrint('=== TEST NOTIFICATION START ===');
+    debugPrint('Title: $title');
+    debugPrint('Body: $body');
+    
+    // Check permission first
+    if (Platform.isAndroid) {
+      debugPrint('Checking Android notification permission...');
+      final androidImpl = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImpl != null) {
+        final hasPermission = await androidImpl.areNotificationsEnabled();
+        debugPrint('Has notification permission: $hasPermission');
+        
+        if (hasPermission != true) {
+          debugPrint('Permission not granted, requesting...');
+          final granted = await androidImpl.requestNotificationsPermission();
+          debugPrint('Permission request result: $granted');
+        } else {
+          debugPrint('Permission already granted');
+        }
+      } else {
+        debugPrint('ERROR: Android implementation is NULL!');
+      }
+    }
+    
+    try {
+      debugPrint('Calling _notifications.show()...');
+      // Use a unique ID each time to ensure notification appears
+      final notificationId = DateTime.now().millisecondsSinceEpoch % 2147483647;
+      debugPrint('Notification ID: $notificationId');
+      debugPrint('Channel: gentle_reminders');
+      
+      // Try to show notification with maximum visibility
+      await _notifications.show(
+        notificationId,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'gentle_reminders',
+            'Gentle Reminders',
+            channelDescription: 'Test notifications',
+            importance: Importance.max,
+            priority: Priority.max,
+            showWhen: true,
+            enableVibration: true,
+            playSound: true,
+            ticker: 'Test notification',
+            styleInformation: const BigTextStyleInformation(''),
+            visibility: NotificationVisibility.public,
+            fullScreenIntent: false,
+            ongoing: false,
+            autoCancel: true,
+            channelAction: AndroidNotificationChannelAction.createIfNotExists,
+            category: AndroidNotificationCategory.alarm, // Use alarm category for maximum priority
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.timeSensitive,
+          ),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-    );
+      );
+      
+      debugPrint('✓ _notifications.show() completed without error');
+      
+      // Wait a bit to ensure notification is processed
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      debugPrint('✓ TEST NOTIFICATION SENT SUCCESSFULLY');
+      debugPrint('=== TEST NOTIFICATION END ===');
+    } catch (e, stackTrace) {
+      debugPrint('✗ ERROR showing test notification: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('=== TEST NOTIFICATION FAILED ===');
+      rethrow;
+    }
   }
 
   static Future<List<NotificationInfo>> getPendingNotifications() async {
     final pending = await _notifications.pendingNotificationRequests();
+    debugPrint('=== Pending Notifications: ${pending.length} ===');
+    for (final p in pending) {
+      debugPrint('  ID: ${p.id}, Title: ${p.title}, Body: ${p.body}');
+    }
     return pending.map((p) => NotificationInfo(
       id: p.id,
       title: p.title,
       body: p.body,
     )).toList();
+  }
+  
+  static Future<bool> checkNotificationPermission() async {
+    if (Platform.isAndroid) {
+      final androidImplementation = _notifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      
+      if (androidImplementation != null) {
+        final granted = await androidImplementation.areNotificationsEnabled();
+        debugPrint('Notification permission status: $granted');
+        return granted ?? false;
+      }
+    }
+    return false;
   }
 
   static Future<void> cancelAll() async {
@@ -735,24 +809,35 @@ class NotificationService {
     }
 
     try {
+      final scheduledTime = tz.TZDateTime.from(reminderTime, tz.local);
+      debugPrint('Scheduling $type goal reminder at: $scheduledTime');
       await _notifications.zonedSchedule(
         _getNotificationId('goal_$type', reminderTime),
         title,
         body,
-        tz.TZDateTime.from(reminderTime, tz.local),
+        scheduledTime,
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'gentle_reminders',
             'Gentle Reminders',
             channelDescription: 'Quran, Dhikr, and other gentle reminders',
-            importance: Importance.defaultImportance,
+            importance: Importance.high,
+            priority: Priority.high,
+            showWhen: true,
+            enableVibration: true,
+            playSound: true,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
+      debugPrint('✓ $type goal reminder scheduled successfully');
     } catch (e) {
       // Fallback to inexact if exact not permitted
       try {
@@ -784,6 +869,12 @@ class NotificationService {
   /// This should be called daily (e.g., on app startup or after Maghrib)
   static Future<void> rescheduleAllReminders({
     required AppDatabase database,
+    String? sahurTitle,
+    String? sahurBody,
+    String? iftarTitle,
+    String? iftarBody,
+    String? nightPlanTitle,
+    String? nightPlanBody,
   }) async {
     debugPrint('=== rescheduleAllReminders called ===');
     try {
@@ -831,6 +922,10 @@ class NotificationService {
       
       debugPrint('Reminder settings: sahur=$sahurEnabled (offset=$sahurOffset), iftar=$iftarEnabled (offset=$iftarOffset)');
 
+      // Check notification permission status
+      final permissionStatus = await checkNotificationPermission();
+      debugPrint('Notification permission status: $permissionStatus');
+
       // Cancel old notifications
       await cancelAll();
 
@@ -850,6 +945,12 @@ class NotificationService {
         nightPlanEnabled: nightPlanEnabled == 'true',
         fajrAdjust: fajrAdjust,
         maghribAdjust: maghribAdjust,
+        sahurTitle: sahurTitle,
+        sahurBody: sahurBody,
+        iftarTitle: iftarTitle,
+        iftarBody: iftarBody,
+        nightPlanTitle: nightPlanTitle,
+        nightPlanBody: nightPlanBody,
       );
 
       // Schedule goal reminders
@@ -866,6 +967,9 @@ class NotificationService {
       );
 
       debugPrint('All reminders rescheduled successfully');
+      
+      // Log pending notifications after rescheduling
+      await getPendingNotifications();
     } catch (e) {
       debugPrint('Error rescheduling reminders: $e');
     }

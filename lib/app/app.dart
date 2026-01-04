@@ -95,7 +95,27 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     // Reschedule notifications on app startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _rescheduleNotifications();
+      // Test notification after 3 seconds to verify permissions
+      Future.delayed(const Duration(seconds: 3), () {
+        _testNotificationAfterStartup();
+      });
     });
+  }
+  
+  Future<void> _testNotificationAfterStartup() async {
+    debugPrint('=== _testNotificationAfterStartup() CALLED ===');
+    try {
+      debugPrint('Calling NotificationService.testNotification()...');
+      await NotificationService.testNotification(
+        title: 'Test Notification',
+        body: 'If you see this, notifications are working!',
+      );
+      debugPrint('=== _testNotificationAfterStartup() COMPLETED ===');
+    } catch (e, stackTrace) {
+      debugPrint('=== ERROR in _testNotificationAfterStartup() ===');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
   }
 
   @override
@@ -127,8 +147,17 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     debugPrint('=== _rescheduleNotifications called ===');
     try {
       final database = ref.read(databaseProvider);
+      
+      // Check permission status first
+      final hasPermission = await NotificationService.checkNotificationPermission();
+      debugPrint('Notification permission status before reschedule: $hasPermission');
+      
       await NotificationService.rescheduleAllReminders(database: database);
       debugPrint('=== _rescheduleNotifications completed ===');
+      
+      // Show pending notifications count
+      final pending = await NotificationService.getPendingNotifications();
+      debugPrint('Total pending notifications: ${pending.length}');
     } catch (e, stackTrace) {
       debugPrint('Error rescheduling notifications on startup: $e');
       debugPrint('Stack trace: $stackTrace');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 class OnboardingStep4Goals extends StatefulWidget {
   final OnboardingData data;
@@ -61,6 +62,7 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final hasQuran = widget.data.selectedHabits.contains('quran_pages');
     final hasDhikr = widget.data.selectedHabits.contains('dhikr');
     final hasSedekah = widget.data.selectedHabits.contains('sedekah');
@@ -71,25 +73,25 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Set Goals',
+            l10n.setGoals,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Gentle goals beat perfect streaks.',
+            l10n.gentleGoalsBeatPerfectStreaks,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 32),
           if (hasQuran) ...[
             Text(
-              'Quran Goal',
+              l10n.quranGoal,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             RadioListTile<String>(
-              title: Text('1 Khatam (20 pages/day)'),
+              title: Text(l10n.oneKhatam20Pages),
               value: '1_khatam',
               groupValue: widget.data.quranGoal,
               onChanged: (value) {
@@ -99,7 +101,7 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
               },
             ),
             RadioListTile<String>(
-              title: Text('2 Khatam (40 pages/day)'),
+              title: Text(l10n.twoKhatam40Pages),
               value: '2_khatam',
               groupValue: widget.data.quranGoal,
               onChanged: (value) {
@@ -109,7 +111,7 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
               },
             ),
             RadioListTile<String>(
-              title: const Text('Custom'),
+              title: Text(l10n.custom),
               value: 'custom',
               groupValue: widget.data.quranGoal,
               onChanged: (value) {
@@ -121,23 +123,39 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
             if (widget.data.quranGoal == 'custom') ...[
               Padding(
                 padding: const EdgeInsets.only(left: 48, top: 8, bottom: 8),
-                child: TextField(
-                  controller: _customPagesController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Pages per day',
-                  ),
-                  onChanged: (value) {
-                    final pages = int.tryParse(value) ?? 20;
-                    widget.data.customQuranPages = pages;
-                    setState(() {});
-                  },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.pagesPerDayLabel,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ) ?? const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _customPagesController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: l10n.enterPages,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        final pages = int.tryParse(value) ?? 20;
+                        widget.data.customQuranPages = pages;
+                        setState(() {});
+                      },
+                    ),
+                  ],
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 48, bottom: 16),
                 child: Text(
-                  '${_calculateTotalPages()} total pages → ${_getDailyPages()} pages/day for ${widget.data.days} days',
+                  l10n.totalPagesCalculation(_calculateTotalPages(), _getDailyPages(), widget.data.days),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -148,7 +166,7 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
           ],
           if (hasDhikr) ...[
             Text(
-              'Dhikr Target',
+              l10n.dhikrTarget,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -172,7 +190,7 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
           ],
           if (hasSedekah) ...[
             SwitchListTile(
-              title: const Text('Set a daily Sedekah goal'),
+              title: Text(l10n.setDailySedekahGoal),
               value: widget.data.sedekahGoalEnabled,
               onChanged: (value) {
                 setState(() {
@@ -186,37 +204,67 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextField(
-                      controller: _sedekahAmountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Amount',
-                      ),
-                      onChanged: (value) {
-                        widget.data.sedekahAmount = int.tryParse(value) ?? 0;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: widget.data.sedekahCurrency,
-                      decoration: const InputDecoration(
-                        labelText: 'Currency',
-                        isDense: true,
-                      ),
-                      isExpanded: true,
-                      items: const [
-                        DropdownMenuItem(value: 'Rp', child: Text('IDR (Rp)')),
-                        DropdownMenuItem(value: 'S\$', child: Text('SGD (S\$)')),
-                        DropdownMenuItem(value: '\$', child: Text('USD (\$)')),
-                        DropdownMenuItem(value: 'RM', child: Text('MYR (RM)')),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.amount,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ) ?? const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _sedekahAmountController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: l10n.enterAmount,
+                            border: const OutlineInputBorder(),
+                          ),
+                          onChanged: (value) {
+                            widget.data.sedekahAmount = int.tryParse(value) ?? 0;
+                          },
+                        ),
                       ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            widget.data.sedekahCurrency = value;
-                          });
-                        }
-                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.currency,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ) ?? const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: widget.data.sedekahCurrency,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                          isExpanded: true,
+                          items: [
+                            DropdownMenuItem(value: 'IDR', child: Text(l10n.idrRp)),
+                            DropdownMenuItem(value: 'SGD', child: Text(l10n.sgdSdollar)),
+                            DropdownMenuItem(value: 'USD', child: Text(l10n.usdDollar)),
+                            DropdownMenuItem(value: 'MYR', child: Text(l10n.myrRm)),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                widget.data.sedekahCurrency = value;
+                              });
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -224,15 +272,15 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
             const SizedBox(height: 24),
           ],
           Text(
-            'Autopilot Intensity',
+            l10n.autopilotIntensity,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'light', label: Text('Light')),
-              ButtonSegment(value: 'balanced', label: Text('Balanced')),
-              ButtonSegment(value: 'strong', label: Text('Strong')),
+            segments: [
+              ButtonSegment(value: 'light', label: Text(l10n.light)),
+              ButtonSegment(value: 'balanced', label: Text(l10n.balanced)),
+              ButtonSegment(value: 'strong', label: Text(l10n.strong)),
             ],
             selected: {widget.data.autopilotIntensity},
             onSelectionChanged: (Set<String> newSelection) {
@@ -244,10 +292,10 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
           const SizedBox(height: 8),
           Text(
             widget.data.autopilotIntensity == 'light'
-                ? 'Gentle reminders, minimal pressure'
+                ? l10n.gentleRemindersMinimalPressure
                 : widget.data.autopilotIntensity == 'balanced'
-                    ? 'Regular check-ins, steady progress'
-                    : 'Frequent reminders, maximum support',
+                    ? l10n.regularCheckInsSteadyProgress
+                    : l10n.frequentRemindersMaximumSupport,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
@@ -258,14 +306,14 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: widget.onPrevious,
-                  child: const Text('Back'),
+                  child: Text(l10n.back),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
                   onPressed: widget.onNext,
-                  child: const Text('Continue'),
+                  child: Text(l10n.continueButton),
                 ),
               ),
             ],

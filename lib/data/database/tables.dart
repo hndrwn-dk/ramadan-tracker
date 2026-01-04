@@ -82,7 +82,22 @@ class Notes extends Table {
   IntColumn get dayIndex => integer().nullable()();
   TextColumn get title => text().nullable()();
   TextColumn get body => text()();
+  TextColumn get mood => text().nullable()(); // 'excellent', 'good', 'ok', 'difficult'
   IntColumn get createdAt => integer()();
+}
+
+class PrayerDetails extends Table {
+  IntColumn get seasonId => integer()();
+  IntColumn get dayIndex => integer()();
+  BoolColumn get fajr => boolean().withDefault(const Constant(false))();
+  BoolColumn get dhuhr => boolean().withDefault(const Constant(false))();
+  BoolColumn get asr => boolean().withDefault(const Constant(false))();
+  BoolColumn get maghrib => boolean().withDefault(const Constant(false))();
+  BoolColumn get isha => boolean().withDefault(const Constant(false))();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {seasonId, dayIndex};
 }
 
 class KvSettings extends Table {

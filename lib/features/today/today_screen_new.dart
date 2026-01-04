@@ -16,6 +16,7 @@ import 'package:ramadan_tracker/widgets/quran_tracker.dart';
 import 'package:ramadan_tracker/widgets/sedekah_tracker.dart';
 import 'package:ramadan_tracker/widgets/counter_widget.dart';
 import 'package:ramadan_tracker/features/settings/settings_screen.dart';
+import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               children: [
                 Icon(Icons.nights_stay, size: 24),
                 SizedBox(width: 8),
-                Text('Ramadan Offline'),
+                Text('Ramadan Tracker'),
               ],
             ),
             const SizedBox(height: 4),
@@ -89,15 +90,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
         ],
       ),
-      body: seasonAsync.when(
-        data: (season) {
-          if (season == null) {
-            return const Center(child: Text('No season found'));
-          }
-          return _buildContent(season.id, dayIndex, season.days);
+      body: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        child: seasonAsync.when(
+          data: (season) {
+            if (season == null) {
+              return const Center(child: Text('No season found'));
+            }
+            return _buildContent(season.id, dayIndex, season.days);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
+        ),
       ),
     );
   }
@@ -118,7 +124,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (!_focusMode) ...[
-              _buildHeroCard(seasonId, dayIndex, seasonHabitsAsync, entriesAsync),
+              _buildHeroCard(seasonId, dayIndex, habitsAsync, seasonHabitsAsync, entriesAsync),
               const SizedBox(height: 16),
             ],
             _buildOneTapTodayCard(
@@ -140,6 +146,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   Widget _buildHeroCard(
     int seasonId,
     int dayIndex,
+    AsyncValue<List<dynamic>> habitsAsync,
     AsyncValue<List<dynamic>> seasonHabitsAsync,
     AsyncValue<List<dynamic>> entriesAsync,
   ) {
@@ -155,11 +162,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   data: (seasonHabits) => entriesAsync.when(
                     data: (entries) {
                       final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
-                      final score = CompletionService.calculateCompletionScore(
-                        enabledHabits: enabledHabits.cast(),
-                        entries: entries.cast(),
+                      return FutureBuilder<double>(
+                        future: CompletionService.calculateCompletionScore(
+                          seasonId: seasonId,
+                          dayIndex: dayIndex,
+                          enabledHabits: enabledHabits.cast(),
+                          entries: entries.cast(),
+                          database: ref.read(databaseProvider),
+                          allHabits: habitsAsync.value,
+                        ),
+                        builder: (context, snapshot) {
+                          final score = snapshot.data ?? 0.0;
+                          return ScoreRing(score: score);
+                        },
                       );
-                      return ScoreRing(score: score);
                     },
                     loading: () => const ScoreRing(score: 0),
                     error: (_, __) => const ScoreRing(score: 0),
@@ -181,16 +197,30 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    seasonHabitsAsync.when(
-                      data: (seasonHabits) => entriesAsync.when(
-                        data: (entries) {
-                          final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
-                          final completed = (entries as List).where((e) => e.isCompleted).length;
-                          return Text(
-                            'Done: $completed/${enabledHabits.length}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          );
-                        },
+                    habitsAsync.when(
+                      data: (allHabits) => seasonHabitsAsync.when(
+                        data: (seasonHabits) => entriesAsync.when(
+                          data: (entries) {
+                            return FutureBuilder<Map<String, int>>(
+                              future: _calculateCompletedCount(
+                                seasonId: seasonId,
+                                dayIndex: dayIndex,
+                                enabledHabits: (seasonHabits as List).where((sh) => sh.isEnabled).toList(),
+                                entries: entries.cast(),
+                                allHabits: allHabits,
+                              ),
+                              builder: (context, snapshot) {
+                                final result = snapshot.data ?? {'completed': 0, 'total': 0};
+                                return Text(
+                                  'Done: ${result['completed']}/${result['total']}',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                );
+                              },
+                            );
+                          },
+                          loading: () => const Text('Done: 0/0'),
+                          error: (_, __) => const Text('Done: 0/0'),
+                        ),
                         loading: () => const Text('Done: 0/0'),
                         error: (_, __) => const Text('Done: 0/0'),
                       ),
@@ -264,7 +294,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   ) {
     final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
     
-    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'itikaf'];
+    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'itikaf'];
     final sortedHabits = <Widget>[];
 
     for (final habitKey in habitOrder) {
@@ -369,11 +399,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 return TextField(
                   controller: _reflectionController,
                   maxLines: 3,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     hintText: 'How was today?',
                   ),
                   onChanged: (text) {
                     _setNote(seasonId, dayIndex, reflectionHabitId, text.isEmpty ? null : text);
+                  },
+                  onSubmitted: (_) {
+                    FocusScope.of(context).unfocus();
                   },
                 );
               },
@@ -393,6 +427,115 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       currentDayIndex: dayIndex,
       database: database,
     );
+  }
+
+  Future<Map<String, int>> _calculateCompletedCount({
+    required int seasonId,
+    required int dayIndex,
+    required List enabledHabits,
+    required List entries,
+    List? allHabits,
+  }) async {
+    if (enabledHabits.isEmpty) return {'completed': 0, 'total': 0};
+
+    final database = ref.read(databaseProvider);
+    
+    // Load plans for count-based habits
+    final quranPlan = await database.quranPlanDao.getPlan(seasonId);
+    final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
+    final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled');
+    final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
+    
+    // Load Quran daily data (Quran uses separate table)
+    final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
+    
+    // Check if we're in the last 10 days (for Itikaf)
+    final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    final last10Start = season != null ? season.days - 9 : 0;
+    final isInLast10Days = dayIndex >= last10Start && dayIndex > 0;
+
+    int completedCount = 0;
+    int totalRelevantHabits = 0;
+
+    for (final habit in enabledHabits) {
+      // Get habit key to identify count habits and Itikaf
+      String? habitKey;
+      if (allHabits != null) {
+        try {
+          final fullHabit = allHabits.firstWhere((h) => h.id == habit.habitId);
+          habitKey = fullHabit.key;
+        } catch (e) {
+          habitKey = null;
+        }
+      }
+      
+      // Skip Itikaf if not in last 10 days
+      if (habitKey == 'itikaf' && !isInLast10Days) {
+        continue; // Don't count Itikaf in total if not in last 10 days
+      }
+      
+      // Count this habit in total relevant habits
+      totalRelevantHabits++;
+      
+      final entry = entries.where((e) => 
+        e.habitId == habit.habitId && 
+        e.seasonId == seasonId && 
+        e.dayIndex == dayIndex
+      ).firstOrNull ??
+          DailyEntryModel(
+            seasonId: seasonId,
+            dayIndex: dayIndex,
+            habitId: habit.habitId,
+            updatedAt: DateTime.now(),
+          );
+
+      bool isCompleted = false;
+      
+      // Count habits (quran_pages, dhikr, sedekah) should be checked based on target
+      if (habitKey == 'quran_pages') {
+        // Quran uses QuranDaily table, not DailyEntries
+        final target = quranPlan?.dailyTargetPages ?? 20;
+        if (target > 0) {
+          final currentValue = quranDaily?.pagesRead ?? 0;
+          isCompleted = currentValue >= target;
+        } else {
+          final currentValue = quranDaily?.pagesRead ?? 0;
+          isCompleted = currentValue > 0;
+        }
+      } else if (habitKey == 'dhikr') {
+        // Dhikr target from DhikrPlan
+        final target = dhikrPlan?.dailyTarget ?? 100;
+        if (target > 0) {
+          isCompleted = (entry.valueInt ?? 0) >= target;
+        } else {
+          isCompleted = (entry.valueInt ?? 0) > 0;
+        }
+      } else if (habitKey == 'sedekah') {
+        // Sedekah target from KvSettings
+        if (sedekahGoalEnabled == 'true' && sedekahGoalAmount != null) {
+          final target = double.tryParse(sedekahGoalAmount) ?? 0;
+          if (target > 0) {
+            // Convert valueInt to double for accurate comparison
+            final currentValue = (entry.valueInt ?? 0).toDouble();
+            isCompleted = currentValue >= target;
+          } else {
+            isCompleted = (entry.valueInt ?? 0) > 0;
+          }
+        } else {
+          // If sedekah goal disabled, consider completed if value > 0
+          isCompleted = (entry.valueInt ?? 0) > 0;
+        }
+      } else {
+        // Boolean habits (fasting, taraweeh, itikaf, prayers)
+        isCompleted = entry.isCompleted;
+      }
+
+      if (isCompleted) {
+        completedCount++;
+      }
+    }
+
+    return {'completed': completedCount, 'total': totalRelevantHabits};
   }
 
   Future<void> _toggleBoolHabit(int seasonId, int dayIndex, int habitId, bool value) async {
