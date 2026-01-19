@@ -10,13 +10,18 @@ import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/features/settings/backup_service.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/features/settings/webview_screen.dart';
 import 'package:ramadan_tracker/data/providers/locale_provider.dart';
+import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
+import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/utils/log_service.dart';
+import 'package:flutter/foundation.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -33,6 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     'habits': false,
     'times': false,
     'backup': false,
+    'debug': false,
     'about': false,
   };
 
@@ -80,6 +86,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildTimesAndReminders(),
             const SizedBox(height: 16),
             _buildBackupRestore(),
+            const SizedBox(height: 16),
+            _buildDebugSection(),
             const SizedBox(height: 16),
             _buildAbout(),
           ],
@@ -499,6 +507,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         for (final season in seasons) {
                           await database.kvSettingsDao.deleteValue('onboarding_done_season_${season.id}');
                         }
+                        // Invalidate onboarding provider to show onboarding on next app start
+                        ref.invalidate(shouldShowOnboardingProvider);
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(l10n.onboardingWillShowOnRestart)),
@@ -847,14 +857,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: Text(l10n.testNotification),
                   subtitle: Text(l10n.sendTestNotification, style: const TextStyle(fontSize: 12)),
                   onTap: () async {
-                    await NotificationService.testNotification(
-                      title: l10n.testNotification,
-                      body: l10n.appTitle,
-                    );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.testNotificationSent)),
-                      );
+                    try {
+                      // Use scheduleTestNotification which shows immediate notification first
+                      await NotificationService.scheduleTestNotification(seconds: 10);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Test notification sent! Immediate notification should appear now. Scheduled notification may fail if there are corrupt notifications in database.'),
+                            duration: Duration(seconds: 4),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      // Only show error if immediate notification also failed
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Error: Immediate notification failed. Check logs for details.'),
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      }
                     }
                   },
                   shape: RoundedRectangleBorder(
@@ -1215,6 +1238,400 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildDebugSection() {
+    final isExpanded = _expandedSections['debug'] ?? false;
+    final logCount = LogService.getLogs().length;
+
+    return PremiumCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => _toggleSection('debug'),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.bug_report_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Debug & Logs',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$logCount log entries',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.file_download),
+                  title: const Text('Export Logs'),
+                  subtitle: const Text('Save logs to Downloads folder', style: TextStyle(fontSize: 12)),
+                  onTap: () async {
+                    try {
+                      final file = await LogService.exportLogsToFile();
+                      if (mounted) {
+                        if (file != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Logs exported to:\n${file.path}'),
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to export logs'),
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.share),
+                  title: const Text('Share Logs'),
+                  subtitle: const Text('Share logs via other apps', style: TextStyle(fontSize: 12)),
+                  onTap: () async {
+                    try {
+                      final file = await LogService.exportLogsToFile();
+                      if (file != null && mounted) {
+                        await Share.shareXFiles(
+                          [XFile(file.path)],
+                          text: 'Ramadan Tracker Debug Logs',
+                        );
+                      } else if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Failed to export logs'),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.notifications_active),
+                  title: const Text('Test Notification (10s)'),
+                  subtitle: const Text('Send immediate + scheduled test notification', style: TextStyle(fontSize: 12)),
+                  onTap: () async {
+                    try {
+                      await NotificationService.scheduleTestNotification(seconds: 10);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Test notification sent! Immediate notification should appear now. Scheduled notification may fail if there are corrupt notifications in database.'),
+                            duration: Duration(seconds: 4),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      // Only show error if immediate notification also failed
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: Immediate notification failed. Check logs for details.'),
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.healing, color: Colors.green),
+                  title: const Text('Fix Notification Issues', style: TextStyle(color: Colors.green)),
+                  subtitle: const Text('Fix corrupt notification database (won\'t delete your data)', style: TextStyle(fontSize: 12)),
+                  onTap: () async {
+                    // Show warning dialog first
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Fix Notification Issues'),
+                        content: const Text(
+                          'This will clear corrupt notification data. '
+                          'Your app data (progress, settings) will NOT be deleted. '
+                          'Continue?'
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Fix Now'),
+                          ),
+                        ],
+                      ),
+                    );
+                    
+                    if (confirm != true || !mounted) return;
+                    
+                    // Show loading
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                    
+                    try {
+                      // Clear database using native method
+                      final success = await NotificationService.clearCorruptNotificationDatabase();
+                      
+                      // Hide loading
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
+                      
+                      // Show result
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success 
+                                ? '✓ Notification database fixed! Please restart the app for best results.'
+                                : '✗ Failed to fix. Please try "Clear Corrupt Notifications" or clear app data manually.'
+                            ),
+                            backgroundColor: success ? Colors.green : Colors.orange,
+                            duration: const Duration(seconds: 6),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      // Hide loading
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e\n\nPlease try "Clear Corrupt Notifications" or clear app data from Android Settings.'),
+                            duration: const Duration(seconds: 8),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.delete_sweep, color: Colors.orange),
+                  title: const Text('Clear Corrupt Notifications', style: TextStyle(color: Colors.orange)),
+                  subtitle: const Text('Clear corrupt notifications from database (fallback method)', style: TextStyle(fontSize: 12)),
+                  onTap: () async {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Clearing notification database...'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                    
+                    try {
+                      final success = await NotificationService.clearNotificationDatabase();
+                      
+                      if (mounted) {
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✓ Notification database cleared successfully! Please restart the app.'),
+                              duration: Duration(seconds: 5),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✗ Database still corrupt. Please go to Android Settings > Apps > Ramadan Tracker > Storage > Clear Data, then reinstall the app.'),
+                              duration: Duration(seconds: 8),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e\n\nPlease clear app data from Android Settings.'),
+                            duration: const Duration(seconds: 8),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.delete_outline),
+                  title: const Text('Clear Logs'),
+                  subtitle: const Text('Clear all log entries', style: TextStyle(fontSize: 12)),
+                  onTap: () {
+                    LogService.clearLogs();
+                    if (mounted) {
+                      setState(() {});
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Logs cleared'),
+                        ),
+                      );
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.refresh, color: Colors.red),
+                  title: const Text('Reset App Data', style: TextStyle(color: Colors.red)),
+                  subtitle: const Text('Clear all data and reset onboarding', style: TextStyle(fontSize: 12)),
+                  onTap: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Reset App Data?'),
+                        content: const Text(
+                          'This will delete all your data including seasons, habits, goals, and entries. '
+                          'This action cannot be undone. Are you sure?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            style: TextButton.styleFrom(foregroundColor: Colors.red),
+                            child: const Text('Reset'),
+                          ),
+                        ],
+                      ),
+                    );
+                    
+                    if (confirmed == true && mounted) {
+                      try {
+                        final database = ref.read(databaseProvider);
+                        
+                        // Try to clear notification database first
+                        await NotificationService.clearNotificationDatabase();
+                        
+                        // Completely wipe the database file to ensure clean state
+                        // This will delete the database file and all its data
+                        await database.wipeDatabase();
+                        
+                        // Invalidate providers to refresh UI
+                        ref.invalidate(shouldShowOnboardingProvider);
+                        ref.invalidate(currentSeasonProvider);
+                        ref.invalidate(databaseProvider);
+                        
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('App data completely wiped. Please restart the app to ensure notification database is cleared.'),
+                              duration: Duration(seconds: 6),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error resetting data: $e\n\nIf notifications still don\'t work, please clear app data from Android Settings.'),
+                              duration: const Duration(seconds: 8),
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ],
+            ),
+            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAbout() {
     final l10n = AppLocalizations.of(context)!;
     final isExpanded = _expandedSections['about'] ?? false;
@@ -1363,6 +1780,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await database.ramadanSeasonsDao.deleteSeason(seasonId);
       ref.invalidate(allSeasonsProvider);
       ref.invalidate(currentSeasonProvider);
+      
+      // Check if there are any seasons left
+      final remainingSeasons = await database.ramadanSeasonsDao.getAllSeasons();
+      if (remainingSeasons.isEmpty) {
+        // No seasons left, navigate to onboarding immediately
+        ref.invalidate(shouldShowOnboardingProvider);
+        if (mounted) {
+          // Navigate to onboarding flow and clear navigation stack
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => const OnboardingFlow(),
+            ),
+            (route) => false,
+          );
+        }
+      }
     }
   }
 

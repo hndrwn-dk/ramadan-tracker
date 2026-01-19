@@ -49,3 +49,10 @@ app.*.map.json
 *.config.dart
 android/.gradle/
 android/local.properties
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+
+# Release builds (uncomment if you want to ignore release files)
+# /releases/*.apk
+# /releases/*.aab

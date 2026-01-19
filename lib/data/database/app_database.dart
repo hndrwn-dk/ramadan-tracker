@@ -4,6 +4,8 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:ramadan_tracker/data/database/tables.dart';
+import 'package:ramadan_tracker/utils/log_service.dart';
+import 'package:flutter/foundation.dart';
 
 part 'app_database.g.dart';
 part 'daos.dart';
@@ -70,9 +72,56 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> initialize() async {
+    // Check if this is a fresh install by checking if database file exists
+    // If database exists but has no seasons, it might be from a previous install
+    // that wasn't properly cleaned. We'll let the user go through onboarding anyway.
     await _seedDefaultHabits();
     // Don't auto-create season - let onboarding handle it
     // await _ensureCurrentSeason();
+  }
+  
+  /// Completely wipe the database - use with caution!
+  /// This will delete all data including seasons, habits, entries, etc.
+  /// After calling this, the app must be restarted for the database to be recreated.
+  Future<void> wipeDatabase() async {
+    try {
+      // Get the database file path BEFORE closing
+      final dbFolder = await getApplicationDocumentsDirectory();
+      final dbFile = File(p.join(dbFolder.path, 'ramadan.db'));
+      final dbPath = dbFile.path;
+      
+      // Close existing connections first
+      await close();
+      
+      // Delete the database file if it exists
+      if (await dbFile.exists()) {
+        await dbFile.delete();
+        debugPrint('[DB] Database file deleted: $dbPath');
+        LogService.log('[DB] Database file deleted: $dbPath');
+      }
+      
+      // Also delete any journal/WAL files
+      final walFile = File('$dbPath-wal');
+      final shmFile = File('$dbPath-shm');
+      if (await walFile.exists()) {
+        await walFile.delete();
+        debugPrint('[DB] WAL file deleted: ${walFile.path}');
+        LogService.log('[DB] WAL file deleted: ${walFile.path}');
+      }
+      if (await shmFile.exists()) {
+        await shmFile.delete();
+        debugPrint('[DB] SHM file deleted: ${shmFile.path}');
+        LogService.log('[DB] SHM file deleted: ${shmFile.path}');
+      }
+      
+      debugPrint('[DB] Database completely wiped. App must be restarted.');
+      LogService.log('[DB] Database completely wiped. App must be restarted.');
+    } catch (e, stackTrace) {
+      debugPrint('[DB] Error wiping database: $e');
+      debugPrint('[DB] Stack trace: $stackTrace');
+      LogService.log('[DB] Error wiping database: $e');
+      rethrow;
+    }
   }
 
   Future<void> _seedDefaultHabits() async {

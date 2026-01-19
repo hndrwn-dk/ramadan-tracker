@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/app/app.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
+import 'package:ramadan_tracker/utils/log_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize log service
+  LogService.init();
+  LogService.log('=== App Started ===');
   
   try {
     final database = AppDatabase();
