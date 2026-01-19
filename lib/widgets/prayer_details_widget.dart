@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
+import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
@@ -170,6 +171,8 @@ class PrayerDetailsWidget extends ConsumerWidget {
       final prayersHabit = habits.where((h) => h.key == 'prayers').firstOrNull;
       if (prayersHabit != null) {
         await database.dailyEntriesDao.setBoolValue(seasonId, dayIndex, prayersHabit.id, allCompleted);
+        // Invalidate dailyEntriesProvider to trigger completion score recalculation
+        ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
       }
     }
   }

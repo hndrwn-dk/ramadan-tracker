@@ -35,6 +35,7 @@ dependencies:
   
   # File operations
   share_plus: ^7.2.1
+  cross_file: ^0.3.4
   
   # Utilities
   uuid: ^4.2.1

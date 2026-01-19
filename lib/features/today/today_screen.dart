@@ -10,6 +10,8 @@ import 'package:ramadan_tracker/data/providers/last10_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
+import 'package:ramadan_tracker/data/providers/quran_provider.dart';
+import 'package:ramadan_tracker/data/providers/completion_score_provider.dart';
 import 'package:ramadan_tracker/domain/services/completion_service.dart';
 import 'package:ramadan_tracker/app/app.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
@@ -781,28 +783,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                seasonHabitsAsync.when(
-                  data: (seasonHabits) => entriesAsync.when(
-                    data: (entries) {
-                      final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
-                      return FutureBuilder<double>(
-                        future: CompletionService.calculateCompletionScore(
-                          seasonId: seasonId,
-                          dayIndex: dayIndex,
-                          enabledHabits: enabledHabits.cast(),
-                          entries: entries.cast(),
-                          database: ref.read(databaseProvider),
-                          allHabits: habitsAsync.value,
-                        ),
-                        builder: (context, snapshot) {
-                          final score = snapshot.data ?? 0.0;
-                          return ScoreRing(score: score);
-                        },
-                      );
-                    },
-                    loading: () => const ScoreRing(score: 0),
-                    error: (_, __) => const ScoreRing(score: 0),
-                  ),
+                // Use completion score provider which auto-refreshes when entries or quran daily changes
+                ref.watch(completionScoreProvider((seasonId: seasonId, dayIndex: dayIndex))).when(
+                  data: (score) => ScoreRing(score: score),
                   loading: () => const ScoreRing(score: 0),
                   error: (_, __) => const ScoreRing(score: 0),
                 ),

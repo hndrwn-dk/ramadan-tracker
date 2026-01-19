@@ -312,6 +312,14 @@ class OnboardingData {
 
     if (latitude != null && longitude != null) {
       try {
+        debugPrint('=== ONBOARDING: Scheduling all reminders ===');
+        debugPrint('  Season ID: $seasonId');
+        debugPrint('  Location: $latitude, $longitude');
+        debugPrint('  Timezone: $timezone');
+        debugPrint('  Sahur enabled: $sahurEnabled, offset: $sahurOffsetMinutes');
+        debugPrint('  Iftar enabled: $iftarEnabled, offset: $iftarOffsetMinutes');
+        debugPrint('  Night plan enabled: $nightPlanEnabled');
+        
         await NotificationService.scheduleAllReminders(
           database: database,
           seasonId: seasonId,
@@ -328,11 +336,27 @@ class OnboardingData {
           fajrAdjust: fajrAdjust,
           maghribAdjust: maghribAdjust,
         );
-      } catch (e) {
+        
+        // Verify notifications were scheduled
+        final pending = await NotificationService.getPendingNotifications();
+        debugPrint('=== ONBOARDING: Reminders scheduled successfully ===');
+        debugPrint('  Total pending notifications: ${pending.length}');
+        if (pending.isNotEmpty) {
+          debugPrint('  First few notifications:');
+          for (var i = 0; i < pending.length && i < 5; i++) {
+            final notif = pending[i];
+            debugPrint('    - ${notif.title}: ${notif.body} (ID: ${notif.id})');
+          }
+        }
+      } catch (e, stackTrace) {
         // Log error but don't block onboarding completion
         // Notifications can be set up later from settings
-        debugPrint('Warning: Failed to schedule reminders: $e');
+        debugPrint('=== ONBOARDING: Failed to schedule reminders ===');
+        debugPrint('  Error: $e');
+        debugPrint('  Stack trace: $stackTrace');
       }
+    } else {
+      debugPrint('=== ONBOARDING: Skipping reminder scheduling (no location) ===');
     }
   }
 }
