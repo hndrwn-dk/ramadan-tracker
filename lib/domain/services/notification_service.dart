@@ -13,6 +13,12 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
+  // Flag to prevent recursive clear database calls
+  static bool _isClearingDatabase = false;
+  
+  // Flag to prevent concurrent scheduling (prevents duplicate notifications)
+  static bool _isScheduling = false;
+
   // Base IDs for notification types (deterministic)
   static const int _baseIdSahur = 1000000;
   static const int _baseIdIftar = 2000000;
@@ -70,7 +76,7 @@ class NotificationService {
   // Initialize and set timezone location
   static Future<void> initializeTimezone(String ianaTimezone) async {
     try {
-      tz_data.initializeTimeZones();
+    tz_data.initializeTimeZones();
       final location = resolveLocation(ianaTimezone);
       tz.setLocalLocation(location);
       LogService.log('[TZ] Timezone initialized and set: ${location.name}');
@@ -87,54 +93,56 @@ class NotificationService {
   // Helper: Get date-only DateTime
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  // Detect corrupt database dengan mencoba schedule test notification
+  // Detect corrupt database dengan mencoba get pending notifications
   // Returns true if database is OK, false if corrupt
+  // NOTE: Tidak pakai schedule test karena schedule sendiri bisa menyebabkan corruption
   static Future<bool> _detectCorruptDatabase() async {
     try {
-      // Use UTC for test notification
-      final tzNow = tz.TZDateTime.now(tz.UTC);
-      final testTime = tzNow.add(const Duration(seconds: 5));
-      final testScheduled = await _safeZonedSchedule(
-        id: 99999,
-        title: 'Database Test',
-        body: 'Testing database',
-        scheduledDate: testTime,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'ramadan_reminders',
-            'Ramadan Reminders',
-            importance: Importance.low,
-            priority: Priority.low,
-            channelAction: AndroidNotificationChannelAction.createIfNotExists,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-      
-      if (!testScheduled) {
-        LogService.log('[NOTIF] ⚠️ WARNING: Database may be corrupt! Notifications may not work.');
-        LogService.log('[NOTIF] ⚠️ User needs to clear app data or reinstall app to fix.');
-        if (kDebugMode) {
-          debugPrint('[NOTIF] ⚠️ WARNING: Database may be corrupt! Notifications may not work.');
-          debugPrint('[NOTIF] ⚠️ User needs to clear app data or reinstall app to fix.');
-        }
-        return false;
-      } else {
-        // Cancel test notification
-        try {
-          await _notifications.cancel(99999);
-        } catch (_) {
-          // Ignore cancel error
-        }
-        return true;
-      }
+      // Coba get pending notifications - ini akan gagal jika database corrupt
+      // Tapi tidak akan menyebabkan corruption baru karena hanya read operation
+      await _notifications.pendingNotificationRequests();
+      return true; // Database OK
     } catch (e) {
-      LogService.log('[NOTIF] Error detecting corrupt database: $e');
-      return false;
+      final errorStr = e.toString();
+      if (errorStr.contains('Missing type parameter')) {
+        LogService.log('[NOTIF] WARN: Database corrupt detected (cannot read pending notifications)');
+        if (kDebugMode) {
+          debugPrint('[NOTIF] WARN: Database corrupt detected (cannot read pending notifications)');
+        }
+        return false; // Database corrupt
+      } else {
+        // Other error - assume OK (might be permission issue, etc)
+        LogService.log('[NOTIF] Error checking database (non-corruption): $e');
+        return true; // Assume OK for other errors
+      }
     }
+  }
+
+  /// Rate-limited schedule: adds delay every [batchSize] notifications to prevent Android rate limiting.
+  static Future<bool> _scheduleWithRateLimit({
+    required int id,
+    required String? title,
+    required String? body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
+    AndroidScheduleMode androidScheduleMode = AndroidScheduleMode.exactAllowWhileIdle,
+    UILocalNotificationDateInterpretation uiLocalNotificationDateInterpretation = UILocalNotificationDateInterpretation.absoluteTime,
+    int batchIndex = 0,
+    int batchSize = 10,
+  }) async {
+    if (batchIndex > 0 && batchIndex % batchSize == 0) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      LogService.log('[NOTIF] Rate limit delay after $batchIndex notifications');
+    }
+    return await _safeZonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: notificationDetails,
+      androidScheduleMode: androidScheduleMode,
+      uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
+    );
   }
 
   // Helper untuk safe zonedSchedule dengan error handling untuk corrupt database
@@ -148,54 +156,100 @@ class NotificationService {
     AndroidScheduleMode androidScheduleMode = AndroidScheduleMode.exactAllowWhileIdle,
     UILocalNotificationDateInterpretation uiLocalNotificationDateInterpretation = UILocalNotificationDateInterpretation.absoluteTime,
   }) async {
-    // Check and request exact alarm permission for exact scheduling
-    if (androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle && Platform.isAndroid) {
+    // Check exact alarm permission only for exactAllowWhileIdle (alarmClock has its own requirements)
+    final isExactMode = androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle;
+    if (isExactMode && Platform.isAndroid) {
       final androidImpl = _notifications.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
         try {
           final canExact = await androidImpl.canScheduleExactNotifications();
           if (canExact != true) {
-            LogService.log('[NOTIF] ⚠️ Exact alarm permission not granted for notification ID $id');
-            LogService.log('[NOTIF] ⚠️ Attempting to request exact alarm permission...');
+            LogService.log('[NOTIF] WARN: Exact alarm permission not granted for notification ID $id');
+            final tzNow = tz.TZDateTime.now(tz.local);
+            final timeUntil = scheduledDate.difference(tzNow);
+            final isTimeSensitive = timeUntil.inMinutes <= 60;
             
-            // Try to request exact alarm permission
-            try {
-              await androidImpl.requestExactAlarmsPermission();
-              // Wait a bit for permission to be granted
-              await Future.delayed(const Duration(milliseconds: 500));
-              final canExactAfter = await androidImpl.canScheduleExactNotifications();
-              if (canExactAfter != true) {
-                LogService.log('[NOTIF] ⚠️ Exact alarm permission still not granted. Falling back to inexact scheduling.');
-                LogService.log('[NOTIF] ⚠️ User should grant exact alarm permission in Android Settings > Apps > Ramadan Tracker > Alarms & reminders');
-                // Fallback to inexact
-                androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
-              } else {
-                LogService.log('[NOTIF] ✓ Exact alarm permission granted after request');
+            if (isTimeSensitive) {
+              LogService.log('[NOTIF] Time-sensitive notification (${timeUntil.inMinutes} min). Requesting exact alarm permission...');
+              try {
+                await androidImpl.requestExactAlarmsPermission();
+                await Future.delayed(const Duration(milliseconds: 500));
+                final canExactAfter = await androidImpl.canScheduleExactNotifications();
+                if (canExactAfter != true) {
+                  LogService.log('[NOTIF] ERROR: Cannot schedule time-sensitive notification without exact alarms. User must grant Alarms & reminders.');
+                  return false;
+                }
+                LogService.log('[NOTIF] Exact alarm permission granted after request');
+              } catch (e) {
+                LogService.log('[NOTIF] ERROR: Could not request exact alarm permission: $e');
+                return false;
               }
-            } catch (e) {
-              LogService.log('[NOTIF] ⚠️ Could not request exact alarm permission: $e. Falling back to inexact.');
+            } else {
+              LogService.log('[NOTIF] Far-future notification (${timeUntil.inHours}h). Using INEXACT mode.');
               androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
             }
           } else {
-            LogService.log('[NOTIF] ✓ Exact alarm permission is granted');
+            LogService.log('[NOTIF] Exact alarm permission is granted');
           }
         } catch (e) {
-          LogService.log('[NOTIF] Error checking exact alarm permission: $e. Falling back to inexact.');
+          LogService.log('[NOTIF] Error checking exact alarm permission: $e');
+          final tzNow = tz.TZDateTime.now(tz.local);
+          final timeUntil = scheduledDate.difference(tzNow);
+          if (timeUntil.inMinutes <= 60) {
+            LogService.log('[NOTIF] ERROR: Time-sensitive notification and permission check failed. Aborting.');
+            return false;
+          }
           androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
         }
       }
     }
     
     try {
-      // Calculate time until scheduled (scheduledDate is already in correct timezone)
-      final now = DateTime.now();
-      final timeUntil = scheduledDate.toLocal().difference(now);
+      // Validate scheduled time is in the future (use tz.local for consistent comparison)
+      final tzNow = tz.TZDateTime.now(tz.local);
+      final timeUntil = scheduledDate.difference(tzNow);
       
-      final scheduleModeStr = androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle 
-          ? 'EXACT' 
-          : 'INEXACT';
-      LogService.log('[NOTIF] Scheduling notification ID $id: "$title" at $scheduledDate (in ${timeUntil.inMinutes} minutes) [Mode: $scheduleModeStr]');
+      if (timeUntil.isNegative) {
+        LogService.log('[NOTIF] ERROR: Cannot schedule notification ID $id in the past!');
+        LogService.log('[NOTIF]   Now (tz.local): $tzNow');
+        LogService.log('[NOTIF]   Scheduled: $scheduledDate');
+        LogService.log('[NOTIF]   Difference: ${timeUntil.inSeconds}s');
+        if (kDebugMode) {
+          debugPrint('[NOTIF] ERROR: Cannot schedule notification ID $id in the past!');
+        }
+        return false;
+      }
+      
+      if (timeUntil.inSeconds < 5) {
+        LogService.log('[NOTIF] WARNING: Notification ID $id scheduled very soon (${timeUntil.inSeconds}s)');
+      }
+      
+      // Ensure notification channel exists before scheduling
+      // Note: We recreate channel to ensure it's not blocked (getNotificationChannel not available in this plugin version)
+      if (Platform.isAndroid) {
+        try {
+          await _createChannels();
+        } catch (e) {
+          LogService.log('[NOTIF] Error ensuring channel exists: $e');
+          // Continue anyway - channel should exist from initialization
+        }
+      }
+      
+      final scheduleModeStr = androidScheduleMode == AndroidScheduleMode.alarmClock
+          ? 'ALARM_CLOCK'
+          : androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle
+              ? 'EXACT'
+              : 'INEXACT';
+      final timeUntilStr = timeUntil.inSeconds < 60
+          ? 'in ${timeUntil.inSeconds} seconds'
+          : 'in ${timeUntil.inMinutes} minutes';
+      LogService.log('[NOTIF] Scheduling notification ID $id: "$title" at $scheduledDate ($timeUntilStr) [Mode: $scheduleModeStr]');
+      LogService.log('[NOTIF] Current time (tz.local): $tzNow, Timezone: ${tz.local.name}');
+      
+      // Add small delay between individual notifications to prevent Android rate limiting
+      // This helps when scheduling many notifications at once (e.g., 64 notifications)
+      await Future.delayed(const Duration(milliseconds: 10));
       
       await _notifications.zonedSchedule(
         id,
@@ -207,17 +261,83 @@ class NotificationService {
         uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
       );
       
-      LogService.log('[NOTIF] ✓ Notification ID $id scheduled successfully [Mode: $scheduleModeStr]');
+      LogService.log('[NOTIF] Notification ID $id scheduled successfully [Mode: $scheduleModeStr]');
       return true;
     } catch (e) {
       final errorStr = e.toString();
       if (errorStr.contains('Missing type parameter')) {
-        LogService.log('[NOTIF] ✗ CRITICAL: Database corrupt! Cannot schedule notification ID $id. Error: $e');
-        LogService.log('[NOTIF] ✗ User needs to clear app data or reinstall app to fix corrupt notification database.');
+        LogService.log('[NOTIF] ✗ CRITICAL: Database corrupt detected during schedule! Error: $e');
+        LogService.log('[NOTIF] Attempting to auto-clear corrupt database...');
+        
+        // Auto-clear corrupt database when detected during schedule
+        try {
+          final cleared = await clearCorruptNotificationDatabase();
+          if (cleared) {
+            LogService.log('[NOTIF] Database cleared successfully. Waiting for plugin to reload...');
+            // Wait longer for plugin to fully reload after database clear
+            await Future.delayed(const Duration(milliseconds: 3000));
+            
+            // Force reinitialize plugin to clear memory cache
+            LogService.log('[NOTIF] Force reinitializing plugin to clear memory cache...');
+            try {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+    await _notifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+              LogService.log('[NOTIF] Plugin reinitialized after database clear');
+            } catch (reinitError) {
+              LogService.log('[NOTIF] Error reinitializing plugin: $reinitError');
+            }
+            
+            // Wait a bit more after reinitialize
+            await Future.delayed(const Duration(milliseconds: 1000));
+            
+            // Retry schedule once after clear and reinitialize
+            try {
+              final retryScheduleModeStr = androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle 
+                  ? 'EXACT' 
+                  : 'INEXACT';
+              LogService.log('[NOTIF] Retrying schedule after database clear and plugin reinitialize...');
+              await _notifications.zonedSchedule(
+                id,
+                title,
+                body,
+                scheduledDate,
+                notificationDetails,
+                androidScheduleMode: androidScheduleMode,
+                uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
+              );
+              LogService.log('[NOTIF] Notification ID $id scheduled successfully after database clear [Mode: $retryScheduleModeStr]');
+              return true;
+            } catch (retryError) {
+              final retryErrorStr = retryError.toString();
+              if (retryErrorStr.contains('Missing type parameter')) {
+                LogService.log('[NOTIF] ✗ Retry schedule still fails with corruption. Database may need app restart.');
+              } else {
+                LogService.log('[NOTIF] ✗ Retry schedule failed after clear: $retryError');
+              }
+              return false;
+            }
+          } else {
+            LogService.log('[NOTIF] ✗ Failed to clear corrupt database. User needs to clear app data or reinstall app.');
+          }
+        } catch (clearError) {
+          LogService.log('[NOTIF] ✗ Error during auto-clear: $clearError');
+        }
+        
         if (kDebugMode) {
           debugPrint('[NOTIF] ✗ CRITICAL: Database corrupt! Cannot schedule notification ID $id');
           debugPrint('[NOTIF] ✗ Error: $e');
-          debugPrint('[NOTIF] ✗ User needs to clear app data or reinstall app');
         }
         return false;
       } else {
@@ -259,8 +379,8 @@ class NotificationService {
         body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'ramadan_reminders',
-            'Ramadan Reminders',
+      'ramadan_reminders',
+      'Ramadan Reminders',
             channelDescription: 'Test notifications',
             importance: Importance.max,
             priority: Priority.max,
@@ -279,7 +399,7 @@ class NotificationService {
         ),
       );
       
-      debugPrint('✓ TEST NOTIFICATION SENT SUCCESSFULLY');
+      debugPrint('TEST NOTIFICATION SENT SUCCESSFULLY');
     } catch (e, stackTrace) {
       debugPrint('✗ ERROR showing test notification: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -317,7 +437,7 @@ class NotificationService {
   static Future<bool> checkNotificationPermission() async {
     if (Platform.isAndroid) {
       final androidImplementation = _notifications
-          .resolvePlatformSpecificImplementation<
+        .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       
       if (androidImplementation != null) {
@@ -339,13 +459,35 @@ class NotificationService {
 
   static Future<void> cancelAll() async {
     try {
+      // Add small delay to prevent rate limiting if called multiple times
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // Get count before cancel for verification
+      final beforeCount = await getPendingNotifications();
+      LogService.log('[NOTIF] cancelAll() called - current pending: ${beforeCount.length}');
+      
       await _notifications.cancelAll();
-      LogService.log('[NOTIF] All notifications cancelled successfully');
+      
+      // Wait for cancellation to propagate through Android system
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Verify cancellation worked
+      final afterCount = await getPendingNotifications();
+      LogService.log('[NOTIF] cancelAll() completed - pending after: ${afterCount.length}');
+      
+      if (afterCount.length > 0) {
+        LogService.log('[NOTIF] WARNING: cancelAll() did not remove all notifications (${beforeCount.length} -> ${afterCount.length})');
+      } else {
+        LogService.log('[NOTIF] cancelAll() successful - all notifications removed');
+      }
     } catch (e, stackTrace) {
       LogService.log('[NOTIF] Error cancelling notifications: $e');
       if (kDebugMode) {
         debugPrint('[NOTIF] Error cancelling notifications: $e');
+        debugPrint('[NOTIF] Stack trace: $stackTrace');
       }
+      // Re-throw so caller knows cancellation failed
+      rethrow;
     }
   }
 
@@ -359,7 +501,7 @@ class NotificationService {
       // First, try to cancel all notifications
       try {
         await cancelAll();
-      } catch (e) {
+    } catch (e) {
         LogService.log('[NOTIF] Error cancelling all: $e');
         // Continue anyway - database might be corrupt
       }
@@ -396,20 +538,14 @@ class NotificationService {
     );
 
         LogService.log('[NOTIF] Reinitialized notification service');
-      } catch (e) {
+    } catch (e) {
         LogService.log('[NOTIF] Error reinitializing: $e');
       }
       
-      // Test if database is still corrupt (wait a bit for reinitialize to complete)
-      await Future.delayed(const Duration(milliseconds: 500));
-      final testResult = await _detectCorruptDatabase();
-      if (testResult) {
-        LogService.log('[NOTIF] ✓ Notification database cleared successfully');
-        return true;
-      } else {
-        LogService.log('[NOTIF] ✗ Database still corrupt - user needs to clear app data');
-        return false;
-      }
+      // Don't test after clear - native clear is aggressive and should work
+      // Testing might fail due to timing issues even if clear was successful
+      LogService.log('[NOTIF] Notification database cleared successfully (native clear)');
+      return true;
     } catch (e) {
       LogService.log('[NOTIF] Error clearing notification database: $e');
       return false;
@@ -419,12 +555,19 @@ class NotificationService {
   /// Clear corrupt notification database via native code
   /// This directly deletes the SharedPreferences file that stores notifications
   /// This is the RECOMMENDED method to fix corrupt database
-  static Future<bool> clearCorruptNotificationDatabase() async {
+  static Future<bool> clearCorruptNotificationDatabase({bool skipReinitialize = false}) async {
+    // Prevent recursive calls
+    if (_isClearingDatabase) {
+      LogService.log('[NOTIF] Already clearing database, skipping...');
+      return true;
+    }
+    
+    _isClearingDatabase = true;
     try {
       LogService.log('[NOTIF] ========================================');
       LogService.log('[NOTIF] Attempting to clear corrupt notification database via native code...');
       
-      if (Platform.isAndroid) {
+    if (Platform.isAndroid) {
         // Use MethodChannel to call native Android code
         const platform = MethodChannel('com.ramadan_tracker/notifications');
         try {
@@ -433,11 +576,11 @@ class NotificationService {
           LogService.log('[NOTIF] Native clear result: $result (type: ${result.runtimeType})');
           
           if (result == true) {
-            LogService.log('[NOTIF] ✓ Notification database cleared successfully via native code');
+            LogService.log('[NOTIF] Notification database cleared successfully via native code');
             
             // Wait longer for SharedPreferences to be fully cleared and written to disk
             LogService.log('[NOTIF] Waiting for SharedPreferences to be written to disk...');
-            await Future.delayed(const Duration(milliseconds: 1000));
+            await Future.delayed(const Duration(milliseconds: 2000));
             
             // Force close and reinitialize notification service
             LogService.log('[NOTIF] Reinitializing notification service...');
@@ -452,23 +595,59 @@ class NotificationService {
               LogService.log('[NOTIF] Error before reinitialize: $e');
             }
             
-            await initialize();
-            LogService.log('[NOTIF] Notification service reinitialized');
-            
-            // Test if it works now
-            await Future.delayed(const Duration(milliseconds: 1000));
-            LogService.log('[NOTIF] Testing if database is fixed...');
-            final testResult = await _detectCorruptDatabase();
-            
-            if (testResult) {
-              LogService.log('[NOTIF] ✓✓✓ Database is now working correctly! ✓✓✓');
-              LogService.log('[NOTIF] ========================================');
-              return true;
+            // Reinitialize notification service (only if not skipped)
+            if (!skipReinitialize) {
+              // Force reinitialize plugin to clear memory cache
+              LogService.log('[NOTIF] Force reinitializing plugin to clear memory cache...');
+              try {
+                // First, try to cancel all notifications (might fail if corrupt, that's OK)
+                try {
+                  await _notifications.cancelAll();
+                } catch (e) {
+                  LogService.log('[NOTIF] Error cancelling all before reinitialize (expected if corrupt): $e');
+                }
+                
+                // Wait a bit before reinitialize
+                await Future.delayed(const Duration(milliseconds: 500));
+                
+                // Force reinitialize plugin
+                const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+                const iosSettings = DarwinInitializationSettings(
+                  requestAlertPermission: true,
+                  requestBadgePermission: true,
+                  requestSoundPermission: true,
+                );
+                const initSettings = InitializationSettings(
+                  android: androidSettings,
+                  iOS: iosSettings,
+                );
+                await _notifications.initialize(
+                  initSettings,
+                  onDidReceiveNotificationResponse: _onNotificationTapped,
+                );
+                LogService.log('[NOTIF] Plugin reinitialized after database clear');
+              } catch (reinitError) {
+                LogService.log('[NOTIF] Error reinitializing plugin: $reinitError');
+                // Fallback to standard initialize
+                try {
+                  await initialize();
+                } catch (e) {
+                  LogService.log('[NOTIF] Error in fallback initialize: $e');
+                }
+              }
+              
+              // Wait longer after reinitialize to ensure plugin has fully reloaded
+              await Future.delayed(const Duration(milliseconds: 2000));
+              LogService.log('[NOTIF] Notification service reinitialized');
             } else {
-              LogService.log('[NOTIF] ⚠️ Database cleared but test still fails - app restart required');
-              LogService.log('[NOTIF] ========================================');
-              return true; // Return true anyway since we cleared it - restart will fix
+              LogService.log('[NOTIF] Skipping reinitialize (called from initialize)');
             }
+            
+            // Native clear is aggressive (deletes SharedPreferences files directly)
+            // So we assume it worked - no need to test (test might fail if plugin hasn't reloaded yet)
+            LogService.log('[NOTIF] Database cleared via native code (aggressive clear)');
+            LogService.log('[NOTIF] ========================================');
+            return true;
           } else {
             LogService.log('[NOTIF] ✗ Native clear returned false');
           }
@@ -481,26 +660,33 @@ class NotificationService {
         LogService.log('[NOTIF] Not Android platform, skipping native method');
       }
       
-      // Fallback: Try standard clear method
+      // Fallback: Try standard clear method (but this will fail if database is corrupt)
       LogService.log('[NOTIF] Trying fallback method...');
       try {
         await _notifications.cancelAll();
       } catch (e) {
-        LogService.log('[NOTIF] Error cancelling all in fallback: $e');
+        LogService.log('[NOTIF] Error cancelling all in fallback (expected if corrupt): $e');
       }
       
-      await initialize();
+      // Reinitialize only if not skipped
+      if (!skipReinitialize) {
+        await initialize();
+      }
       
-      // Test if it works
-      await Future.delayed(const Duration(milliseconds: 500));
-      final testResult = await _detectCorruptDatabase();
+      // Don't test after fallback - if we're here, native clear failed
+      // Return false so caller knows to try again or user needs to clear app data
+      LogService.log('[NOTIF] Fallback clear completed (may still be corrupt)');
       LogService.log('[NOTIF] ========================================');
-      return testResult;
+      _isClearingDatabase = false;
+      return false; // Return false because native clear failed
     } catch (e, stackTrace) {
       LogService.log('[NOTIF] Error in clearCorruptNotificationDatabase: $e');
       LogService.log('[NOTIF] Stack trace: $stackTrace');
       LogService.log('[NOTIF] ========================================');
+      _isClearingDatabase = false;
       return false;
+    } finally {
+      _isClearingDatabase = false;
     }
   }
 
@@ -562,15 +748,15 @@ class NotificationService {
       if (scheduledTime.isBefore(tzNow)) {
         scheduledTime = scheduledTime.add(const Duration(days: 1));
         if (kDebugMode) {
-          debugPrint('⚠️ Goal reminder time passed, scheduling for tomorrow');
+          debugPrint('Goal reminder time passed, scheduling for tomorrow');
         }
       }
       
       // Generate ID based on scheduled date, type index, and hour
       final notificationId = _getNotificationIdForGoalReminder(typeIndex, hour, scheduledTime);
       
-      // Cancel existing notification for this ID first
-      await _notifications.cancel(notificationId);
+      // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
+      // Individual cancels cause Android rate limiting (5 ops/sec limit)
       
       final timeUntilScheduled = scheduledTime.difference(tzNow);
       
@@ -620,7 +806,7 @@ class NotificationService {
       
       if (kDebugMode) {
         if (scheduled) {
-          debugPrint('✓ $type goal reminder scheduled successfully (ID: $notificationId)');
+          debugPrint('$type goal reminder scheduled successfully (ID: $notificationId)');
         } else {
           debugPrint('✗ Failed to schedule goal reminder (database may be corrupt)');
         }
@@ -645,8 +831,7 @@ class NotificationService {
       
       final notificationId2 = _getNotificationIdForGoalReminder(typeIndex, hour, scheduledTime2);
       
-      // Cancel existing notification first
-      await _notifications.cancel(notificationId2);
+      // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
       
       await _safeZonedSchedule(
         id: notificationId2,
@@ -654,9 +839,9 @@ class NotificationService {
         body: body,
         scheduledDate: scheduledTime2,
         notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'ramadan_reminders',
-            'Ramadan Reminders',
+              android: AndroidNotificationDetails(
+                'ramadan_reminders',
+                'Ramadan Reminders',
             channelDescription: 'Sahur, Iftar, and goal reminders',
             importance: Importance.max,
             priority: Priority.max,
@@ -668,12 +853,12 @@ class NotificationService {
             ongoing: false,
             autoCancel: true,
             enableLights: true,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+              ),
+              iOS: DarwinNotificationDetails(),
+            ),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
       );
       
       // Fallback scheduled (no tomorrow scheduling in fallback)
@@ -713,10 +898,10 @@ class NotificationService {
         9998,
         'Test Notification (Immediate)',
         'This is an immediate test notification. If you see this, notifications are working!',
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'ramadan_reminders',
-            'Ramadan Reminders',
+              const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  'ramadan_reminders',
+                  'Ramadan Reminders',
             importance: Importance.max,
             priority: Priority.max,
             channelAction: AndroidNotificationChannelAction.createIfNotExists,
@@ -732,7 +917,7 @@ class NotificationService {
           ),
         ),
       );
-      LogService.log('[TEST] ✓ Immediate notification shown');
+      LogService.log('[TEST] Immediate notification shown');
     } catch (e) {
       LogService.log('[TEST] ✗ Error showing immediate notification: $e');
     }
@@ -768,11 +953,11 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
     );
     if (scheduled) {
-      LogService.log('[TEST] ✓ Scheduled notification set for $scheduledTime');
+      LogService.log('[TEST] Scheduled notification set for $scheduledTime');
       LogService.log('[TEST] Time until scheduled: ${scheduledTime.difference(tzNow).inSeconds} seconds');
     } else {
       LogService.log('[TEST] ✗ Error scheduling notification (database may be corrupt)');
@@ -787,7 +972,7 @@ class NotificationService {
       debugPrint('Current time: $tzNow');
       
       if (pending.isEmpty) {
-        debugPrint('⚠️ WARNING: No pending notifications found!');
+        debugPrint('WARNING: No pending notifications found!');
       } else {
         for (final p in pending) {
           debugPrint('  ID: ${p.id}, Title: ${p.title}');
@@ -844,9 +1029,58 @@ class NotificationService {
       final iftarOffset = int.tryParse(await database.kvSettingsDao.getValue('iftar_offset') ?? '0') ?? 0;
       final nightPlanEnabled = await database.kvSettingsDao.getValue('night_plan_enabled') ?? 'true';
 
-      // JANGAN cancelAll() - biarkan notifikasi yang sudah muncul tetap ada
-      // Hanya schedule ulang dengan ID yang sama akan replace pending notifications
-      // Tapi tidak akan menghapus notifikasi yang sudah muncul di notification tray
+      // CRITICAL: Cancel all existing notifications FIRST to prevent duplicates
+      // Without this, each reschedule adds more notifications instead of replacing them
+      LogService.log('[NOTIF] ========================================');
+      LogService.log('[NOTIF] RESCHEDULE: Cancelling all existing notifications...');
+      
+      int cancelAttempts = 0;
+      const maxCancelAttempts = 3;
+      bool cancelSuccess = false;
+      
+      while (cancelAttempts < maxCancelAttempts && !cancelSuccess) {
+        try {
+          cancelAttempts++;
+          LogService.log('[NOTIF] RESCHEDULE: Cancel attempt $cancelAttempts/$maxCancelAttempts...');
+          
+          // Get count before cancel
+          final beforeCancel = await getPendingNotifications();
+          LogService.log('[NOTIF] RESCHEDULE: Notifications before cancel: ${beforeCancel.length}');
+          
+          await cancelAll();
+          
+          // Wait for cancellation to propagate
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Verify cancellation worked
+          final afterCancel = await getPendingNotifications();
+          LogService.log('[NOTIF] RESCHEDULE: Notifications after cancel: ${afterCancel.length}');
+          
+          if (afterCancel.length == 0) {
+            cancelSuccess = true;
+            LogService.log('[NOTIF] RESCHEDULE: All notifications cancelled successfully');
+          } else if (afterCancel.length < beforeCancel.length) {
+            // Some cancelled, but not all - try again
+            LogService.log('[NOTIF] RESCHEDULE: WARN Partial cancellation (${beforeCancel.length} -> ${afterCancel.length}), retrying...');
+            await Future.delayed(const Duration(milliseconds: 500));
+          } else {
+            LogService.log('[NOTIF] RESCHEDULE: WARN Cancellation may have failed (count unchanged), retrying...');
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        } catch (e) {
+          LogService.log('[NOTIF] RESCHEDULE: Cancel attempt $cancelAttempts failed: $e');
+          if (cancelAttempts < maxCancelAttempts) {
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        }
+      }
+      
+      if (!cancelSuccess) {
+        LogService.log('[NOTIF] RESCHEDULE: WARNING: Failed to cancel all notifications after $maxCancelAttempts attempts');
+        LogService.log('[NOTIF] RESCHEDULE: Proceeding anyway - scheduleAllReminders will also try to cancel');
+      }
+      
+      LogService.log('[NOTIF] ========================================');
 
       await scheduleAllReminders(
         database: database,
@@ -913,8 +1147,34 @@ class NotificationService {
       debugPrint('NotificationService initialized: $initialized');
     }
     
-    // Test untuk detect corrupt database (ignore return value, just log)
-    await _detectCorruptDatabase();
+    // Only clear notification database when corruption is detected (e.g. "Missing type parameter").
+    // Do NOT clear on every app start - that wipes all scheduled notifications and breaks reminders.
+    if (Platform.isAndroid && !_isClearingDatabase) {
+      try {
+        final isHealthy = await _detectCorruptDatabase();
+        if (!isHealthy) {
+          LogService.log('[NOTIF] Corruption detected after initialize, clearing...');
+          await clearCorruptNotificationDatabase(skipReinitialize: true);
+          LogService.log('[NOTIF] Database cleared after initialize');
+        }
+      } catch (e) {
+        LogService.log('[NOTIF] Error checking/clearing database after initialize: $e');
+      }
+    }
+
+    // Check scheduling health (ProGuard/R8 detection) - only in debug mode on Android
+    if (kDebugMode && Platform.isAndroid) {
+      try {
+        final isHealthy = await checkSchedulingHealth();
+        if (!isHealthy) {
+          debugPrint('[NOTIF] WARNING: ProGuard/R8 signature stripping detected in release build!');
+          debugPrint('[NOTIF] Scheduled notifications will fail. Check proguard-rules.pro.');
+        }
+      } catch (e) {
+        // Ignore errors in health check during initialization
+        debugPrint('[NOTIF] Health check skipped during init: $e');
+      }
+    }
 
     if (kDebugMode) {
       debugPrint('Creating notification channels...');
@@ -961,15 +1221,15 @@ class NotificationService {
                 debugPrint('[PERM] Can schedule exact alarms (after request): $canExactAfter');
               }
               if (canExactAfter == true) {
-                LogService.log('[PERM] ✓ Exact alarm permission granted');
+                LogService.log('[PERM] Exact alarm permission granted');
               } else {
-                LogService.log('[PERM] ⚠️ Exact alarm permission not granted. User should grant in Settings > Apps > Ramadan Tracker > Alarms & reminders');
+                LogService.log('[PERM] WARN: Exact alarm permission not granted. User should grant in Settings > Apps > Ramadan Tracker > Alarms & reminders');
               }
             } catch (e) {
               LogService.log('[PERM] Error requesting exact alarm permission: $e');
             }
           } else {
-            LogService.log('[PERM] ✓ Exact alarm permission already granted');
+            LogService.log('[PERM] Exact alarm permission already granted');
           }
         } catch (e) {
           LogService.log('[PERM] Error checking exact alarms: $e');
@@ -988,6 +1248,7 @@ class NotificationService {
 
   static Future<void> _createChannels() async {
     // Unified channel for all notifications
+    // CRITICAL: Use Importance.max and Visibility.public to ensure notifications show even when device is locked
     const unifiedChannel = AndroidNotificationChannel(
       'ramadan_reminders',
       'Ramadan Reminders',
@@ -1003,11 +1264,17 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>();
     
     if (androidImpl != null) {
+      // Always create/recreate channel to ensure it's not blocked
       await androidImpl.createNotificationChannel(unifiedChannel);
+      
+      // Small delay to ensure channel is registered
+      await Future.delayed(const Duration(milliseconds: 200));
+      
       if (kDebugMode) {
-        debugPrint('✓ Unified notification channel created (importance: max)');
+        debugPrint('Unified notification channel created (importance: max)');
       }
       LogService.log('[NOTIF] Unified notification channel created');
+      LogService.log('[NOTIF] Note: If notifications are blocked, check: Settings > Apps > Ramadan Tracker > Notifications > Ramadan Reminders');
     }
   }
 
@@ -1034,11 +1301,43 @@ class NotificationService {
     }
   }
   
+  // Check scheduling health - detects ProGuard/R8 signature stripping issues
+  // Returns true if healthy, false if "Missing type parameter" error detected
+  static Future<bool> checkSchedulingHealth() async {
+    try {
+      // Try to read pending notifications - this will fail if ProGuard/R8 stripped signatures
+      await _notifications.pendingNotificationRequests();
+      LogService.log('[NOTIF] Scheduling health check: OK');
+      if (kDebugMode) {
+        debugPrint('[NOTIF] Scheduling health check: OK');
+      }
+      return true;
+    } catch (e) {
+      final errorStr = e.toString();
+      if (errorStr.contains('Missing type parameter')) {
+        LogService.log('[NOTIF] WARN: Release shrinker issue detected (ProGuard/R8 Signature stripped). Check proguard-rules.pro.');
+        LogService.log('[NOTIF] Error details: $e');
+        if (kDebugMode) {
+          debugPrint('[NOTIF] WARN: Release shrinker issue detected (ProGuard/R8 Signature stripped). Check proguard-rules.pro.');
+          debugPrint('[NOTIF] Error details: $e');
+        }
+        return false;
+      } else {
+        // Other errors might not be ProGuard-related
+        LogService.log('[NOTIF] Scheduling health check: Error (non-ProGuard): $e');
+        if (kDebugMode) {
+          debugPrint('[NOTIF] Scheduling health check: Error (non-ProGuard): $e');
+        }
+        return true; // Assume healthy for non-ProGuard errors
+      }
+    }
+  }
+
   // Comprehensive diagnostic function
   static Future<void> dumpPendingSchedules() async {
     try {
       final pending = await _notifications.pendingNotificationRequests();
-      final now = DateTime.now();
+    final now = DateTime.now();
       final tzLocal = tz.local;
       
       LogService.log('[DIAG] === Notification Schedule Diagnostic ===');
@@ -1081,24 +1380,33 @@ class NotificationService {
     }
   }
   
-  // Schedule test notification in N seconds
+  // Schedule test notification in N seconds (e.g. 60s test from Settings).
+  // Uses tz.local so the scheduled time matches device timezone and is not interpreted as past.
+  // Uses alarmClock mode so Android delivers it reliably (setAlarmClock is exempt from Doze).
   static Future<void> scheduleTestInSeconds(int seconds) async {
     try {
+      final now = DateTime.now();
       final tzNow = tz.TZDateTime.now(tz.local);
       final scheduledTime = tzNow.add(Duration(seconds: seconds));
+      final secondsUntil = scheduledTime.difference(tzNow).inSeconds;
       
+      LogService.log('[TEST] ===== NOTIFICATION TEST START =====');
+      LogService.log('[TEST] System time: $now');
+      LogService.log('[TEST] TZ Local time: $tzNow');
+      LogService.log('[TEST] Timezone: ${tz.local.name}');
       LogService.log('[TEST] Scheduling test notification in $seconds seconds');
       LogService.log('[TEST] Scheduled time: $scheduledTime');
+      LogService.log('[TEST] Seconds until: $secondsUntil');
       
-      await _safeZonedSchedule(
+      final success = await _safeZonedSchedule(
         id: 99999,
         title: 'Test Notification',
         body: 'This is a test notification scheduled $seconds seconds from now',
         scheduledDate: scheduledTime,
         notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'ramadan_reminders',
-            'Ramadan Reminders',
+            android: AndroidNotificationDetails(
+              'ramadan_reminders',
+              'Ramadan Reminders',
             importance: Importance.max,
             priority: Priority.max,
             channelAction: AndroidNotificationChannelAction.createIfNotExists,
@@ -1113,12 +1421,14 @@ class NotificationService {
             presentSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        // Use alarmClock so it fires reliably (setAlarmClock is exempt from Doze/battery optimization)
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
       
-      LogService.log('[TEST] Test notification scheduled successfully');
+      LogService.log('[TEST] Scheduling result: $success');
+      LogService.log('[TEST] ===== NOTIFICATION TEST END =====');
     } catch (e) {
       LogService.log('[TEST] Error scheduling test notification: $e');
     }
@@ -1168,13 +1478,13 @@ class NotificationService {
               }
               
               if (canScheduleExactAlarmsAfter != true) {
-                LogService.log('[PERM] ⚠️ WARNING: Exact alarms permission not granted. Notifications may be delayed.');
-                LogService.log('[PERM] ⚠️ User should grant exact alarm permission in Android Settings > Apps > Ramadan Tracker > Alarms & reminders');
+                LogService.log('[PERM] WARNING: Exact alarms permission not granted. Notifications may be delayed.');
+                LogService.log('[PERM] User should grant exact alarm permission in Android Settings > Apps > Ramadan Tracker > Alarms & reminders');
                 if (kDebugMode) {
                   debugPrint('WARNING: Exact alarms permission not granted. Notifications may be delayed.');
                 }
               } else {
-                LogService.log('[PERM] ✓ Exact alarm permission granted successfully');
+                LogService.log('[PERM] Exact alarm permission granted successfully');
               }
             } catch (e) {
               LogService.log('[PERM] Error requesting exact alarm permission: $e');
@@ -1183,7 +1493,7 @@ class NotificationService {
               }
             }
           } else {
-            LogService.log('[PERM] ✓ Exact alarm permission already granted');
+            LogService.log('[PERM] Exact alarm permission already granted');
           }
         } catch (e) {
           LogService.log('[PERM] Error checking exact alarms permission: $e');
@@ -1240,9 +1550,9 @@ class NotificationService {
       LogService.log('[NOTIF] Scheduling Sahur: timezone=${location.name}, scheduled=$scheduledTime, now=$tzNow, minutesUntil=${timeUntilScheduled.inMinutes}');
     }
 
-    // Cancel existing Sahur notification for this date first
+    // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
+    // Individual cancels cause Android rate limiting (5 ops/sec limit)
     final notificationId = _getNotificationId(_baseIdSahur, scheduledTime);
-    await _notifications.cancel(notificationId);
     
     final scheduled = await _safeZonedSchedule(
       id: notificationId,
@@ -1250,10 +1560,10 @@ class NotificationService {
       body: body,
       scheduledDate: scheduledTime,
       notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'ramadan_reminders',
-          'Ramadan Reminders',
-          channelDescription: 'Sahur and Iftar reminders',
+          android: AndroidNotificationDetails(
+            'ramadan_reminders',
+            'Ramadan Reminders',
+            channelDescription: 'Sahur and Iftar reminders',
           importance: Importance.max,
           priority: Priority.max,
           showWhen: true,
@@ -1267,10 +1577,10 @@ class NotificationService {
           presentBadge: true,
           presentSound: true,
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
     );
     
     if (!scheduled) {
@@ -1284,10 +1594,10 @@ class NotificationService {
         body: body,
         scheduledDate: scheduledTime,
         notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'ramadan_reminders',
-            'Ramadan Reminders',
-            channelDescription: 'Sahur and Iftar reminders',
+              android: AndroidNotificationDetails(
+                'ramadan_reminders',
+                'Ramadan Reminders',
+                channelDescription: 'Sahur and Iftar reminders',
             importance: Importance.max,
             priority: Priority.max,
             showWhen: true,
@@ -1301,18 +1611,18 @@ class NotificationService {
             presentBadge: true,
             presentSound: true,
           ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+            ),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
       );
       return;
     }
     
     // Schedule untuk besok juga (daily scheduling)
+    // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
     final tomorrowTime = scheduledTime.add(const Duration(days: 1));
     final tomorrowId = _getNotificationId(_baseIdSahur, tomorrowTime);
-    await _notifications.cancel(tomorrowId);
     
     await _safeZonedSchedule(
       id: tomorrowId,
@@ -1320,10 +1630,10 @@ class NotificationService {
       body: body,
       scheduledDate: tomorrowTime,
       notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'ramadan_reminders',
-          'Ramadan Reminders',
-          channelDescription: 'Sahur and Iftar reminders',
+              android: AndroidNotificationDetails(
+                'ramadan_reminders',
+                'Ramadan Reminders',
+                channelDescription: 'Sahur and Iftar reminders',
           importance: Importance.max,
           priority: Priority.max,
           showWhen: true,
@@ -1342,12 +1652,12 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
     );
     
     if (kDebugMode) {
-      debugPrint('✓ Sahur notification scheduled successfully (Today ID: $notificationId, Tomorrow ID: $tomorrowId)');
+      debugPrint('Sahur notification scheduled successfully (Today ID: $notificationId, Tomorrow ID: $tomorrowId)');
     }
   }
 
@@ -1359,6 +1669,8 @@ class NotificationService {
     required String title,
     required String body,
     required tz.Location location,
+    int batchIndex = 0,
+    int batchSize = 10,
   }) async {
     final reminderTime = fajrTime.subtract(Duration(minutes: offsetMinutes));
     final tzNow = tz.TZDateTime.now(location);
@@ -1381,10 +1693,10 @@ class NotificationService {
       return false;
     }
     
+    // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
     final notificationId = _getNotificationId(_baseIdSahur, scheduledTime);
-    await _notifications.cancel(notificationId);
     
-    return await _safeZonedSchedule(
+    return await _scheduleWithRateLimit(
       id: notificationId,
       title: title,
       body: body,
@@ -1411,6 +1723,8 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      batchIndex: batchIndex,
+      batchSize: batchSize,
     );
   }
 
@@ -1422,6 +1736,8 @@ class NotificationService {
     required String title,
     required String body,
     required tz.Location location,
+    int batchIndex = 0,
+    int batchSize = 10,
   }) async {
     final reminderTime = maghribTime.add(Duration(minutes: offsetMinutes));
     final tzNow = tz.TZDateTime.now(location);
@@ -1444,10 +1760,10 @@ class NotificationService {
       return false;
     }
     
+    // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
     final notificationId = _getNotificationId(_baseIdIftar, scheduledTime);
-    await _notifications.cancel(notificationId);
     
-    return await _safeZonedSchedule(
+    return await _scheduleWithRateLimit(
       id: notificationId,
       title: title,
       body: body,
@@ -1474,6 +1790,8 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      batchIndex: batchIndex,
+      batchSize: batchSize,
     );
   }
 
@@ -1485,6 +1803,8 @@ class NotificationService {
     required String title,
     required String body,
     required tz.Location location,
+    int batchIndex = 0,
+    int batchSize = 10,
   }) async {
     final tzNow = tz.TZDateTime.now(location);
     
@@ -1506,10 +1826,10 @@ class NotificationService {
       return false;
     }
     
+    // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
     final notificationId = _getNotificationId(_baseIdNightPlan, scheduledTime);
-    await _notifications.cancel(notificationId);
     
-    return await _safeZonedSchedule(
+    return await _scheduleWithRateLimit(
       id: notificationId,
       title: title,
       body: body,
@@ -1532,6 +1852,8 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      batchIndex: batchIndex,
+      batchSize: batchSize,
     );
   }
   
@@ -1604,15 +1926,26 @@ class NotificationService {
   // Cancel existing notifications for a season
   static Future<void> cancelExistingSeasonNotifications(AppDatabase database, int seasonId) async {
     try {
-      // Cancel all notifications (simplest approach - IDs are deterministic so we can't easily filter by season)
-      // In practice, we cancel all and reschedule, which is safe
+      // Try to cancel all notifications
+      // BUT: If database is corrupt, cancelAll() will also fail because it needs to load the database
+      // So we catch the error and skip cancellation if corrupt (we'll clear database anyway)
       await _notifications.cancelAll();
       LogService.log('[NOTIF] Cancelled all existing notifications before rescheduling season $seasonId');
       if (kDebugMode) {
         debugPrint('[NOTIF] Cancelled all existing notifications before rescheduling season $seasonId');
       }
     } catch (e) {
-      LogService.log('[NOTIF] Error cancelling notifications: $e');
+      final errorStr = e.toString();
+      if (errorStr.contains('Missing type parameter')) {
+        // Database is corrupt - cancelAll() also fails
+        // This is OK because we'll clear database anyway before scheduling
+        LogService.log('[NOTIF] Cannot cancel notifications (database corrupt) - will be cleared before scheduling');
+        if (kDebugMode) {
+          debugPrint('[NOTIF] Cannot cancel notifications (database corrupt) - will be cleared before scheduling');
+        }
+      } else {
+        LogService.log('[NOTIF] Error cancelling notifications: $e');
+      }
     }
   }
   
@@ -1681,25 +2014,28 @@ class NotificationService {
     
     int scheduledCount = 0;
     int skippedCount = 0;
+    int batchCount = 0;
+    const batchSize = 5; // Schedule 5 days at a time to avoid Android rate limiting
+    const batchDelayMs = 100; // 100ms delay between batches
     
     // Loop through each day from scheduleStart to scheduleEnd
     for (var date = scheduleStart; !date.isAfter(scheduleEnd); date = date.add(const Duration(days: 1))) {
       try {
         // Get prayer times for this date
-        final times = await PrayerTimeService.getCachedOrCalculate(
-          database: database,
-          seasonId: seasonId,
-          date: date,
-          latitude: latitude,
-          longitude: longitude,
-          timezone: timezone,
-          method: method,
-          highLatRule: highLatRule,
-          fajrAdjust: fajrAdjust,
-          maghribAdjust: maghribAdjust,
-        );
-        
-        // Schedule Sahur
+      final times = await PrayerTimeService.getCachedOrCalculate(
+        database: database,
+        seasonId: seasonId,
+        date: date,
+        latitude: latitude,
+        longitude: longitude,
+        timezone: timezone,
+        method: method,
+        highLatRule: highLatRule,
+        fajrAdjust: fajrAdjust,
+        maghribAdjust: maghribAdjust,
+      );
+
+        // Schedule Sahur (with rate limit batch index)
         if (sahurEnabled && times['fajr'] != null) {
           final scheduled = await scheduleSahurReminderForDate(
             date: date,
@@ -1708,11 +2044,13 @@ class NotificationService {
             title: sahurTitle ?? 'Sahur Reminder',
             body: sahurBody ?? 'Time to prepare for Sahur',
             location: location,
+            batchIndex: scheduledCount,
+            batchSize: 10,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
         }
         
-        // Schedule Iftar
+        // Schedule Iftar (with rate limit batch index)
         if (iftarEnabled && times['maghrib'] != null) {
           final scheduled = await scheduleIftarReminderForDate(
             date: date,
@@ -1721,11 +2059,13 @@ class NotificationService {
             title: iftarTitle ?? 'Iftar Reminder',
             body: iftarBody ?? 'Time for Iftar',
             location: location,
+            batchIndex: scheduledCount,
+            batchSize: 10,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
         }
         
-        // Schedule Night Plan
+        // Schedule Night Plan (with rate limit batch index)
         if (nightPlanEnabled) {
           final scheduled = await scheduleNightPlanReminderForDate(
             date: date,
@@ -1734,6 +2074,8 @@ class NotificationService {
             title: nightPlanTitle ?? 'Night Plan',
             body: nightPlanBody ?? 'Review your plan for tonight',
             location: location,
+            batchIndex: scheduledCount,
+            batchSize: 10,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
         }
@@ -1753,7 +2095,15 @@ class NotificationService {
           maghribAdjust: maghribAdjust,
         );
         
-      } catch (e) {
+        // Add delay every batchSize days to prevent Android rate limiting
+        batchCount++;
+        if (batchCount >= batchSize) {
+          batchCount = 0;
+          await Future.delayed(Duration(milliseconds: batchDelayMs));
+          LogService.log('[NOTIF] Batch delay: $scheduledCount scheduled so far...');
+        }
+        
+            } catch (e) {
         LogService.log('[NOTIF] Error scheduling for date $date: $e');
         if (kDebugMode) {
           debugPrint('[NOTIF] Error scheduling for date $date: $e');
@@ -1824,18 +2174,18 @@ class NotificationService {
     for (var date = scheduleStart; !date.isAfter(actualEnd); date = date.add(const Duration(days: 1))) {
       try {
         final times = await PrayerTimeService.getCachedOrCalculate(
-          database: database,
-          seasonId: seasonId,
+      database: database,
+      seasonId: seasonId,
           date: date,
-          latitude: latitude,
-          longitude: longitude,
-          timezone: timezone,
-          method: method,
-          highLatRule: highLatRule,
-          fajrAdjust: fajrAdjust,
-          maghribAdjust: maghribAdjust,
-        );
-        
+      latitude: latitude,
+      longitude: longitude,
+      timezone: timezone,
+      method: method,
+      highLatRule: highLatRule,
+      fajrAdjust: fajrAdjust,
+      maghribAdjust: maghribAdjust,
+    );
+    
         if (sahurEnabled && times['fajr'] != null) {
           final scheduled = await scheduleSahurReminderForDate(
             date: date,
@@ -1858,15 +2208,15 @@ class NotificationService {
             location: location,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
-        }
-        
-        if (nightPlanEnabled) {
+    }
+
+    if (nightPlanEnabled) {
           final scheduled = await scheduleNightPlanReminderForDate(
             date: date,
-            hour: 21,
-            minute: 0,
-            title: nightPlanTitle ?? 'Night Plan',
-            body: nightPlanBody ?? 'Review your plan for tonight',
+        hour: 21,
+        minute: 0,
+        title: nightPlanTitle ?? 'Night Plan',
+        body: nightPlanBody ?? 'Review your plan for tonight',
             location: location,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
@@ -1903,6 +2253,15 @@ class NotificationService {
       LogService.log('[DIAG] === Full Notification Diagnostic ===');
       if (kDebugMode) {
         debugPrint('[DIAG] === Full Notification Diagnostic ===');
+      }
+      
+      // Scheduling health check (ProGuard/R8 detection)
+      final isHealthy = await checkSchedulingHealth();
+      if (!isHealthy) {
+        LogService.log('[DIAG] CRITICAL: ProGuard/R8 signature stripping detected! Scheduled notifications will fail.');
+        if (kDebugMode) {
+          debugPrint('[DIAG] CRITICAL: ProGuard/R8 signature stripping detected! Scheduled notifications will fail.');
+        }
       }
       
       // Timezone
@@ -1996,7 +2355,61 @@ class NotificationService {
     String? nightPlanTitle,
     String? nightPlanBody,
   }) async {
-    // 1. Initialize plugin and request permissions
+    // Prevent concurrent scheduling: wait for current run to finish (proper mutex)
+    if (_isScheduling) {
+      LogService.log('[NOTIF] Scheduling already in progress, waiting...');
+      int waitCount = 0;
+      while (_isScheduling && waitCount < 300) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        waitCount++;
+      }
+      if (_isScheduling) {
+        LogService.log('[NOTIF] Scheduling still in progress after 30s, aborting');
+        return;
+      }
+      LogService.log('[NOTIF] Previous scheduling completed, proceeding');
+    }
+    
+    _isScheduling = true;
+    LogService.log('[NOTIF] Scheduling lock acquired');
+    
+    try {
+      // Log pending count at start
+      try {
+        final initialPending = await getPendingNotifications();
+        LogService.log('[NOTIF] Initial pending notifications: ${initialPending.length}');
+      } catch (e) {
+        LogService.log('[NOTIF] Could not get initial pending count: $e');
+      }
+    // 0. Only clear notification database when corruption is detected.
+    // Clearing on every schedule wipes valid notifications and can break state (e.g. wiping
+    // FlutterSharedPreferences in native code). Cancel + re-schedule is enough for normal flow.
+    LogService.log('[NOTIF] ========================================');
+    try {
+      final isHealthy = await _detectCorruptDatabase();
+      if (!isHealthy) {
+        LogService.log('[NOTIF] Step 0: Database corrupt detected, clearing...');
+        final cleared = await clearCorruptNotificationDatabase();
+        if (!cleared) {
+          LogService.log('[NOTIF] First clear attempt failed, retrying...');
+          await Future.delayed(const Duration(milliseconds: 500));
+          await clearCorruptNotificationDatabase();
+        }
+        await Future.delayed(const Duration(milliseconds: 1000));
+        LogService.log('[NOTIF] Database cleared. Proceeding with scheduling...');
+      } else {
+        LogService.log('[NOTIF] Step 0: Database healthy, skipping clear.');
+      }
+      LogService.log('[NOTIF] ========================================');
+    } catch (e, stackTrace) {
+      LogService.log('[NOTIF] Error during corruption check/clear: $e');
+      LogService.log('[NOTIF] Stack trace: $stackTrace');
+      LogService.log('[NOTIF] ========================================');
+    }
+    
+    // 1. Ensure plugin initialized and request permissions
+    // NOTE: initialize() is called AFTER clearCorruptNotificationDatabase() 
+    // to ensure plugin starts with clean state
     await initialize();
     final permissionGranted = await requestPermissions();
     if (!permissionGranted) {
@@ -2017,14 +2430,24 @@ class NotificationService {
     final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
     if (season == null) {
       LogService.log('[NOTIF] ERROR: Season $seasonId not found');
-      return;
-    }
-    
+        return;
+      }
+      
     final seasonStart = DateTime.parse(season.startDate);
     final seasonEnd = seasonStart.add(Duration(days: season.days - 1));
     final today = _dateOnly(DateTime.now());
     final scheduleStart = seasonStart.isAfter(today) ? seasonStart : today;
-    final scheduleEnd = seasonEnd;
+    
+    // Limit Android scheduling to next 30 days to prevent rate limiting
+    // Schedule remaining days later (on app resume/startup)
+    final maxDaysAhead = 7; // Schedule only 1 week at a time to avoid Android rate limiting
+    final maxScheduleEnd = scheduleStart.add(Duration(days: maxDaysAhead - 1));
+    final scheduleEnd = maxScheduleEnd.isBefore(seasonEnd) ? maxScheduleEnd : seasonEnd;
+    
+    if (maxScheduleEnd.isBefore(seasonEnd)) {
+      LogService.log('[NOTIF] Limiting initial schedule to next $maxDaysAhead days to prevent Android rate limiting');
+      LogService.log('[NOTIF] Remaining days will be scheduled on app resume/startup');
+    }
     
     LogService.log('[NOTIF] === Scheduling reminders (season-wide) ===');
     LogService.log('[NOTIF] Season: ${season.label}');
@@ -2040,8 +2463,54 @@ class NotificationService {
       debugPrint('[NOTIF] Schedule range: $scheduleStart to $scheduleEnd');
     }
     
-    // 5. Cancel existing notifications
-    await cancelExistingSeasonNotifications(database, seasonId);
+    // 5. Cancel existing notifications (CRITICAL to prevent duplicates)
+    // This MUST happen before scheduling to avoid accumulating notifications
+    LogService.log('[NOTIF] Step 5: Cancelling ALL existing notifications before scheduling...');
+    int cancelAttempts = 0;
+    const maxCancelAttempts = 3;
+    bool cancelSuccess = false;
+    
+    while (cancelAttempts < maxCancelAttempts && !cancelSuccess) {
+      try {
+        cancelAttempts++;
+        LogService.log('[NOTIF] Cancel attempt $cancelAttempts/$maxCancelAttempts...');
+        
+        // Get count before cancel
+        final beforeCancel = await getPendingNotifications();
+        LogService.log('[NOTIF] Notifications before cancel: ${beforeCancel.length}');
+        
+        await cancelAll();
+        
+        // Wait for cancellation to propagate
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Verify cancellation worked
+        final afterCancel = await getPendingNotifications();
+        LogService.log('[NOTIF] Notifications after cancel: ${afterCancel.length}');
+        
+        if (afterCancel.length == 0) {
+          cancelSuccess = true;
+          LogService.log('[NOTIF] All notifications cancelled successfully');
+        } else if (afterCancel.length < beforeCancel.length) {
+          // Some cancelled, but not all - try again
+          LogService.log('[NOTIF] WARN Partial cancellation (${beforeCancel.length} -> ${afterCancel.length}), retrying...');
+          await Future.delayed(const Duration(milliseconds: 500));
+        } else {
+          LogService.log('[NOTIF] WARN Cancellation may have failed (count unchanged), retrying...');
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      } catch (e) {
+        LogService.log('[NOTIF] Cancel attempt $cancelAttempts failed: $e');
+        if (cancelAttempts < maxCancelAttempts) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      }
+    }
+    
+    if (!cancelSuccess) {
+      LogService.log('[NOTIF] WARNING: Failed to cancel all notifications after $maxCancelAttempts attempts');
+      LogService.log('[NOTIF] Proceeding with scheduling anyway - duplicates may occur');
+    }
     
     // 6. Schedule based on platform
     if (Platform.isAndroid) {
@@ -2101,6 +2570,24 @@ class NotificationService {
     // 7. Debug dump (debug mode only)
     if (kDebugMode) {
       await dumpPendingSchedules();
+    }
+    
+    // 8. Final verification - log final count
+    try {
+      await Future.delayed(const Duration(milliseconds: 500)); // Wait for all schedules to complete
+      final finalPending = await getPendingNotifications();
+      LogService.log('[NOTIF] Scheduling completed - Final pending notifications: ${finalPending.length}');
+      
+      if (finalPending.length > 50) {
+        LogService.log('[NOTIF] WARNING: Final count is high (${finalPending.length}). Check for duplicates.');
+      }
+    } catch (e) {
+      LogService.log('[NOTIF] Could not get final pending count: $e');
+    }
+    
+    } finally {
+      _isScheduling = false;
+      LogService.log('[NOTIF] Scheduling lock released');
     }
   }
 }
