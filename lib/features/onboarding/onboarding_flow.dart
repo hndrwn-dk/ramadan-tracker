@@ -59,8 +59,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           data: _data,
           onPrevious: _previousStep,
           onFinish: () async {
-            await _data.save(ref);
+            // Save data first (fast operations)
+            await _data.saveWithoutScheduling(ref);
             ref.invalidate(shouldShowOnboardingProvider);
+            
+            // Navigate immediately (don't wait for scheduling)
             if (mounted) {
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
@@ -69,6 +72,10 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                 (route) => false,
               );
             }
+            
+            // Schedule notifications in background (non-blocking)
+            // This prevents UI freeze from Android rate limiting
+            _data.scheduleNotificationsInBackground(ref);
           },
         );
       default:
@@ -217,6 +224,123 @@ class OnboardingData {
   String highLatRule = 'middle_of_night';
   int fajrAdjust = 0;
   int maghribAdjust = 0;
+
+  // Save data without scheduling (fast, non-blocking)
+  Future<void> saveWithoutScheduling(WidgetRef ref) async {
+    final database = ref.read(databaseProvider);
+    final now = DateTime.now();
+    
+    final seasonId = await database.ramadanSeasonsDao.createSeason(
+      label: seasonLabel.isEmpty ? 'Ramadan ${now.year}' : seasonLabel,
+      startDate: startDate ?? now,
+      days: days,
+    );
+
+    await database.kvSettingsDao.setValue('onboarding_done_season_$seasonId', 'true');
+    
+    if (latitude != null && longitude != null) {
+      await database.kvSettingsDao.setValue('prayer_latitude', latitude!.toString());
+      await database.kvSettingsDao.setValue('prayer_longitude', longitude!.toString());
+      await database.kvSettingsDao.setValue('prayer_timezone', timezone);
+      await database.kvSettingsDao.setValue('prayer_method', calculationMethod);
+      await database.kvSettingsDao.setValue('prayer_high_lat_rule', highLatRule);
+      await database.kvSettingsDao.setValue('prayer_fajr_adj', fajrAdjust.toString());
+      await database.kvSettingsDao.setValue('prayer_maghrib_adj', maghribAdjust.toString());
+    }
+
+    await database.kvSettingsDao.setValue('sahur_enabled', sahurEnabled.toString());
+    await database.kvSettingsDao.setValue('sahur_offset', sahurOffsetMinutes.toString());
+    await database.kvSettingsDao.setValue('iftar_enabled', iftarEnabled.toString());
+    await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
+    await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
+    
+    // Set prayers to detailed mode by default (track all prayers individually)
+    await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
+    
+    if (selectedHabits.contains('sedekah')) {
+      await database.kvSettingsDao.setValue('sedekah_currency', sedekahCurrency);
+      await database.kvSettingsDao.setValue('sedekah_goal_enabled', sedekahGoalEnabled.toString());
+      if (sedekahGoalEnabled && sedekahAmount > 0) {
+        await database.kvSettingsDao.setValue('sedekah_goal_amount', sedekahAmount.toString());
+      } else {
+        await database.kvSettingsDao.deleteValue('sedekah_goal_amount');
+      }
+    }
+
+    final habits = await database.habitsDao.getAllHabits();
+    for (final habit in habits) {
+      final isEnabled = selectedHabits.contains(habit.key);
+      await database.seasonHabitsDao.setSeasonHabit(
+        SeasonHabit(
+          seasonId: seasonId,
+          habitId: habit.id,
+          isEnabled: isEnabled,
+          targetValue: habit.defaultTarget,
+          reminderEnabled: false,
+          reminderTime: null,
+        ),
+      );
+    }
+
+    int pagesPerJuz = 20;
+    int juzTargetPerDay = 1;
+    int dailyTargetPages = 20;
+    int totalJuz = 30;
+    int totalPages = 600;
+
+    if (quranGoal == '2_khatam') {
+      dailyTargetPages = 40;
+      totalPages = 1200;
+    } else if (quranGoal == 'custom') {
+      dailyTargetPages = customQuranPages;
+      totalPages = dailyTargetPages * days;
+      totalJuz = (totalPages / pagesPerJuz).ceil();
+    }
+
+    await database.quranPlanDao.setPlan(
+      QuranPlanData(
+        seasonId: seasonId,
+        pagesPerJuz: pagesPerJuz,
+        juzTargetPerDay: juzTargetPerDay,
+        dailyTargetPages: dailyTargetPages,
+        totalJuz: totalJuz,
+        totalPages: totalPages,
+        catchupCapPages: 5,
+        createdAt: now.millisecondsSinceEpoch,
+      ),
+    );
+
+    await database.dhikrPlanDao.setPlan(
+      DhikrPlanData(
+        seasonId: seasonId,
+        dailyTarget: dhikrTarget,
+        createdAt: now.millisecondsSinceEpoch,
+      ),
+    );
+    
+    // Note: Notification scheduling is done separately in background to prevent UI blocking
+  }
+
+  // Schedule notifications in background (non-blocking)
+  void scheduleNotificationsInBackground(WidgetRef ref) {
+    // Run in background isolate to prevent UI blocking
+    Future.microtask(() async {
+      try {
+        final database = ref.read(databaseProvider);
+        debugPrint('=== ONBOARDING: Scheduling notifications in background ===');
+        
+        // Use rescheduleAllReminders which properly cancels existing notifications first
+        await NotificationService.rescheduleAllReminders(database: database);
+        
+        debugPrint('=== ONBOARDING: Background scheduling completed ===');
+      } catch (e, stackTrace) {
+        debugPrint('=== ONBOARDING: Background scheduling failed ===');
+        debugPrint('  Error: $e');
+        debugPrint('  Stack trace: $stackTrace');
+        // Don't show error to user - notifications can be scheduled later from settings
+      }
+    });
+  }
 
   Future<void> save(WidgetRef ref) async {
     final database = ref.read(databaseProvider);

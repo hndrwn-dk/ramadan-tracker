@@ -51,86 +51,54 @@ class MainActivity: FlutterActivity() {
         return try {
             android.util.Log.d("MainActivity", "=== clearNotificationDatabase START ===")
             
-            // Method 1: Clear FlutterSharedPreferences notification keys
+            // Method 1: Remove only notification-related keys from FlutterSharedPreferences.
+            // Do NOT clear all FlutterSharedPreferences - that wipes app/plugin state and can break notifications.
             try {
                 val prefs = getSharedPreferences(
                     "FlutterSharedPreferences",
                     Context.MODE_PRIVATE
                 )
-                
                 val editor = prefs.edit()
-                
-                // Remove all notification-related keys
-                val allKeys = prefs.all.keys
                 var removedCount = 0
-                android.util.Log.d("MainActivity", "Found ${allKeys.size} total keys in FlutterSharedPreferences")
-                
-                allKeys.forEach { key ->
-                    if (key.contains("flutter.scheduled_notifications") || 
-                        key.contains("flutter.notification") ||
+                prefs.all.keys.forEach { key ->
+                    if (key.contains("flutter.scheduled_notifications") ||
                         key.contains("scheduled_notifications") ||
-                        key.contains("notification") ||
-                        key.contains("flutter.notification")) {
+                        key.contains("flutter_local_notifications")) {
                         editor.remove(key)
                         removedCount++
                         android.util.Log.d("MainActivity", "Removed key: $key")
                     }
                 }
-                
-                // Use commit() instead of apply() to ensure immediate write
                 val committed = editor.commit()
                 android.util.Log.d("MainActivity", "Removed $removedCount notification-related keys. Committed: $committed")
             } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Error clearing FlutterSharedPreferences: ${e.message}", e)
+                android.util.Log.e("MainActivity", "Error clearing notification keys: ${e.message}", e)
             }
             
-            // Method 2: Clear flutter_local_notifications_plugin preferences
+            // Method 2: Clear flutter_local_notifications plugin storage (source of scheduled notifications)
             try {
                 val notifPrefs = getSharedPreferences(
                     "flutter_local_notifications_plugin",
                     Context.MODE_PRIVATE
                 )
                 val cleared = notifPrefs.edit().clear().commit()
-                android.util.Log.d("MainActivity", "Cleared flutter_local_notifications_plugin preferences. Committed: $cleared")
+                android.util.Log.d("MainActivity", "Cleared flutter_local_notifications_plugin. Committed: $cleared")
             } catch (e: Exception) {
                 android.util.Log.w("MainActivity", "Could not clear plugin preferences: ${e.message}")
             }
             
-            // Method 3: Delete SharedPreferences files directly
+            // Method 3: Delete only the plugin's SharedPreferences file (do NOT delete FlutterSharedPreferences.xml)
             try {
                 val sharedPrefsDir = File(applicationContext.filesDir.parent, "shared_prefs")
                 if (sharedPrefsDir.exists() && sharedPrefsDir.isDirectory) {
-                    val files = sharedPrefsDir.listFiles()
-                    android.util.Log.d("MainActivity", "Found ${files?.size ?: 0} files in shared_prefs directory")
-                    
-                    files?.forEach { file ->
-                        val fileName = file.name
-                        if (fileName.contains("notification") || 
-                            fileName.contains("flutter") ||
-                            fileName == "FlutterSharedPreferences.xml") {
-                            try {
-                                val deleted = file.delete()
-                                android.util.Log.d("MainActivity", "Deleted file: $fileName. Success: $deleted")
-                            } catch (e: Exception) {
-                                android.util.Log.w("MainActivity", "Could not delete $fileName: ${e.message}")
-                            }
-                        }
+                    val pluginFile = File(sharedPrefsDir, "flutter_local_notifications_plugin.xml")
+                    if (pluginFile.exists()) {
+                        val deleted = pluginFile.delete()
+                        android.util.Log.d("MainActivity", "Deleted plugin prefs file. Success: $deleted")
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.w("MainActivity", "Error deleting SharedPreferences files: ${e.message}")
-            }
-            
-            // Method 4: Clear all FlutterSharedPreferences (more aggressive)
-            try {
-                val prefs = getSharedPreferences(
-                    "FlutterSharedPreferences",
-                    Context.MODE_PRIVATE
-                )
-                val allCleared = prefs.edit().clear().commit()
-                android.util.Log.d("MainActivity", "Cleared ALL FlutterSharedPreferences. Committed: $allCleared")
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Error clearing all FlutterSharedPreferences: ${e.message}", e)
+                android.util.Log.w("MainActivity", "Error deleting plugin prefs file: ${e.message}")
             }
             
             android.util.Log.d("MainActivity", "=== clearNotificationDatabase COMPLETE ===")

@@ -158,7 +158,7 @@ class GoalReminderService {
           quranTarget > 0 && 
           quranProgress < quranTarget) {
         if (kDebugMode) {
-          debugPrint('  ✓ All conditions met, scheduling Quran reminders');
+          debugPrint('  All conditions met, scheduling Quran reminders');
         }
         await _scheduleQuranReminders(now, quranProgress, quranTarget, location);
       } else {
@@ -187,7 +187,7 @@ class GoalReminderService {
           dhikrTarget > 0 && 
           dhikrProgress < dhikrTarget) {
         if (kDebugMode) {
-          debugPrint('  ✓ All conditions met, scheduling Dhikr reminders');
+          debugPrint('  All conditions met, scheduling Dhikr reminders');
         }
         await _scheduleDhikrReminders(now, dhikrProgress, dhikrTarget, location);
       } else {
@@ -242,7 +242,7 @@ class GoalReminderService {
       debugPrint('  Time until reminder: ${timeUntilReminder.inMinutes} minutes');
       
       if (reminderTime.isAfter(now)) {
-        debugPrint('  ✓ Scheduling Quran reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
+        debugPrint('  Scheduling Quran reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
         try {
           await NotificationService.scheduleGoalReminder(
             reminderTime: reminderTime,
@@ -251,7 +251,7 @@ class GoalReminderService {
             target: target,
             location: location,
           );
-          debugPrint('  ✓ Quran reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
+          debugPrint('  Quran reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
         } catch (e, stackTrace) {
           debugPrint('  ✗ Error scheduling Quran reminder: $e');
           debugPrint('  Stack trace: $stackTrace');
@@ -282,7 +282,7 @@ class GoalReminderService {
       debugPrint('  Time until reminder: ${timeUntilReminder.inMinutes} minutes');
       
       if (reminderTime.isAfter(now)) {
-        debugPrint('  ✓ Scheduling Dhikr reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
+        debugPrint('  Scheduling Dhikr reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
         try {
           await NotificationService.scheduleGoalReminder(
             reminderTime: reminderTime,
@@ -291,7 +291,7 @@ class GoalReminderService {
             target: target,
             location: location,
           );
-          debugPrint('  ✓ Dhikr reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
+          debugPrint('  Dhikr reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
         } catch (e, stackTrace) {
           debugPrint('  ✗ Error scheduling Dhikr reminder: $e');
           debugPrint('  Stack trace: $stackTrace');

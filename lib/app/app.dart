@@ -123,8 +123,11 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
       }
     }
     
+    // Check if scheduling is already in progress (prevent concurrent calls)
+    // This is a safety check - NotificationService also has its own lock
     _lastRescheduleTime = now;
     debugPrint('=== _rescheduleNotifications called ===');
+    
     try {
       final database = ref.read(databaseProvider);
       
@@ -132,13 +135,27 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
       final hasPermission = await NotificationService.checkNotificationPermission();
       debugPrint('Notification permission status before reschedule: $hasPermission');
       
+      // Get count before reschedule
+      try {
+        final beforePending = await NotificationService.getPendingNotifications();
+        debugPrint('Pending notifications BEFORE reschedule: ${beforePending.length}');
+      } catch (e) {
+        debugPrint('Could not get pending count before reschedule: $e');
+      }
+      
       await NotificationService.rescheduleAllReminders(database: database);
       debugPrint('=== _rescheduleNotifications completed ===');
       
       // Show pending notifications count (with error handling)
       try {
+        await Future.delayed(const Duration(milliseconds: 1000)); // Wait for scheduling to complete
         final pending = await NotificationService.getPendingNotifications();
-        debugPrint('Total pending notifications: ${pending.length}');
+        debugPrint('Total pending notifications AFTER reschedule: ${pending.length}');
+        
+        // Warn if count seems too high (more than expected for 30 days)
+        if (pending.length > 100) {
+          debugPrint('WARNING: Pending notification count is very high (${pending.length}). This may indicate duplicates.');
+        }
       } catch (e) {
         debugPrint('Error getting pending notifications count: $e');
         debugPrint('Notifications may still be scheduled despite this error');

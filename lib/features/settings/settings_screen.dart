@@ -41,11 +41,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     'debug': false,
     'about': false,
   };
+  final _pendingCountKey = GlobalKey<_PendingNotificationCountState>();
 
   void _toggleSection(String key) {
     setState(() {
       _expandedSections[key] = !(_expandedSections[key] ?? false);
     });
+    // Refresh pending count when debug section is expanded
+    if (key == 'debug' && (_expandedSections[key] ?? false)) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _pendingCountKey.currentState?.refresh();
+      });
+    }
   }
 
   @override
@@ -944,6 +951,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         nightPlanTitle: l10n.nightPlanReminder,
         nightPlanBody: l10n.reminderToPlanNightActivities,
       );
+      // Refresh pending count after rescheduling
+      _pendingCountKey.currentState?.refresh();
     } catch (e) {
       debugPrint('Error rescheduling reminders: $e');
     }
@@ -1364,6 +1373,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 const Divider(height: 1),
+                _PendingNotificationCount(key: _pendingCountKey),
+                const Divider(height: 1),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.notifications_active),
@@ -1375,10 +1386,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Test notification sent! Immediate notification should appear now. Scheduled notification may fail if there are corrupt notifications in database.'),
+                            content: Text('Test notification sent! Immediate notification should appear now. Scheduled notification will appear in 10 seconds.'),
                             duration: Duration(seconds: 4),
                           ),
                         );
+                        // Refresh pending count after scheduling test
+                        _pendingCountKey.currentState?.refresh();
                       }
                     } catch (e) {
                       // Only show error if immediate notification also failed
@@ -1386,6 +1399,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Error: Immediate notification failed. Check logs for details.'),
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.schedule),
+                  title: const Text('Schedule Test (60s)'),
+                  subtitle: const Text('Schedule a test notification in 60 seconds', style: TextStyle(fontSize: 12)),
+                  onTap: () async {
+                    try {
+                      await NotificationService.scheduleTestInSeconds(60);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Test notification scheduled for 60s (alarm mode). If it does not appear: Settings > Apps > Ramadan Tracker > Battery > Unrestricted.'),
+                            duration: Duration(seconds: 5),
+                          ),
+                        );
+                        // Refresh pending count after scheduling test
+                        _pendingCountKey.currentState?.refresh();
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error scheduling test: $e'),
                             duration: const Duration(seconds: 4),
                           ),
                         );
@@ -1452,7 +1499,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           SnackBar(
                             content: Text(
                               success 
-                                ? '✓ Notification database fixed! Please restart the app for best results.'
+                                ? 'Notification database fixed! Please restart the app for best results.'
                                 : '✗ Failed to fix. Please try "Clear Corrupt Notifications" or clear app data manually.'
                             ),
                             backgroundColor: success ? Colors.green : Colors.orange,
@@ -1501,7 +1548,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('✓ Notification database cleared successfully! Please restart the app.'),
+                              content: Text('Notification database cleared successfully! Please restart the app.'),
                               duration: Duration(seconds: 5),
                               backgroundColor: Colors.green,
                             ),
@@ -1954,6 +2001,99 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // Fallback to original name if translation not found
         return habitKey;
     }
+  }
+}
+
+class _PendingNotificationCount extends StatefulWidget {
+  const _PendingNotificationCount({super.key});
+
+  @override
+  State<_PendingNotificationCount> createState() => _PendingNotificationCountState();
+}
+
+class _PendingNotificationCountState extends State<_PendingNotificationCount> {
+  int _pendingCount = -1;
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPendingCount();
+  }
+
+  void refresh() {
+    _loadPendingCount();
+  }
+
+  Future<void> _loadPendingCount() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    
+    try {
+      final pending = await NotificationService.getPendingNotifications();
+      if (mounted) {
+        setState(() {
+          _pendingCount = pending.length;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        Icons.schedule,
+        color: _pendingCount > 0 
+          ? Theme.of(context).colorScheme.primary 
+          : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+      ),
+      title: const Text('Pending Notifications'),
+      subtitle: _isLoading
+        ? const Text('Loading...', style: TextStyle(fontSize: 12))
+        : _error != null
+          ? Text('Error: $_error', style: TextStyle(fontSize: 12, color: Colors.red))
+          : Text(
+              _pendingCount == -1 
+                ? 'Unknown' 
+                : _pendingCount == 0
+                  ? 'No pending notifications'
+                  : '$_pendingCount notification${_pendingCount == 1 ? '' : 's'} scheduled',
+              style: TextStyle(
+                fontSize: 12,
+                color: _pendingCount > 0 
+                  ? Theme.of(context).colorScheme.primary 
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                fontWeight: _pendingCount > 0 ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+      trailing: IconButton(
+        icon: _isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.refresh, size: 20),
+        onPressed: _isLoading ? null : _loadPendingCount,
+        tooltip: 'Refresh count',
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
   }
 }
 
