@@ -90,8 +90,14 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
         setState(() {
           if (value == true) {
             widget.data.selectedHabits.add(key);
+            if (key == 'sedekah') {
+              widget.data.sedekahGoalEnabled = true;
+            }
           } else {
             widget.data.selectedHabits.remove(key);
+            if (key == 'sedekah') {
+              widget.data.sedekahGoalEnabled = false;
+            }
           }
         });
       },

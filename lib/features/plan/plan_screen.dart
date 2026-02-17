@@ -25,7 +25,6 @@ class PlanScreen extends ConsumerStatefulWidget {
 }
 
 class _PlanScreenState extends ConsumerState<PlanScreen> {
-  AutopilotIntensity? _intensity;
   int _morningMinutes = 30;
   int _dayMinutes = 60;
   int _nightMinutes = 60;
@@ -115,34 +114,6 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                     AppLocalizations.of(context)!.setupRamadanAutopilotSubtitle,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.intensity,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  ...AutopilotIntensity.values.map((intensity) {
-                    return RadioListTile<AutopilotIntensity>(
-                      title: Text(_getIntensityLabel(context, intensity)),
-                      value: intensity,
-                      groupValue: _intensity,
-                      onChanged: (value) {
-                        setState(() {
-                          _intensity = value;
-                        });
-                      },
-                    );
-                  }),
                 ],
               ),
             ),
@@ -253,7 +224,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           SizedBox(
             width: double.infinity,
               child: ElevatedButton(
-              onPressed: _intensity != null && _quranGoal != null
+              onPressed: _quranGoal != null
                   ? () => _savePlan(seasonId, totalDays)
                   : null,
               child: Text(AppLocalizations.of(context)!.savePlan),
@@ -357,17 +328,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       data: (dhikrPlan) {
         // Use the actual current day index, same as Today screen
         final effectiveDayIndex = dayIndex;
-        return FutureBuilder<AutopilotIntensity>(
-          future: _getAutopilotIntensity(),
-          builder: (context, intensitySnapshot) {
-            final intensity = intensitySnapshot.data ?? AutopilotIntensity.balanced;
-            
-            return FutureBuilder<AutopilotPlan>(
+        return FutureBuilder<AutopilotPlan>(
               future: AutopilotService.generatePlan(
                 seasonId: seasonId,
                 currentDayIndex: effectiveDayIndex,
                 totalDays: totalDays,
-                intensity: intensity,
                 timeBlocks: TimeBlocks(
                   morning: _morningMinutes,
                   day: _dayMinutes,
@@ -419,8 +384,6 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 );
               },
             );
-          },
-        );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('${AppLocalizations.of(context)!.error} loading dhikr plan: $error')),
@@ -941,18 +904,6 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     };
   }
 
-  Future<AutopilotIntensity> _getAutopilotIntensity() async {
-    final database = ref.read(databaseProvider);
-    final intensityStr = await database.kvSettingsDao.getValue('autopilot_intensity') ?? 'balanced';
-    switch (intensityStr) {
-      case 'light':
-        return AutopilotIntensity.light;
-      case 'strong':
-        return AutopilotIntensity.strong;
-      default:
-        return AutopilotIntensity.balanced;
-    }
-  }
 
   Future<Map<String, String?>> _getTimeWindows(BuildContext context, int seasonId, int dayIndex) async {
     final l10n = AppLocalizations.of(context)!;
@@ -1026,17 +977,6 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     }
   }
 
-  String _getIntensityLabel(BuildContext context, AutopilotIntensity intensity) {
-    final l10n = AppLocalizations.of(context)!;
-    switch (intensity) {
-      case AutopilotIntensity.light:
-        return l10n.intensityLight;
-      case AutopilotIntensity.balanced:
-        return l10n.intensityBalanced;
-      case AutopilotIntensity.strong:
-        return l10n.intensityStrong;
-    }
-  }
 
   String _getQuranGoalLabel(BuildContext context, QuranGoalType goal) {
     final l10n = AppLocalizations.of(context)!;

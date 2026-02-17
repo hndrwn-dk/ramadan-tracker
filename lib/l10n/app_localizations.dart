@@ -1754,48 +1754,6 @@ abstract class AppLocalizations {
   /// **'MYR (RM)'**
   String get myrRm;
 
-  /// Autopilot intensity label
-  ///
-  /// In en, this message translates to:
-  /// **'Autopilot Intensity'**
-  String get autopilotIntensity;
-
-  /// Light intensity option
-  ///
-  /// In en, this message translates to:
-  /// **'Light'**
-  String get light;
-
-  /// Balanced intensity option
-  ///
-  /// In en, this message translates to:
-  /// **'Balanced'**
-  String get balanced;
-
-  /// Strong intensity option
-  ///
-  /// In en, this message translates to:
-  /// **'Strong'**
-  String get strong;
-
-  /// Light intensity description
-  ///
-  /// In en, this message translates to:
-  /// **'Gentle reminders, minimal pressure'**
-  String get gentleRemindersMinimalPressure;
-
-  /// Balanced intensity description
-  ///
-  /// In en, this message translates to:
-  /// **'Regular check-ins, steady progress'**
-  String get regularCheckInsSteadyProgress;
-
-  /// Strong intensity description
-  ///
-  /// In en, this message translates to:
-  /// **'Frequent reminders, maximum support'**
-  String get frequentRemindersMaximumSupport;
-
   /// Onboarding step 5 title
   ///
   /// In en, this message translates to:
@@ -2012,6 +1970,12 @@ abstract class AppLocalizations {
   /// **'of {pages} pages'**
   String ofPages(int pages);
 
+  /// Dhikr count target label
+  ///
+  /// In en, this message translates to:
+  /// **'of {count} dhikr'**
+  String ofDhikr(int count);
+
   /// Today amount and goal label
   ///
   /// In en, this message translates to:
@@ -2071,12 +2035,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Configure your goals and available time to generate a daily plan.'**
   String get setupRamadanAutopilotSubtitle;
-
-  /// Intensity section title
-  ///
-  /// In en, this message translates to:
-  /// **'Intensity'**
-  String get intensity;
 
   /// Available time section title
   ///
@@ -2215,24 +2173,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'After Isha'**
   String get afterIsha;
-
-  /// Light intensity label
-  ///
-  /// In en, this message translates to:
-  /// **'Light'**
-  String get intensityLight;
-
-  /// Balanced intensity label
-  ///
-  /// In en, this message translates to:
-  /// **'Balanced'**
-  String get intensityBalanced;
-
-  /// Strong intensity label
-  ///
-  /// In en, this message translates to:
-  /// **'Strong'**
-  String get intensityStrong;
 
   /// 1 Khatam goal label
   ///

@@ -1042,21 +1042,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         sortedHabits.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: CounterWidget(
-              label: getHabitDisplayName(context, habitKey),
-              value: value,
-              icon: Icons.favorite,
-              quickAddChips: const [33, 100, 300],
-              onDecrement: () {
-                if (value > 0) {
-                  _setIntHabit(seasonId, dayIndex, habit.id, value - 1);
-                }
-              },
-              onIncrement: () {
-                _setIntHabit(seasonId, dayIndex, habit.id, value + 1);
-              },
-              onQuickAdd: (chipValue) {
-                _setIntHabit(seasonId, dayIndex, habit.id, value + chipValue);
+            child: FutureBuilder<int>(
+              future: ref.read(databaseProvider).dhikrPlanDao.getPlan(seasonId).then((plan) => plan?.dailyTarget ?? 100),
+              builder: (context, snapshot) {
+                final target = snapshot.data ?? 100;
+                return CounterWidget(
+                  label: getHabitDisplayName(context, habitKey),
+                  value: value,
+                  target: target,
+                  targetLabel: AppLocalizations.of(context)!.ofDhikr(target),
+                  icon: Icons.favorite,
+                  quickAddChips: const [33, 100, 300],
+                  onDecrement: () {
+                    if (value > 0) {
+                      _setIntHabit(seasonId, dayIndex, habit.id, value - 1);
+                    }
+                  },
+                  onIncrement: () {
+                    _setIntHabit(seasonId, dayIndex, habit.id, value + 1);
+                  },
+                  onQuickAdd: (chipValue) {
+                    _setIntHabit(seasonId, dayIndex, habit.id, value + chipValue);
+                  },
+                );
               },
             ),
           ),

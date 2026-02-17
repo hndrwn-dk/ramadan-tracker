@@ -53,6 +53,10 @@ dev_dependencies:
   build_runner: ^2.4.7
   flutter_launcher_icons: ^0.13.1
 
+dependency_overrides:
+  flutter_local_notifications:
+    path: plugins/flutter_local_notifications
+
 flutter:
   uses-material-design: true
   generate: true

@@ -923,30 +923,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myrRm => 'MYR (RM)';
 
   @override
-  String get autopilotIntensity => 'Autopilot Intensity';
-
-  @override
-  String get light => 'Light';
-
-  @override
-  String get balanced => 'Balanced';
-
-  @override
-  String get strong => 'Strong';
-
-  @override
-  String get gentleRemindersMinimalPressure =>
-      'Gentle reminders, minimal pressure';
-
-  @override
-  String get regularCheckInsSteadyProgress =>
-      'Regular check-ins, steady progress';
-
-  @override
-  String get frequentRemindersMaximumSupport =>
-      'Frequent reminders, maximum support';
-
-  @override
   String get smartReminders => 'Smart Reminders';
 
   @override
@@ -1063,6 +1039,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String ofDhikr(int count) {
+    return 'of $count dhikr';
+  }
+
+  @override
   String todayAmountGoal(String amount, String goal) {
     return 'Today: $amount / $goal';
   }
@@ -1094,9 +1075,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get setupRamadanAutopilotSubtitle =>
       'Configure your goals and available time to generate a daily plan.';
-
-  @override
-  String get intensity => 'Intensity';
 
   @override
   String get availableTimeMinutes => 'Available Time (minutes)';
@@ -1173,15 +1151,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get afterIsha => 'After Isha';
-
-  @override
-  String get intensityLight => 'Light';
-
-  @override
-  String get intensityBalanced => 'Balanced';
-
-  @override
-  String get intensityStrong => 'Strong';
 
   @override
   String get quranGoal1Khatam => '1 Khatam';

@@ -42,6 +42,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     'about': false,
   };
   final _pendingCountKey = GlobalKey<_PendingNotificationCountState>();
+  bool _debugEnabled = false;
+  int _versionTapCount = 0;
 
   void _toggleSection(String key) {
     setState(() {
@@ -94,8 +96,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 16),
             _buildBackupRestore(),
             const SizedBox(height: 16),
-            _buildDebugSection(),
-            const SizedBox(height: 16),
+            if (_debugEnabled) ...[
+              _buildDebugSection(),
+              const SizedBox(height: 16),
+            ],
             _buildAbout(),
           ],
         ),
@@ -1735,6 +1739,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.version),
             subtitle: const Text('1.0.0'),
+            onTap: () {
+              _versionTapCount++;
+              if (_versionTapCount >= 7 && !_debugEnabled) {
+                setState(() {
+                  _debugEnabled = true;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Debug mode enabled'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else if (!_debugEnabled && _versionTapCount >= 4) {
+                final remaining = 7 - _versionTapCount;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$remaining taps to enable debug mode'),
+                    duration: const Duration(milliseconds: 800),
+                  ),
+                );
+              }
+            },
           ),
           const Divider(height: 24),
           _buildLinkTile(

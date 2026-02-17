@@ -5,6 +5,7 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/domain/services/goal_reminder_service.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
+import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
@@ -304,9 +305,11 @@ class NotificationService {
             
             // Retry schedule once after clear and reinitialize
             try {
-              final retryScheduleModeStr = androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle 
-                  ? 'EXACT' 
-                  : 'INEXACT';
+              final retryScheduleModeStr = androidScheduleMode == AndroidScheduleMode.alarmClock
+                  ? 'ALARM_CLOCK'
+                  : androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle
+                      ? 'EXACT'
+                      : 'INEXACT';
               LogService.log('[NOTIF] Retrying schedule after database clear and plugin reinitialize...');
               await _notifications.zonedSchedule(
                 id,
@@ -799,7 +802,7 @@ class NotificationService {
             presentSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
@@ -1123,6 +1126,7 @@ class NotificationService {
     }
   }
 
+
   static Future<void> initialize() async {
     tz_data.initializeTimeZones();
     
@@ -1382,7 +1386,7 @@ class NotificationService {
   
   // Schedule test notification in N seconds (e.g. 60s test from Settings).
   // Uses tz.local so the scheduled time matches device timezone and is not interpreted as past.
-  // Uses alarmClock mode so Android delivers it reliably (setAlarmClock is exempt from Doze).
+  // Uses alarmClock (setAlarmClock is exempt from Doze; may show alarm icon). Production reminders use alarmClock too.
   static Future<void> scheduleTestInSeconds(int seconds) async {
     try {
       final now = DateTime.now();
@@ -1390,18 +1394,18 @@ class NotificationService {
       final scheduledTime = tzNow.add(Duration(seconds: seconds));
       final secondsUntil = scheduledTime.difference(tzNow).inSeconds;
       
-      LogService.log('[TEST] ===== NOTIFICATION TEST START =====');
-      LogService.log('[TEST] System time: $now');
-      LogService.log('[TEST] TZ Local time: $tzNow');
-      LogService.log('[TEST] Timezone: ${tz.local.name}');
-      LogService.log('[TEST] Scheduling test notification in $seconds seconds');
-      LogService.log('[TEST] Scheduled time: $scheduledTime');
-      LogService.log('[TEST] Seconds until: $secondsUntil');
+      LogService.log('');
+      LogService.log('========================================');
+      LogService.log('[TEST-60s] TRIGGER at $now');
+      LogService.log('[TEST-60s] TZ: $tzNow (${tz.local.name})');
+      LogService.log('[TEST-60s] Will fire at: $scheduledTime ($secondsUntil s)');
+      LogService.log('[TEST-60s] Alarm ID: 99999 (native), 99997 (in-app fallback)');
+      LogService.log('========================================');
       
       final success = await _safeZonedSchedule(
         id: 99999,
-        title: 'Test Notification',
-        body: 'This is a test notification scheduled $seconds seconds from now',
+        title: 'Test Notification (${seconds}s)',
+        body: 'Scheduled notification fired after $seconds seconds. Time: ${scheduledTime.hour}:${scheduledTime.minute}:${scheduledTime.second}',
         scheduledDate: scheduledTime,
         notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
@@ -1427,10 +1431,55 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
       );
       
-      LogService.log('[TEST] Scheduling result: $success');
-      LogService.log('[TEST] ===== NOTIFICATION TEST END =====');
+      LogService.log('[TEST-60s] Schedule result: $success');
+      if (success) {
+        try {
+          final pending = await getPendingNotifications();
+          final testNotif = pending.where((n) => n.id == 99999).toList().firstOrNull;
+          LogService.log('[TEST-60s] In pending list: ${testNotif != null}');
+          if (testNotif != null) {
+            LogService.log('[TEST-60s] Pending: id=${testNotif.id}, title=${testNotif.title}');
+          }
+          LogService.log('[TEST-60s] Total pending: ${pending.length}');
+        } catch (e) {
+          LogService.log('[TEST-60s] Could not verify pending: $e');
+        }
+        Future.delayed(Duration(seconds: seconds + 5), () async {
+          try {
+            LogService.log('[TEST-60s] In-app fallback firing now (${seconds + 5}s elapsed)');
+            await _notifications.show(
+              99997,
+              'Test (${seconds}s) - from app',
+              'You got this after $seconds seconds. If this is the only one, set Battery to Unrestricted for scheduled reminders.',
+              const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  'ramadan_reminders',
+                  'Ramadan Reminders',
+                  importance: Importance.max,
+                  priority: Priority.max,
+                  channelAction: AndroidNotificationChannelAction.createIfNotExists,
+                  enableVibration: true,
+                  playSound: true,
+                ),
+                iOS: DarwinNotificationDetails(
+                  presentAlert: true,
+                  presentBadge: true,
+                  presentSound: true,
+                ),
+              ),
+            );
+            LogService.log('[TEST-60s] IN-APP FALLBACK notification shown (ID 99997)');
+          } catch (e) {
+            LogService.log('[TEST-60s] IN-APP FALLBACK failed: $e');
+          }
+        });
+      }
+      LogService.log('[TEST-60s] Setup complete. Watch for 2 notifications:');
+      LogService.log('[TEST-60s]   1) "NATIVE ALARM" (ID 99999) = native receiver works');
+      LogService.log('[TEST-60s]   2) "IN-APP FALLBACK" (ID 99997) = app timer works');
+      LogService.log('========================================');
     } catch (e) {
-      LogService.log('[TEST] Error scheduling test notification: $e');
+      LogService.log('[TEST-60s] ERROR: $e');
     }
   }
 
@@ -1578,7 +1627,7 @@ class NotificationService {
           presentSound: true,
         ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
     );
@@ -1651,7 +1700,7 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
     );
@@ -1720,7 +1769,7 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       batchIndex: batchIndex,
@@ -1787,7 +1836,7 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       batchIndex: batchIndex,
@@ -1849,7 +1898,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       batchIndex: batchIndex,
@@ -1917,7 +1966,7 @@ class NotificationService {
         ),
         iOS: const DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
