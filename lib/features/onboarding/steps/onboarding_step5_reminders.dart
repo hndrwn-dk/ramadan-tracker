@@ -297,6 +297,61 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
           ),
           const SizedBox(height: 24),
           Text(
+            l10n.goalRemindersTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.goalRemindersSubtitle,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          if (widget.data.selectedHabits.contains('quran_pages'))
+            SwitchListTile(
+              title: Text(l10n.goalReminderQuran),
+              subtitle: Text(l10n.goalReminderQuranDesc, style: const TextStyle(fontSize: 11)),
+              value: widget.data.quranReminderEnabled,
+              onChanged: (value) {
+                setState(() {
+                  widget.data.quranReminderEnabled = value;
+                });
+              },
+            ),
+          if (widget.data.selectedHabits.contains('dhikr'))
+            SwitchListTile(
+              title: Text(l10n.goalReminderDhikr),
+              subtitle: Text(l10n.goalReminderDhikrDesc, style: const TextStyle(fontSize: 11)),
+              value: widget.data.dhikrReminderEnabled,
+              onChanged: (value) {
+                setState(() {
+                  widget.data.dhikrReminderEnabled = value;
+                });
+              },
+            ),
+          if (widget.data.selectedHabits.contains('sedekah'))
+            SwitchListTile(
+              title: Text(l10n.goalReminderSedekah),
+              subtitle: Text(l10n.goalReminderSedekahDesc, style: const TextStyle(fontSize: 11)),
+              value: widget.data.sedekahReminderEnabled,
+              onChanged: (value) {
+                setState(() {
+                  widget.data.sedekahReminderEnabled = value;
+                });
+              },
+            ),
+          if (widget.data.selectedHabits.contains('taraweeh'))
+            SwitchListTile(
+              title: Text(l10n.goalReminderTaraweeh),
+              subtitle: Text(l10n.goalReminderTaraweehDesc, style: const TextStyle(fontSize: 11)),
+              value: widget.data.taraweehReminderEnabled,
+              onChanged: (value) {
+                setState(() {
+                  widget.data.taraweehReminderEnabled = value;
+                });
+              },
+            ),
+          const SizedBox(height: 24),
+          Text(
             l10n.location,
             style: Theme.of(context).textTheme.titleMedium,
           ),

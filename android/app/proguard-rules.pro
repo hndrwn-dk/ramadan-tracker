@@ -80,6 +80,27 @@
 -keepnames class com.google.gson.reflect.TypeToken
 -keepnames class * extends com.google.gson.reflect.TypeToken
 
+# CRITICAL: Prevent R8 from optimizing Gson and flutter_local_notifications
+# R8 full mode can strip generic type signatures even with -keepattributes Signature
+# This causes ScheduledNotificationReceiver to fail silently when deserializing notification data
+-dontoptimize
+
+# Keep all classes with generic signatures used by Gson reflection
+-keep,allowobfuscation class * extends com.google.gson.reflect.TypeToken
+-keep class * extends com.google.gson.reflect.TypeToken {
+    <fields>;
+    <init>(...);
+}
+
+# Prevent R8 from removing ParameterizedType implementations
+-keep class * implements java.lang.reflect.ParameterizedType {
+    *;
+}
+
+# Keep Gson internal classes needed for TypeToken resolution
+-keep class com.google.gson.internal.** { *; }
+-keep class com.google.gson.stream.** { *; }
+
 # Additional Flutter/Dart keep rules
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }

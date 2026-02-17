@@ -10,7 +10,6 @@ class AutopilotService {
     required int seasonId,
     required int currentDayIndex,
     required int totalDays,
-    required AutopilotIntensity intensity,
     required TimeBlocks timeBlocks,
     required QuranPlanData? quranPlan,
     required DhikrPlanData? dhikrPlan,
@@ -67,7 +66,7 @@ class AutopilotService {
 
     final quranMinutes = dailyTarget * quranMinutesPerPage;
     final dhikrMinutes = dhikrTarget * dhikrMinutesPerCount;
-    final qiyamMinutes = _getQiyamMinutes(intensity);
+    const qiyamMinutes = 20;
 
     final morningTasks = <Task>[];
     final dayTasks = <Task>[];
@@ -148,22 +147,6 @@ class AutopilotService {
     );
   }
 
-  static int _getQiyamMinutes(AutopilotIntensity intensity) {
-    switch (intensity) {
-      case AutopilotIntensity.light:
-        return 10;
-      case AutopilotIntensity.balanced:
-        return 20;
-      case AutopilotIntensity.strong:
-        return 30;
-    }
-  }
-}
-
-enum AutopilotIntensity {
-  light,
-  balanced,
-  strong,
 }
 
 class TimeBlocks {

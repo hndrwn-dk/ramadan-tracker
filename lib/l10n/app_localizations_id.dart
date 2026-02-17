@@ -927,30 +927,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get myrRm => 'MYR (RM)';
 
   @override
-  String get autopilotIntensity => 'Intensitas Otomatis';
-
-  @override
-  String get light => 'Ringan';
-
-  @override
-  String get balanced => 'Seimbang';
-
-  @override
-  String get strong => 'Kuat';
-
-  @override
-  String get gentleRemindersMinimalPressure =>
-      'Pengingat lembut, tekanan minimal';
-
-  @override
-  String get regularCheckInsSteadyProgress =>
-      'Pemeriksaan rutin, progres stabil';
-
-  @override
-  String get frequentRemindersMaximumSupport =>
-      'Pengingat sering, dukungan maksimal';
-
-  @override
   String get smartReminders => 'Pengingat Cerdas';
 
   @override
@@ -1068,6 +1044,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String ofDhikr(int count) {
+    return 'dari $count dzikir';
+  }
+
+  @override
   String todayAmountGoal(String amount, String goal) {
     return 'Hari ini: $amount / $goal';
   }
@@ -1099,9 +1080,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get setupRamadanAutopilotSubtitle =>
       'Konfigurasi target dan waktu yang tersedia untuk menghasilkan rencana harian.';
-
-  @override
-  String get intensity => 'Intensitas';
 
   @override
   String get availableTimeMinutes => 'Waktu Tersedia (menit)';
@@ -1180,15 +1158,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get afterIsha => 'Setelah Isya';
-
-  @override
-  String get intensityLight => 'Ringan';
-
-  @override
-  String get intensityBalanced => 'Seimbang';
-
-  @override
-  String get intensityStrong => 'Kuat';
 
   @override
   String get quranGoal1Khatam => '1 Khatam';

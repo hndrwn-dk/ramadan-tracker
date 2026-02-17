@@ -31,6 +31,10 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
     _sedekahAmountController = TextEditingController(
       text: widget.data.sedekahAmount > 0 ? widget.data.sedekahAmount.toString() : '',
     );
+    // Auto-enable sedekah goal if sedekah habit is selected but toggle is off
+    if (widget.data.selectedHabits.contains('sedekah') && !widget.data.sedekahGoalEnabled) {
+      widget.data.sedekahGoalEnabled = true;
+    }
   }
 
   @override
@@ -271,35 +275,6 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
               ),
             const SizedBox(height: 24),
           ],
-          Text(
-            l10n.autopilotIntensity,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<String>(
-            segments: [
-              ButtonSegment(value: 'light', label: Text(l10n.light)),
-              ButtonSegment(value: 'balanced', label: Text(l10n.balanced)),
-              ButtonSegment(value: 'strong', label: Text(l10n.strong)),
-            ],
-            selected: {widget.data.autopilotIntensity},
-            onSelectionChanged: (Set<String> newSelection) {
-              setState(() {
-                widget.data.autopilotIntensity = newSelection.first;
-              });
-            },
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.data.autopilotIntensity == 'light'
-                ? l10n.gentleRemindersMinimalPressure
-                : widget.data.autopilotIntensity == 'balanced'
-                    ? l10n.regularCheckInsSteadyProgress
-                    : l10n.frequentRemindersMaximumSupport,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-          ),
           const SizedBox(height: 32),
           Row(
             children: [

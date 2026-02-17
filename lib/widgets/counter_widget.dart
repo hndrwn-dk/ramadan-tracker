@@ -9,6 +9,8 @@ class CounterWidget extends StatefulWidget {
   final List<int> quickAddChips;
   final ValueChanged<int>? onQuickAdd;
   final IconData? icon;
+  final int? target;
+  final String? targetLabel;
 
   const CounterWidget({
     super.key,
@@ -19,6 +21,8 @@ class CounterWidget extends StatefulWidget {
     this.quickAddChips = const [],
     this.onQuickAdd,
     this.icon,
+    this.target,
+    this.targetLabel,
   });
 
   @override
@@ -65,9 +69,19 @@ class _CounterWidgetState extends State<CounterWidget> {
                 color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                '${widget.value}',
-                style: Theme.of(context).textTheme.headlineMedium,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${widget.value}',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  if (widget.target != null)
+                    Text(
+                      widget.targetLabel ?? 'of ${widget.target}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 16),

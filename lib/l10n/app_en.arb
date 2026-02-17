@@ -1489,41 +1489,6 @@
     "description": "MYR currency label"
   },
   
-  "autopilotIntensity": "Autopilot Intensity",
-  "@autopilotIntensity": {
-    "description": "Autopilot intensity label"
-  },
-  
-  "light": "Light",
-  "@light": {
-    "description": "Light intensity option"
-  },
-  
-  "balanced": "Balanced",
-  "@balanced": {
-    "description": "Balanced intensity option"
-  },
-  
-  "strong": "Strong",
-  "@strong": {
-    "description": "Strong intensity option"
-  },
-  
-  "gentleRemindersMinimalPressure": "Gentle reminders, minimal pressure",
-  "@gentleRemindersMinimalPressure": {
-    "description": "Light intensity description"
-  },
-  
-  "regularCheckInsSteadyProgress": "Regular check-ins, steady progress",
-  "@regularCheckInsSteadyProgress": {
-    "description": "Balanced intensity description"
-  },
-  
-  "frequentRemindersMaximumSupport": "Frequent reminders, maximum support",
-  "@frequentRemindersMaximumSupport": {
-    "description": "Strong intensity description"
-  },
-  
   "smartReminders": "Smart Reminders",
   "@smartReminders": {
     "description": "Onboarding step 5 title"
@@ -1746,6 +1711,16 @@
       }
     }
   },
+
+  "ofDhikr": "of {count} dhikr",
+  "@ofDhikr": {
+    "description": "Dhikr count target label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   
   "todayAmountGoal": "Today: {amount} / {goal}",
   "@todayAmountGoal": {
@@ -1808,11 +1783,6 @@
   "setupRamadanAutopilotSubtitle": "Configure your goals and available time to generate a daily plan.",
   "@setupRamadanAutopilotSubtitle": {
     "description": "Setup wizard subtitle"
-  },
-  
-  "intensity": "Intensity",
-  "@intensity": {
-    "description": "Intensity section title"
   },
   
   "availableTimeMinutes": "Available Time (minutes)",
@@ -1991,21 +1961,6 @@
   "afterIsha": "After Isha",
   "@afterIsha": {
     "description": "After Isha time window"
-  },
-  
-  "intensityLight": "Light",
-  "@intensityLight": {
-    "description": "Light intensity label"
-  },
-  
-  "intensityBalanced": "Balanced",
-  "@intensityBalanced": {
-    "description": "Balanced intensity label"
-  },
-  
-  "intensityStrong": "Strong",
-  "@intensityStrong": {
-    "description": "Strong intensity label"
   },
   
   "quranGoal1Khatam": "1 Khatam",

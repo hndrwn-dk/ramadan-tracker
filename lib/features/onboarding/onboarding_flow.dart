@@ -207,15 +207,16 @@ class OnboardingData {
   bool sedekahGoalEnabled = false;
   int sedekahAmount = 0;
   String sedekahCurrency = 'IDR';
-  String autopilotIntensity = 'balanced';
   
   bool sahurEnabled = true;
   int sahurOffsetMinutes = 30;
   bool iftarEnabled = true;
   int iftarOffsetMinutes = 0;
   bool nightPlanEnabled = true;
-  bool quranReminderEnabled = false;
-  bool dhikrReminderEnabled = false;
+  bool quranReminderEnabled = true;
+  bool dhikrReminderEnabled = true;
+  bool sedekahReminderEnabled = true;
+  bool taraweehReminderEnabled = true;
   
   double? latitude;
   double? longitude;
@@ -253,6 +254,12 @@ class OnboardingData {
     await database.kvSettingsDao.setValue('iftar_enabled', iftarEnabled.toString());
     await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
     await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
+    
+    // Goal reminder settings
+    await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
+    await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
+    await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
+    await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
     
     // Set prayers to detailed mode by default (track all prayers individually)
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
@@ -369,6 +376,12 @@ class OnboardingData {
     await database.kvSettingsDao.setValue('iftar_enabled', iftarEnabled.toString());
     await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
     await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
+    
+    // Goal reminder settings
+    await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
+    await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
+    await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
+    await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
     
     // Set prayers to detailed mode by default (track all prayers individually)
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
