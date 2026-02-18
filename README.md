@@ -1,16 +1,22 @@
 # Ramadan Tracker
 
-Premium Ramadan tracker & planner with yearly seasons, Autopilot Qur'an plan, Sahur/Iftar reminders, and local backup/restore.
+Track your Ramadan habits and get smart reminders.
+
+![Feature overview](assets/feature_design.png)
+
+Premium Ramadan tracker and planner: yearly seasons, Autopilot Quran plan, Sahur/Iftar reminders, and local backup/restore.
 
 ## Features
 
-- **Offline-First**: Works completely offline, no internet or account required
-- **Yearly Reusable**: Create multiple Ramadan seasons (2025, 2026, etc.)
-- **Ramadan Autopilot**: AI-free algorithm that generates daily plans based on your goals and available time
-- **Quick Logging**: Complete daily tracking in under 15 seconds
-- **Insights**: Visual charts showing Quran progress, Dhikr progress, and completion scores
-- **Backup & Restore**: Export/import your data as JSON
-- **No Ads, No Tracking**: Privacy-focused design
+- **One-tap habit tracking**: Fasting, Quran, Dhikr, Taraweeh, Sedekah, 5 Prayers
+- **Smart reminders**: Sahur, Iftar, and goal reminders (Quran, Dhikr, Sedekah, Taraweeh) based on your location
+- **Daily progress and streaks**: Completion score and streak counter
+- **Insights and heatmaps**: Charts, heatmaps, and trends for Quran, Dhikr, and habits
+- **Ramadan Autopilot**: Daily plan with Quran reading targets and catch-up suggestions
+- **Yearly reusable**: Multiple Ramadan seasons (2025, 2026, etc.)
+- **Backup and restore**: Export/import data as JSON
+- **100% offline and private**: No account, no ads, no tracking; data stays on your device
+- **Multi-language**: English and Indonesian
 
 ## Architecture
 
@@ -112,7 +118,6 @@ The Autopilot plan is configured during onboarding, but you can adjust it later:
    - Quran goal (1 Khatam / 2 Khatam / Custom pages per day)
    - Dhikr target (33/100/300/1000 per day)
    - Sedekah goal (optional, with currency selection)
-   - Autopilot intensity (Light/Balanced/Strong)
 3. View your daily plan in the Plan tab
 
 ### Quick Logging
@@ -145,7 +150,7 @@ The Autopilot generates daily plans based on:
 2. **Time Allocation**:
    - Quran: ~1.5 minutes per page
    - Dhikr: ~0.02 minutes per count
-   - Taraweeh: 10/20/30 minutes based on intensity
+   - Taraweeh: 20 minutes (fixed)
 
 3. **Catch-Up Mode**:
    - If you miss days, increases daily target
