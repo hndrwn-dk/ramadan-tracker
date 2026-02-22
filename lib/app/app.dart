@@ -152,8 +152,8 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
         final pending = await NotificationService.getPendingNotifications();
         debugPrint('Total pending notifications AFTER reschedule: ${pending.length}');
         
-        // Warn if count seems too high (more than expected for 30 days)
-        if (pending.length > 100) {
+        // Warn only if count suggests duplicates (~12/day * 30 days = 360 is normal; >500 likely duplicate runs)
+        if (pending.length > 500) {
           debugPrint('WARNING: Pending notification count is very high (${pending.length}). This may indicate duplicates.');
         }
       } catch (e) {

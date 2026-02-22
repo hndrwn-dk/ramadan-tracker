@@ -12,8 +12,13 @@ import 'package:ramadan_tracker/domain/services/completion_service.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/widgets/habit_toggle.dart';
 import 'package:ramadan_tracker/widgets/quran_tracker.dart';
+import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
+import 'package:ramadan_tracker/widgets/prayers_icon.dart';
+import 'package:ramadan_tracker/widgets/tahajud_icon.dart';
+import 'package:ramadan_tracker/widgets/taraweeh_icon.dart';
 import 'package:ramadan_tracker/widgets/sedekah_tracker.dart';
 import 'package:ramadan_tracker/widgets/counter_widget.dart';
+import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
@@ -236,7 +241,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
     List<dynamic> entries,
     bool showItikaf,
   ) {
-    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'itikaf'];
+    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'tahajud', 'itikaf'];
     final sortedHabits = <Widget>[];
 
     // Debug logging
@@ -280,10 +285,20 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
       if (habitModel.type == HabitType.bool) {
         final value = entry?.valueBool ?? false;
         IconData? icon;
-        if (habitKey == 'fasting') icon = Icons.wb_sunny;
+        if (habitKey == 'fasting') icon = Icons.no_meals;
         if (habitKey == 'taraweeh') icon = Icons.nights_stay;
         if (habitKey == 'itikaf') icon = Icons.mosque;
         if (habitKey == 'prayers') icon = Icons.mosque;
+        if (habitKey == 'tahajud') icon = Icons.self_improvement;
+        final iconWidget = habitKey == 'tahajud'
+            ? TahajudIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+            : habitKey == 'prayers'
+                ? PrayersIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                : habitKey == 'itikaf'
+                    ? ItikafIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                    : habitKey == 'taraweeh'
+                        ? TaraweehIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                        : null;
 
         debugPrint('  Adding bool habit to UI: $habitKey (value=$value)');
         sortedHabits.add(
@@ -293,6 +308,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
               label: habit.name,
               value: value,
               icon: icon,
+              iconWidget: iconWidget,
               onTap: () {
                 _toggleBoolHabit(habit.id, !value);
               },
@@ -321,6 +337,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
               label: habit.name,
               value: value,
               icon: Icons.favorite,
+              iconWidget: DhikrIcon(size: 20, color: Theme.of(context).colorScheme.primary),
               quickAddChips: const [33, 100, 300],
               onDecrement: () {
                 if (value > 0) {

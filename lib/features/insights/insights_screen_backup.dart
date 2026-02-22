@@ -718,6 +718,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     
     // Load Sedekah currency
     final sedekahCurrency = await database.kvSettingsDao.getValue('sedekah_currency') ?? 'IDR';
+    final taraweehRakaatRaw = await database.kvSettingsDao.getValue('taraweeh_rakaat_per_day');
+    final taraweehRakaatPerDay = int.tryParse(taraweehRakaatRaw ?? '') ?? 11;
 
     // Convert entries to models
     final entryModels = filteredEntries.map((e) => DailyEntryModel(
@@ -739,7 +741,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
       final taskKey = TaskRegistry.getTaskKeyByHabitKey(habit.key);
       if (taskKey != null) {
         enabledTasks.add(taskKey);
-        targets[taskKey] = sh.targetValue;
+        if (habit.key == 'taraweeh') {
+          targets[taskKey] = taraweehRakaatPerDay;
+        } else {
+          targets[taskKey] = sh.targetValue;
+        }
       }
     }
 

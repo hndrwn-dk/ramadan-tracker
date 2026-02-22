@@ -6,6 +6,7 @@ import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/prayers_icon.dart';
 
 final prayerDetailsProvider = FutureProvider.family<PrayerDetail?, ({int seasonId, int dayIndex})>((ref, params) async {
   final database = ref.read(databaseProvider);
@@ -40,8 +41,7 @@ class PrayerDetailsWidget extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.mosque,
+                PrayersIcon(
                   size: 20,
                   color: Theme.of(context).colorScheme.primary,
                 ),

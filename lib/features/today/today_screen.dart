@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,11 +20,16 @@ import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/widgets/habit_toggle.dart';
 import 'package:ramadan_tracker/widgets/quran_tracker.dart';
+import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
+import 'package:ramadan_tracker/widgets/tahajud_icon.dart';
+import 'package:ramadan_tracker/widgets/taraweeh_icon.dart';
 import 'package:ramadan_tracker/widgets/sedekah_tracker.dart';
 import 'package:ramadan_tracker/widgets/counter_widget.dart';
+import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/prayer_details_widget.dart';
 import 'package:ramadan_tracker/features/goals/edit_goals_flow.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:flutter/services.dart';
@@ -470,8 +477,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Widget _buildTimesCard(int seasonId, int dayIndex) {
-    return FutureBuilder<Map<String, DateTime>>(
-      future: _getPrayerTimes(seasonId),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _getPrayerTimesWithTimezone(seasonId),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return Card(
@@ -505,8 +512,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         }
 
         final times = snapshot.data!;
-        final fajr = times['fajr'];
-        final maghrib = times['maghrib'];
+        final fajrUtc = times['fajr'] as DateTime?;
+        final maghribUtc = times['maghrib'] as DateTime?;
+        final timezoneStr = times['timezone'] as String? ?? 'UTC';
         final database = ref.read(databaseProvider);
         
         return FutureBuilder<Map<String, dynamic>>(
@@ -514,8 +522,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           builder: (context, settingsSnapshot) {
             final sahurOffset = settingsSnapshot.data?['sahur_offset'] ?? 30;
             final iftarOffset = settingsSnapshot.data?['iftar_offset'] ?? 0;
+            final showIftarCountdown = settingsSnapshot.data?['show_iftar_countdown'] ?? true;
+            final showSahurCountdown = settingsSnapshot.data?['show_sahur_countdown'] ?? false;
             
-            if (fajr == null || maghrib == null) {
+            if (fajrUtc == null || maghribUtc == null) {
               // Show card with message if location not set
               return Card(
                 child: Padding(
@@ -548,75 +558,209 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               );
             }
 
+            // Convert UTC to target timezone for display (stored times are always UTC)
+            DateTime fajr = fajrUtc;
+            DateTime maghrib = maghribUtc;
+            try {
+              if (timezoneStr != 'UTC' && timezoneStr.isNotEmpty) {
+                final targetLocation = tz.getLocation(timezoneStr);
+                final fajrUtcMoment = fajrUtc.isUtc ? fajrUtc : DateTime.utc(fajrUtc.year, fajrUtc.month, fajrUtc.day, fajrUtc.hour, fajrUtc.minute, fajrUtc.second);
+                final maghribUtcMoment = maghribUtc.isUtc ? maghribUtc : DateTime.utc(maghribUtc.year, maghribUtc.month, maghribUtc.day, maghribUtc.hour, maghribUtc.minute, maghribUtc.second);
+                final fajrTz = tz.TZDateTime.from(fajrUtcMoment, targetLocation);
+                final maghribTz = tz.TZDateTime.from(maghribUtcMoment, targetLocation);
+                fajr = DateTime(fajrTz.year, fajrTz.month, fajrTz.day, fajrTz.hour, fajrTz.minute, fajrTz.second);
+                maghrib = DateTime(maghribTz.year, maghribTz.month, maghribTz.day, maghribTz.hour, maghribTz.minute, maghribTz.second);
+              }
+            } catch (_) {
+              // Use UTC times if conversion fails
+            }
+            
             final sahurTime = fajr.subtract(Duration(minutes: sahurOffset));
             final iftarTime = maghrib.add(Duration(minutes: iftarOffset));
 
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.times,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Tooltip(
+                              message: AppLocalizations.of(context)!.refreshTimesTooltip,
+                              child: IconButton(
+                                icon: const Icon(Icons.refresh, size: 20),
+                                onPressed: () {
+                                  _refreshPrayerTimes(seasonId);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
                         Text(
-                          AppLocalizations.of(context)!.times,
-                          style: Theme.of(context).textTheme.titleMedium,
+                          AppLocalizations.of(context)!.timesForDate(
+                            DateFormat('d MMM yyyy').format(fajr),
+                          ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.refresh, size: 20),
-                          onPressed: () {
-                            _refreshPrayerTimes(seasonId);
-                          },
+                        const SizedBox(height: 2),
+                        Text(
+                          AppLocalizations.of(context)!.prayerTimesVaryDaily,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              AppLocalizations.of(context)!.sahur,
-                              style: Theme.of(context).textTheme.bodySmall,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.sahur,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                Text(
+                                  DateFormat('HH:mm').format(sahurTime),
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                Text(
+                                  '${DateFormat('HH:mm').format(fajr)} ${AppLocalizations.of(context)!.fajr}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
                             ),
-                            Text(
-                              DateFormat('HH:mm').format(sahurTime),
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            Text(
-                              '${DateFormat('HH:mm').format(fajr)} ${AppLocalizations.of(context)!.fajr}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.iftar,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                Text(
+                                  DateFormat('HH:mm').format(iftarTime),
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                Text(
+                                  '${DateFormat('HH:mm').format(maghrib)} ${AppLocalizations.of(context)!.maghrib}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.iftar,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            Text(
-                              DateFormat('HH:mm').format(iftarTime),
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            Text(
-                              '${DateFormat('HH:mm').format(maghrib)} ${AppLocalizations.of(context)!.maghrib}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
+                        _TimesCountdownLine(
+                          iftarTime: iftarTime,
+                          sahurTime: sahurTime,
+                          showIftar: showIftarCountdown,
+                          showSahur: showSahurCountdown,
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                _buildPrayerOffsetTipBanner(seasonId, fajr, maghrib),
+              ],
             );
           },
+        );
+      },
+    );
+  }
+
+  /// Returns true if Fajr or Maghrib look off by ~1 hour (e.g. UTC shown as local, or wrong TZ).
+  /// For Indonesia/Singapore: Fajr typically 03:00-06:00, Maghrib 17:00-20:00.
+  bool _isPrayerTimePlausiblyOffByOneHour(DateTime fajrLocal, DateTime maghribLocal) {
+    final fajrHour = fajrLocal.hour;
+    final maghribHour = maghribLocal.hour;
+    final fajrInRange = fajrHour >= 3 && fajrHour <= 6;
+    final maghribInRange = maghribHour >= 17 && maghribHour <= 20;
+    return !fajrInRange || !maghribInRange;
+  }
+
+  Future<bool> _isPrayerOffsetTipDismissed(int seasonId) async {
+    final database = ref.read(databaseProvider);
+    final key = 'prayer_offset_tip_dismissed_season_$seasonId';
+    final value = await database.kvSettingsDao.getValue(key);
+    return value == 'true';
+  }
+
+  Future<void> _dismissPrayerOffsetTip(int seasonId) async {
+    final database = ref.read(databaseProvider);
+    await database.kvSettingsDao.setValue('prayer_offset_tip_dismissed_season_$seasonId', 'true');
+    if (mounted) setState(() {});
+  }
+
+  Widget _buildPrayerOffsetTipBanner(int seasonId, DateTime fajrLocal, DateTime maghribLocal) {
+    if (!_isPrayerTimePlausiblyOffByOneHour(fajrLocal, maghribLocal)) {
+      return const SizedBox.shrink();
+    }
+    final l10n = AppLocalizations.of(context)!;
+    return FutureBuilder<bool>(
+      future: _isPrayerOffsetTipDismissed(seasonId),
+      builder: (context, snapshot) {
+        if (snapshot.data == true) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Material(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.prayerOffsetTipTitle,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () => _dismissPrayerOffsetTip(seasonId),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.prayerOffsetTipBody,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () {
+                        ref.read(openSettingsSectionProvider.notifier).state = 'times';
+                        ref.read(tabIndexProvider.notifier).state = 4;
+                      },
+                      child: Text(l10n.prayerOffsetTipCta),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
@@ -690,10 +834,19 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Future<Map<String, DateTime>> _getPrayerTimes(int seasonId) async {
+    final result = await _getPrayerTimesWithTimezone(seasonId);
+    if (result.isEmpty) return {};
+    return {
+      'fajr': result['fajr'] as DateTime,
+      'maghrib': result['maghrib'] as DateTime,
+    };
+  }
+
+  Future<Map<String, dynamic>> _getPrayerTimesWithTimezone(int seasonId) async {
     final database = ref.read(databaseProvider);
     final latStr = await database.kvSettingsDao.getValue('prayer_latitude');
     final lonStr = await database.kvSettingsDao.getValue('prayer_longitude');
-    final tz = await database.kvSettingsDao.getValue('prayer_timezone') ?? 'UTC';
+    final timezoneStr = await database.kvSettingsDao.getValue('prayer_timezone') ?? 'UTC';
     final method = await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl';
     final highLatRule = await database.kvSettingsDao.getValue('prayer_high_lat_rule') ?? 'middle_of_night';
     final fajrAdj = int.tryParse(await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0') ?? 0;
@@ -711,25 +864,30 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
 
     try {
-      return await PrayerTimeService.getCachedOrCalculate(
+      final times = await PrayerTimeService.getCachedOrCalculate(
         database: database,
         seasonId: seasonId,
         date: DateTime.now(),
         latitude: lat,
         longitude: lon,
-        timezone: tz,
+        timezone: timezoneStr,
         method: method,
         highLatRule: highLatRule,
         fajrAdjust: fajrAdj,
         maghribAdjust: maghribAdj,
       );
+      return {
+        'fajr': times['fajr'],
+        'maghrib': times['maghrib'],
+        'timezone': timezoneStr,
+      };
     } catch (e) {
       return {};
     }
   }
 
   Future<Map<String, dynamic>> _getReminderSettings(AppDatabase database) async {
-    final sahurOffset = int.tryParse(await database.kvSettingsDao.getValue('sahur_offset') ?? '30') ?? 30;
+    final sahurOffset = (int.tryParse(await database.kvSettingsDao.getValue('sahur_offset') ?? '30') ?? 30).clamp(1, 45);
     final iftarOffset = int.tryParse(await database.kvSettingsDao.getValue('iftar_offset') ?? '0') ?? 0;
     return {
       'sahur_offset': sahurOffset,
@@ -941,7 +1099,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     List<dynamic> entries,
     bool showItikaf,
   ) {
-    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'itikaf'];
+    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'tahajud', 'itikaf'];
     final sortedHabits = <Widget>[];
 
     // Debug logging
@@ -990,10 +1148,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       if (habitModel.type == HabitType.bool) {
         final value = entry?.valueBool ?? false;
         IconData? icon;
-        if (habitKey == 'fasting') icon = Icons.wb_sunny;
+        if (habitKey == 'fasting') icon = Icons.no_meals;
         if (habitKey == 'taraweeh') icon = Icons.nights_stay;
         if (habitKey == 'itikaf') icon = Icons.mosque;
         if (habitKey == 'prayers') icon = Icons.mosque;
+        if (habitKey == 'tahajud') icon = Icons.self_improvement;
+        final iconWidget = habitKey == 'tahajud'
+            ? TahajudIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+            : habitKey == 'itikaf'
+                ? ItikafIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                : habitKey == 'taraweeh'
+                    ? TaraweehIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                    : null;
 
         debugPrint('  Adding bool habit to UI: $habitKey (value=$value)');
         
@@ -1002,14 +1168,39 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           sortedHabits.add(
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: PrayerDetailsWidget(
-                seasonId: seasonId,
-                dayIndex: dayIndex,
+              child: _wrapHabitInCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: PrayerDetailsWidget(
+                    seasonId: seasonId,
+                    dayIndex: dayIndex,
+                  ),
+                ),
+              ),
+            ),
+          );
+        } else if (habitKey == 'taraweeh') {
+          final rakaat = entry?.valueInt;
+          final isDone = entry?.valueBool ?? false;
+          sortedHabits.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _wrapHabitInCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildTaraweehRakaatContent(
+                    seasonId: seasonId,
+                    dayIndex: dayIndex,
+                    habitId: habit.id,
+                    isDone: isDone,
+                    selectedRakaat: rakaat,
+                  ),
+                ),
               ),
             ),
           );
         } else {
-          // Other boolean habits
+          // Other boolean habits (HabitToggle has its own border)
           sortedHabits.add(
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -1017,6 +1208,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 label: getHabitDisplayName(context, habitKey),
                 value: value,
                 icon: icon,
+                iconWidget: iconWidget,
                 onTap: () {
                   _toggleBoolHabit(seasonId, dayIndex, habit.id, !value);
                 },
@@ -1028,11 +1220,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         debugPrint('  Adding quran_pages to UI');
         sortedHabits.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: QuranTracker(
-              seasonId: seasonId,
-              dayIndex: dayIndex,
-              habitId: habit.id,
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _wrapHabitInCard(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: QuranTracker(
+                  seasonId: seasonId,
+                  dayIndex: dayIndex,
+                  habitId: habit.id,
+                ),
+              ),
             ),
           ),
         );
@@ -1041,31 +1238,37 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         debugPrint('  Adding dhikr to UI (value=$value)');
         sortedHabits.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: FutureBuilder<int>(
-              future: ref.read(databaseProvider).dhikrPlanDao.getPlan(seasonId).then((plan) => plan?.dailyTarget ?? 100),
-              builder: (context, snapshot) {
-                final target = snapshot.data ?? 100;
-                return CounterWidget(
-                  label: getHabitDisplayName(context, habitKey),
-                  value: value,
-                  target: target,
-                  targetLabel: AppLocalizations.of(context)!.ofDhikr(target),
-                  icon: Icons.favorite,
-                  quickAddChips: const [33, 100, 300],
-                  onDecrement: () {
-                    if (value > 0) {
-                      _setIntHabit(seasonId, dayIndex, habit.id, value - 1);
-                    }
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _wrapHabitInCard(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: FutureBuilder<int>(
+                  future: ref.read(databaseProvider).dhikrPlanDao.getPlan(seasonId).then((plan) => plan?.dailyTarget ?? 100),
+                  builder: (context, snapshot) {
+                    final target = snapshot.data ?? 100;
+                    return CounterWidget(
+                      label: getHabitDisplayName(context, habitKey),
+                      value: value,
+                      target: target,
+                      targetLabel: AppLocalizations.of(context)!.ofDhikr(target),
+                      icon: Icons.favorite,
+                      iconWidget: DhikrIcon(size: 20, color: Theme.of(context).colorScheme.primary),
+                      quickAddChips: const [33, 100, 300],
+                      onDecrement: () {
+                        if (value > 0) {
+                          _setIntHabit(seasonId, dayIndex, habit.id, value - 1);
+                        }
+                      },
+                      onIncrement: () {
+                        _setIntHabit(seasonId, dayIndex, habit.id, value + 1);
+                      },
+                      onQuickAdd: (chipValue) {
+                        _setIntHabit(seasonId, dayIndex, habit.id, value + chipValue);
+                      },
+                    );
                   },
-                  onIncrement: () {
-                    _setIntHabit(seasonId, dayIndex, habit.id, value + 1);
-                  },
-                  onQuickAdd: (chipValue) {
-                    _setIntHabit(seasonId, dayIndex, habit.id, value + chipValue);
-                  },
-                );
-              },
+                ),
+              ),
             ),
           ),
         );
@@ -1073,11 +1276,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         debugPrint('  Adding sedekah to UI');
         sortedHabits.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: SedekahTracker(
-              seasonId: seasonId,
-              dayIndex: dayIndex,
-              habitId: habit.id,
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _wrapHabitInCard(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SedekahTracker(
+                  seasonId: seasonId,
+                  dayIndex: dayIndex,
+                  habitId: habit.id,
+                ),
+              ),
             ),
           ),
         );
@@ -1455,6 +1663,119 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
   }
 
+  Future<void> _setTaraweehRakaat(int seasonId, int dayIndex, int habitId, int? rakaat) async {
+    HapticFeedback.lightImpact();
+    final database = ref.read(databaseProvider);
+    await database.dailyEntriesDao.setBoolAndIntValue(
+      seasonId,
+      dayIndex,
+      habitId,
+      rakaat != null,
+      rakaat,
+    );
+    ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+  }
+
+  Widget _wrapHabitInCard({required Widget child}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isDark ? Colors.white.withOpacity(0.12) : Colors.grey.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildTaraweehRakaatContent({
+    required int seasonId,
+    required int dayIndex,
+    required int habitId,
+    required bool isDone,
+    required int? selectedRakaat,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            TaraweehIcon(
+              size: 20,
+              color: isDone
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              getHabitDisplayName(context, 'taraweeh'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: isDone ? FontWeight.w600 : FontWeight.normal,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _TaraweehRakaatChip(
+                label: l10n.taraweehRakaat11,
+                isSelected: selectedRakaat == 11,
+                onTap: () {
+                  _setTaraweehRakaat(seasonId, dayIndex, habitId, selectedRakaat == 11 ? null : 11);
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _TaraweehRakaatChip(
+                label: l10n.taraweehRakaat23,
+                isSelected: selectedRakaat == 23,
+                onTap: () {
+                  _setTaraweehRakaat(seasonId, dayIndex, habitId, selectedRakaat == 23 ? null : 23);
+                },
+              ),
+            ),
+          ],
+        ),
+        FutureBuilder<({int totalRakaat, int targetRakaat})?>(
+          future: _getTaraweehSeasonProgress(seasonId, habitId),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
+            final d = snapshot.data!;
+            if (d.targetRakaat <= 0) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                l10n.taraweehRakaatProgress(d.totalRakaat, d.targetRakaat),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<({int totalRakaat, int targetRakaat})?> _getTaraweehSeasonProgress(int seasonId, int habitId) async {
+    final database = ref.read(databaseProvider);
+    final season = await ref.read(currentSeasonProvider.future);
+    if (season == null) return null;
+    final entries = await database.dailyEntriesDao.getAllSeasonEntries(seasonId);
+    final totalRakaat = entries.where((e) => e.habitId == habitId).fold<int>(0, (s, e) => s + (e.valueInt ?? 0));
+    final raw = await database.kvSettingsDao.getValue('taraweeh_rakaat_per_day');
+    final perDay = int.tryParse(raw ?? '') ?? 11;
+    final targetRakaat = perDay * season.days;
+    return (totalRakaat: totalRakaat, targetRakaat: targetRakaat);
+  }
+
   Future<void> _setIntHabit(int seasonId, int dayIndex, int habitId, int value) async {
     final database = ref.read(databaseProvider);
     await database.dailyEntriesDao.setIntValue(seasonId, dayIndex, habitId, value);
@@ -1465,6 +1786,150 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final database = ref.read(databaseProvider);
     await database.dailyEntriesDao.setNote(seasonId, dayIndex, habitId, note);
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+  }
+}
+
+class _TaraweehRakaatChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TaraweehRakaatChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primaryContainer
+                : Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimesCountdownLine extends StatefulWidget {
+  const _TimesCountdownLine({
+    required this.iftarTime,
+    required this.sahurTime,
+    required this.showIftar,
+    required this.showSahur,
+  });
+  final DateTime iftarTime;
+  final DateTime sahurTime;
+  final bool showIftar;
+  final bool showSahur;
+
+  @override
+  State<_TimesCountdownLine> createState() => _TimesCountdownLineState();
+}
+
+class _TimesCountdownLineState extends State<_TimesCountdownLine> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  static String _formatCountdown(Duration d) {
+    if (d.inHours >= 1) {
+      final h = d.inHours;
+      final m = d.inMinutes % 60;
+      final s = d.inSeconds % 60;
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    }
+    final m = d.inMinutes % 60;
+    final s = d.inSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  static String _formatTime(DateTime t) {
+    return DateFormat('HH:mm').format(t);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final l10n = AppLocalizations.of(context)!;
+    final style = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.primary,
+      fontWeight: FontWeight.w500,
+    );
+    final List<Widget> lines = [];
+
+    if (widget.showIftar) {
+      if (now.isBefore(widget.iftarTime)) {
+        final d = widget.iftarTime.difference(now);
+        lines.add(Text(l10n.iftarIn(_formatCountdown(d)), style: style));
+      } else {
+        lines.add(Text(l10n.iftarPassed(_formatTime(widget.iftarTime)), style: style));
+      }
+    }
+
+    if (widget.showSahur) {
+      if (now.isBefore(widget.sahurTime)) {
+        final d = widget.sahurTime.difference(now);
+        lines.add(Text(l10n.sahurIn(_formatCountdown(d)), style: style));
+      } else {
+        lines.add(Text(l10n.sahurPassed(_formatTime(widget.sahurTime)), style: style));
+      }
+    }
+
+    if (lines.isEmpty) return const SizedBox.shrink();
+    final children = <Widget>[];
+    for (var i = 0; i < lines.length; i++) {
+      if (i > 0) children.add(const SizedBox(height: 4));
+      children.add(lines[i]);
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      ),
+    );
   }
 }
 

@@ -24,9 +24,13 @@ class PrayerTimeService {
         return CalculationMethod.singapore.getParameters();
       case 'indonesia':
       case 'kemenag':
-        // Indonesia/Kemenag: MWL is most commonly used, closest to Ephemeris method
-        // Fajr 18°, Isha 17° (same as MWL)
-        return CalculationMethod.muslim_world_league.getParameters();
+        // Indonesia/Kemenag (Sihat): 20 deg Fajr, 18 deg Isha per official Bimasislam/Kemenag.
+        // Matches jadwal imsakiyah for Jakarta and other Indonesian cities.
+        return CalculationParameters(
+          method: CalculationMethod.other,
+          fajrAngle: 20.0,
+          ishaAngle: 18.0,
+        );
       case 'dubai':
         return CalculationMethod.dubai.getParameters();
       case 'qatar':
@@ -127,30 +131,56 @@ class PrayerTimeService {
       utcOffset: utcOffset,
     );
 
-    // adhan v2.0 returns times as DateTime objects in the specified timezone (via utcOffset)
-    // Apply adjustments directly
-    final fajr = prayerTimes.fajr.add(Duration(minutes: fajrAdjust));
-    final maghrib = prayerTimes.maghrib.add(Duration(minutes: maghribAdjust));
+    // adhan v2.0: When utcOffset is provided, prayerTimes.fajr/maghrib are DateTime objects
+    // that represent local time in the target timezone (e.g., 04:32 in Asia/Jakarta).
+    // However, DateTime in Dart doesn't store timezone info - it's always in device local timezone.
+    // So prayerTimes.fajr (04:32) is actually 04:32 in device local timezone, not target timezone.
+    
+    // Apply adjustments
+    var fajr = prayerTimes.fajr.add(Duration(minutes: fajrAdjust));
+    var maghrib = prayerTimes.maghrib.add(Duration(minutes: maghribAdjust));
 
-    // Return as DateTime (already in correct timezone)
-    return {
-      'fajr': DateTime(
-        fajr.year,
-        fajr.month,
-        fajr.day,
+    // The issue: fajr/maghrib from adhan represent local time in target timezone,
+    // but DateTime interprets them as device local timezone.
+    // Solution: Create TZDateTime in target timezone using the hour/minute from adhan,
+    // then convert to UTC for storage. Caller converts back to target timezone for display.
+    
+    try {
+      final targetLocation = tz.getLocation(timezone);
+      
+      // Create TZDateTime in target timezone using hour/minute from adhan result
+      // This ensures the time represents the correct local time in target timezone
+      final fajrTz = tz.TZDateTime(
+        targetLocation,
+        date.year,
+        date.month,
+        date.day,
         fajr.hour,
         fajr.minute,
         fajr.second,
-      ),
-      'maghrib': DateTime(
-        maghrib.year,
-        maghrib.month,
-        maghrib.day,
+      );
+      final maghribTz = tz.TZDateTime(
+        targetLocation,
+        date.year,
+        date.month,
+        date.day,
         maghrib.hour,
         maghrib.minute,
         maghrib.second,
-      ),
-    };
+      );
+      
+      // Convert to UTC for storage - caller will convert back to target timezone
+      return {
+        'fajr': fajrTz.toUtc(),
+        'maghrib': maghribTz.toUtc(),
+      };
+    } catch (e) {
+      // Fallback: return as-is (shouldn't happen)
+      return {
+        'fajr': fajr,
+        'maghrib': maghrib,
+      };
+    }
   }
 
   static Future<Map<String, DateTime>> getCachedOrCalculate({

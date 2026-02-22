@@ -5,6 +5,8 @@ import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/domain/services/autopilot_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
+import 'package:ramadan_tracker/widgets/quran_icon.dart';
 
 class PlanBlockCard extends ConsumerWidget {
   final String label;
@@ -169,8 +171,7 @@ class PlanBlockCard extends ConsumerWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.menu_book,
+                            QuranIcon(
                               size: 14,
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
@@ -187,8 +188,7 @@ class PlanBlockCard extends ConsumerWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.favorite,
+                            DhikrIcon(
                               size: 14,
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
@@ -225,6 +225,7 @@ class PlanBlockCard extends ConsumerWidget {
         context,
         label: AppLocalizations.of(context)!.startReading,
         icon: Icons.menu_book,
+        iconWidget: QuranIcon(size: 14, color: Theme.of(context).colorScheme.onPrimaryContainer),
         onTap: () {
           // Navigate to Today screen (Quran tracker is there)
           ref.read(tabIndexProvider.notifier).state = 0;
@@ -235,6 +236,7 @@ class PlanBlockCard extends ConsumerWidget {
         context,
         label: AppLocalizations.of(context)!.startCounter,
         icon: Icons.favorite,
+        iconWidget: DhikrIcon(size: 14, color: Theme.of(context).colorScheme.onPrimaryContainer),
         onTap: () {
           // Navigate to Today screen (Dhikr counter is there)
           ref.read(tabIndexProvider.notifier).state = 0;
@@ -265,8 +267,10 @@ class PlanBlockCard extends ConsumerWidget {
     BuildContext context, {
     required String label,
     required IconData icon,
+    Widget? iconWidget,
     required VoidCallback onTap,
   }) {
+    final iconColor = Theme.of(context).colorScheme.onPrimaryContainer;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -285,11 +289,7 @@ class PlanBlockCard extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 14,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
+              iconWidget ?? Icon(icon, size: 14, color: iconColor),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
@@ -351,7 +351,7 @@ class PlanBlockCard extends ConsumerWidget {
     } else if (lowerName.contains('dhikr')) {
       return l10n.habitDhikr;
     } else if (lowerName.contains('qiyam')) {
-      return l10n.taskQiyam;
+      return '${l10n.taskQiyam} (${l10n.habitTahajud})';
     } else if (lowerName.contains('taraweeh')) {
       return l10n.habitTaraweeh;
     }

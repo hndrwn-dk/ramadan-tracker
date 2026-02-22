@@ -72,7 +72,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeAutoDesc => 'Follow system theme (default)';
 
   @override
-  String get seasonManagementTitle => 'Season Management';
+  String get seasonManagementTitle => 'My Ramadan';
 
   @override
   String get seasonManagementSubtitle =>
@@ -92,6 +92,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure prayer times and notification reminders';
 
   @override
+  String get prayerOffsetTipTitle => 'Prayer times off by 1 hour?';
+
+  @override
+  String get prayerOffsetTipBody =>
+      'If prayer times look off by about 1 hour, you can set an Offset in Settings.';
+
+  @override
+  String get prayerOffsetTipCta => 'Set Offset';
+
+  @override
   String get backupRestoreTitle => 'Backup & Restore';
 
   @override
@@ -108,6 +118,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageSubtitle => 'Choose your preferred language';
+
+  @override
+  String get languageReason =>
+      'Menus and content will appear in this language throughout the app.';
 
   @override
   String get english => 'English';
@@ -202,7 +216,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsBiggestComeback => 'Biggest Comeback';
 
   @override
-  String get monthViewTitle => 'Month View';
+  String get monthViewTitle => 'Monthly View';
 
   @override
   String get monthViewLegend => 'Legend';
@@ -408,6 +422,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitTaraweeh => 'Taraweeh';
 
   @override
+  String get taraweehRakaat11 => '11 rakaat';
+
+  @override
+  String get taraweehRakaat23 => '23 rakaat';
+
+  @override
+  String get taraweehRakaatPerDayLabel => 'Rakaat per day:';
+
+  @override
+  String taraweehRakaatProgress(int current, int target) {
+    return '$current/$target rakaat';
+  }
+
+  @override
   String get habitSedekah => 'Sedekah';
 
   @override
@@ -415,6 +443,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitPrayers => '5 Prayers';
+
+  @override
+  String get habitTahajud => 'Tahajud';
 
   @override
   String get habitPrayersDetailed => '5 Prayers (detailed)';
@@ -465,11 +496,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Get notified when it\'s time to break fast';
 
   @override
-  String get nightPlanReminder => 'Night plan reminder';
+  String get nightPlanReminder => 'Time for night worship';
 
   @override
   String get reminderToPlanNightActivities =>
-      'Reminder to plan your night activities';
+      'Reminder to plan your night activities (Qiyam & Tahajud)';
 
   @override
   String get calculationMethod => 'Calculation Method';
@@ -674,6 +705,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get maghrib => 'Maghrib';
+
+  @override
+  String iftarCountdown(int hours, int minutes) {
+    return 'Iftar in ${hours}h ${minutes}m';
+  }
+
+  @override
+  String iftarIn(String time) {
+    return 'Iftar in $time';
+  }
+
+  @override
+  String iftarPassed(String time) {
+    return 'Iftar passed • $time';
+  }
+
+  @override
+  String sahurIn(String time) {
+    return 'Sahur in $time';
+  }
+
+  @override
+  String sahurPassed(String time) {
+    return 'Sahur passed • $time';
+  }
+
+  @override
+  String get showIftarCountdown => 'Show Iftar countdown';
+
+  @override
+  String get showSahurCountdown => 'Show Sahur countdown';
 
   @override
   String get todayIn10Seconds => 'Today in 10 seconds';
@@ -996,6 +1058,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get prayerTimesPreview => 'Prayer Times Preview';
+
+  @override
+  String get prayerTimesVaryDaily =>
+      'Times are calculated per day and change through Ramadan.';
+
+  @override
+  String get refreshTimesTooltip =>
+      'Recalculate times (e.g. after changing location)';
+
+  @override
+  String timesForDate(String date) {
+    return 'Times for $date';
+  }
 
   @override
   String get test => 'Test';

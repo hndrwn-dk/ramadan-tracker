@@ -4,6 +4,8 @@ import 'package:ramadan_tracker/app/app.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
+import 'package:ramadan_tracker/data/providers/season_provider.dart';
+import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step1_welcome.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step2_season.dart';
@@ -59,23 +61,45 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           data: _data,
           onPrevious: _previousStep,
           onFinish: () async {
-            // Save data first (fast operations)
-            await _data.saveWithoutScheduling(ref);
-            ref.invalidate(shouldShowOnboardingProvider);
-            
-            // Navigate immediately (don't wait for scheduling)
-            if (mounted) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (_) => const MainScreen(),
-                ),
-                (route) => false,
-              );
+            debugPrint('=== Onboarding Finish Started ===');
+            try {
+              // Save data first (fast operations)
+              debugPrint('Saving onboarding data...');
+              await _data.saveWithoutScheduling(ref);
+              debugPrint('Onboarding data saved successfully');
+
+              ref.invalidate(shouldShowOnboardingProvider);
+              ref.invalidate(allSeasonsProvider);
+              ref.invalidate(currentSeasonProvider);
+
+              await Future.delayed(const Duration(milliseconds: 100));
+              debugPrint('Waited for provider update');
+              
+              if (mounted) {
+                ref.read(tabIndexProvider.notifier).state = 0;
+                debugPrint('Navigating to MainScreen...');
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const MainScreen(),
+                  ),
+                  (route) => false,
+                );
+                debugPrint('Navigation completed');
+              } else {
+                debugPrint('Widget not mounted, skipping navigation');
+              }
+              
+              // Schedule notifications in background (non-blocking)
+              // This prevents UI freeze from Android rate limiting
+              debugPrint('Scheduling notifications in background...');
+              _data.scheduleNotificationsInBackground(ref);
+              debugPrint('=== Onboarding Finish Completed ===');
+            } catch (e, stackTrace) {
+              debugPrint('=== ERROR in Onboarding Finish ===');
+              debugPrint('Error: $e');
+              debugPrint('Stack: $stackTrace');
+              debugPrint('=== End Error ===');
             }
-            
-            // Schedule notifications in background (non-blocking)
-            // This prevents UI freeze from Android rate limiting
-            _data.scheduleNotificationsInBackground(ref);
           },
         );
       default:
@@ -213,11 +237,14 @@ class OnboardingData {
   bool iftarEnabled = true;
   int iftarOffsetMinutes = 0;
   bool nightPlanEnabled = true;
+  int nightPlanHour = 2;
+  int nightPlanMinute = 30;
   bool quranReminderEnabled = true;
   bool dhikrReminderEnabled = true;
   bool sedekahReminderEnabled = true;
   bool taraweehReminderEnabled = true;
-  
+  int taraweehRakaatPerDay = 11;
+
   double? latitude;
   double? longitude;
   String timezone = 'UTC';
@@ -228,16 +255,22 @@ class OnboardingData {
 
   // Save data without scheduling (fast, non-blocking)
   Future<void> saveWithoutScheduling(WidgetRef ref) async {
+    debugPrint('=== saveWithoutScheduling Started ===');
     final database = ref.read(databaseProvider);
     final now = DateTime.now();
     
+    debugPrint('Creating season: label=$seasonLabel, startDate=$startDate, days=$days');
     final seasonId = await database.ramadanSeasonsDao.createSeason(
       label: seasonLabel.isEmpty ? 'Ramadan ${now.year}' : seasonLabel,
       startDate: startDate ?? now,
       days: days,
     );
+    debugPrint('Season created with ID: $seasonId');
 
-    await database.kvSettingsDao.setValue('onboarding_done_season_$seasonId', 'true');
+    final flagKey = 'onboarding_done_season_$seasonId';
+    debugPrint('Setting onboarding flag: $flagKey');
+    await database.kvSettingsDao.setValue(flagKey, 'true');
+    debugPrint('Onboarding flag set to true');
     
     if (latitude != null && longitude != null) {
       await database.kvSettingsDao.setValue('prayer_latitude', latitude!.toString());
@@ -250,17 +283,20 @@ class OnboardingData {
     }
 
     await database.kvSettingsDao.setValue('sahur_enabled', sahurEnabled.toString());
-    await database.kvSettingsDao.setValue('sahur_offset', sahurOffsetMinutes.toString());
+    await database.kvSettingsDao.setValue('sahur_offset', sahurOffsetMinutes.clamp(1, 45).toString());
     await database.kvSettingsDao.setValue('iftar_enabled', iftarEnabled.toString());
     await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
     await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
+    await database.kvSettingsDao.setValue('night_plan_hour', nightPlanHour.clamp(2, 4).toString());
+    await database.kvSettingsDao.setValue('night_plan_minute', nightPlanMinute.clamp(0, 59).toString());
     
     // Goal reminder settings
     await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
-    
+    await database.kvSettingsDao.setValue('taraweeh_rakaat_per_day', taraweehRakaatPerDay.toString());
+
     // Set prayers to detailed mode by default (track all prayers individually)
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
     
@@ -324,6 +360,20 @@ class OnboardingData {
         createdAt: now.millisecondsSinceEpoch,
       ),
     );
+    
+    // Verify the flag was saved
+    final verifyFlag = await database.kvSettingsDao.getValue('onboarding_done_season_$seasonId');
+    debugPrint('Verification: onboarding_done_season_$seasonId = $verifyFlag');
+    
+    // Verify season exists
+    final verifySeason = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    debugPrint('Verification: Season $seasonId exists = ${verifySeason != null}');
+    
+    // Verify habits
+    final verifyHabits = await database.seasonHabitsDao.getSeasonHabits(seasonId);
+    debugPrint('Verification: Season habits count = ${verifyHabits.length}');
+    
+    debugPrint('=== saveWithoutScheduling Completed ===');
     
     // Note: Notification scheduling is done separately in background to prevent UI blocking
   }
@@ -350,16 +400,22 @@ class OnboardingData {
   }
 
   Future<void> save(WidgetRef ref) async {
+    debugPrint('=== save() Started (CreateSeasonFlow) ===');
     final database = ref.read(databaseProvider);
     final now = DateTime.now();
     
+    debugPrint('Creating season: label=$seasonLabel, startDate=$startDate, days=$days');
     final seasonId = await database.ramadanSeasonsDao.createSeason(
       label: seasonLabel.isEmpty ? 'Ramadan ${now.year}' : seasonLabel,
       startDate: startDate ?? now,
       days: days,
     );
+    debugPrint('Season created with ID: $seasonId');
 
-    await database.kvSettingsDao.setValue('onboarding_done_season_$seasonId', 'true');
+    final flagKey = 'onboarding_done_season_$seasonId';
+    debugPrint('Setting onboarding flag: $flagKey');
+    await database.kvSettingsDao.setValue(flagKey, 'true');
+    debugPrint('Onboarding flag set to true');
     
     if (latitude != null && longitude != null) {
       await database.kvSettingsDao.setValue('prayer_latitude', latitude!.toString());
@@ -372,17 +428,20 @@ class OnboardingData {
     }
 
     await database.kvSettingsDao.setValue('sahur_enabled', sahurEnabled.toString());
-    await database.kvSettingsDao.setValue('sahur_offset', sahurOffsetMinutes.toString());
+    await database.kvSettingsDao.setValue('sahur_offset', sahurOffsetMinutes.clamp(1, 45).toString());
     await database.kvSettingsDao.setValue('iftar_enabled', iftarEnabled.toString());
     await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
     await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
+    await database.kvSettingsDao.setValue('night_plan_hour', nightPlanHour.clamp(2, 4).toString());
+    await database.kvSettingsDao.setValue('night_plan_minute', nightPlanMinute.clamp(0, 59).toString());
     
     // Goal reminder settings
     await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
-    
+    await database.kvSettingsDao.setValue('taraweeh_rakaat_per_day', taraweehRakaatPerDay.toString());
+
     // Set prayers to detailed mode by default (track all prayers individually)
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
     
@@ -396,7 +455,9 @@ class OnboardingData {
       }
     }
 
+    debugPrint('Setting season habits...');
     final habits = await database.habitsDao.getAllHabits();
+    debugPrint('Found ${habits.length} habits, selected: ${selectedHabits.length}');
     for (final habit in habits) {
       final isEnabled = selectedHabits.contains(habit.key);
       await database.seasonHabitsDao.setSeasonHabit(
@@ -410,6 +471,7 @@ class OnboardingData {
         ),
       );
     }
+    debugPrint('Season habits set');
 
     int pagesPerJuz = 20;
     int juzTargetPerDay = 1;
@@ -426,6 +488,7 @@ class OnboardingData {
       totalJuz = (totalPages / pagesPerJuz).ceil();
     }
 
+    debugPrint('Setting Quran plan...');
     await database.quranPlanDao.setPlan(
       QuranPlanData(
         seasonId: seasonId,
@@ -438,7 +501,9 @@ class OnboardingData {
         createdAt: now.millisecondsSinceEpoch,
       ),
     );
+    debugPrint('Quran plan set');
 
+    debugPrint('Setting Dhikr plan...');
     await database.dhikrPlanDao.setPlan(
       DhikrPlanData(
         seasonId: seasonId,
@@ -446,6 +511,21 @@ class OnboardingData {
         createdAt: now.millisecondsSinceEpoch,
       ),
     );
+    debugPrint('Dhikr plan set');
+    
+    // Verify the flag was saved
+    final verifyFlag = await database.kvSettingsDao.getValue('onboarding_done_season_$seasonId');
+    debugPrint('Verification: onboarding_done_season_$seasonId = $verifyFlag');
+    
+    // Verify season exists
+    final verifySeason = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    debugPrint('Verification: Season $seasonId exists = ${verifySeason != null}');
+    
+    // Verify habits
+    final verifyHabits = await database.seasonHabitsDao.getSeasonHabits(seasonId);
+    debugPrint('Verification: Season habits count = ${verifyHabits.length}');
+    
+    debugPrint('=== save() Completed (CreateSeasonFlow) ===');
 
     if (latitude != null && longitude != null) {
       try {

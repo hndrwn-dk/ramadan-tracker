@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/insights/models.dart';
 import 'package:ramadan_tracker/insights/task_registry.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
+import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
+import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
+import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
+import 'package:ramadan_tracker/widgets/prayers_icon.dart';
+import 'package:ramadan_tracker/widgets/quran_icon.dart';
+import 'package:ramadan_tracker/widgets/taraweeh_icon.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskKey taskKey;
@@ -31,11 +38,41 @@ class TaskCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                taskDef.icon,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              taskKey == TaskKey.quran
+                  ? QuranIcon(
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  : taskKey == TaskKey.prayers5
+                      ? PrayersIcon(
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                      : taskKey == TaskKey.itikaf
+                          ? ItikafIcon(
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : taskKey == TaskKey.taraweeh
+                              ? TaraweehIcon(
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                )
+                              : taskKey == TaskKey.dhikr
+                                  ? DhikrIcon(
+                                      size: 20,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    )
+                                  : taskKey == TaskKey.sedekah
+                                      ? SedekahIcon(
+                                          size: 20,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        )
+                                      : Icon(
+                                          taskDef.icon,
+                                          size: 20,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -74,7 +111,27 @@ class TaskCard extends StatelessWidget {
   ) {
     switch (taskKey) {
       case TaskKey.fasting:
+        final days = summary.chartSeries.where((s) => s.y >= 100).length;
+        final total = summary.chartSeries.length;
+        return Text(
+          'Done $days/$total days',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        );
       case TaskKey.taraweeh:
+        final totalRakaat = summary.metadata['totalRakaat'] as int? ?? 0;
+        final targetRakaat = summary.metadata['targetRakaat'] as int? ?? 0;
+        if (targetRakaat > 0) {
+          final l10n = AppLocalizations.of(context);
+          final label = l10n?.taraweehRakaatProgress(totalRakaat, targetRakaat) ?? '$totalRakaat/$targetRakaat rakaat';
+          return Text(
+            label,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          );
+        }
         final days = summary.chartSeries.where((s) => s.y >= 100).length;
         final total = summary.chartSeries.length;
         return Text(

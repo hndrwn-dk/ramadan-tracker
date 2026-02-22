@@ -105,9 +105,9 @@
     "description": "Auto theme description"
   },
   
-  "seasonManagementTitle": "Season Management",
+  "seasonManagementTitle": "My Ramadan",
   "@seasonManagementTitle": {
-    "description": "Season Management section title"
+    "description": "My Ramadan section title"
   },
   
   "seasonManagementSubtitle": "Create, view, and delete Ramadan seasons",
@@ -134,6 +134,10 @@
   "@timesRemindersSubtitle": {
     "description": "Times & Reminders section subtitle"
   },
+  
+  "prayerOffsetTipTitle": "Prayer times off by 1 hour?",
+  "prayerOffsetTipBody": "If prayer times look off by about 1 hour, you can set an Offset in Settings.",
+  "prayerOffsetTipCta": "Set Offset",
   
   "backupRestoreTitle": "Backup & Restore",
   "@backupRestoreTitle": {
@@ -163,6 +167,10 @@
   "languageSubtitle": "Choose your preferred language",
   "@languageSubtitle": {
     "description": "Language section subtitle"
+  },
+  "languageReason": "Menus and content will appear in this language throughout the app.",
+  "@languageReason": {
+    "description": "Short reason why user should choose language"
   },
   
   "english": "English",
@@ -323,7 +331,7 @@
     "description": "Biggest comeback label"
   },
   
-  "monthViewTitle": "Month View",
+  "monthViewTitle": "Monthly View",
   "@monthViewTitle": {
     "description": "Month view screen title"
   },
@@ -584,6 +592,17 @@
   },
   
   "habitTaraweeh": "Taraweeh",
+  "taraweehRakaat11": "11 rakaat",
+  "taraweehRakaat23": "23 rakaat",
+  "taraweehRakaatPerDayLabel": "Rakaat per day:",
+  "taraweehRakaatProgress": "{current}/{target} rakaat",
+  "@taraweehRakaatProgress": {
+    "description": "Taraweeh rakaat progress",
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
   "@habitTaraweeh": {
     "description": "Taraweeh habit name"
   },
@@ -601,6 +620,10 @@
   "habitPrayers": "5 Prayers",
   "@habitPrayers": {
     "description": "5 Prayers habit name"
+  },
+  "habitTahajud": "Tahajud",
+  "@habitTahajud": {
+    "description": "Tahajud habit name"
   },
   
   "habitPrayersDetailed": "5 Prayers (detailed)",
@@ -678,14 +701,14 @@
     "description": "Iftar reminder description"
   },
   
-  "nightPlanReminder": "Night plan reminder",
+  "nightPlanReminder": "Time for night worship",
   "@nightPlanReminder": {
     "description": "Night plan reminder label"
   },
   
-  "reminderToPlanNightActivities": "Reminder to plan your night activities",
+  "reminderToPlanNightActivities": "Reminder to plan your night activities (Qiyam & Tahajud)",
   "@reminderToPlanNightActivities": {
-    "description": "Night plan reminder description"
+    "description": "Night plan reminder description; includes Qiyam and Tahajud"
   },
   
   "calculationMethod": "Calculation Method",
@@ -1040,7 +1063,43 @@
   "@maghrib": {
     "description": "Maghrib prayer label"
   },
-  
+  "iftarCountdown": "Iftar in {hours}h {minutes}m",
+  "@iftarCountdown": {
+    "description": "Countdown to Iftar time",
+    "placeholders": {
+      "hours": {"type": "int"},
+      "minutes": {"type": "int"}
+    }
+  },
+  "iftarIn": "Iftar in {time}",
+  "@iftarIn": {
+    "description": "Iftar countdown with time string",
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "iftarPassed": "Iftar passed \u2022 {time}",
+  "@iftarPassed": {
+    "description": "Iftar time passed with Maghrib time",
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "sahurIn": "Sahur in {time}",
+  "@sahurIn": {
+    "description": "Sahur countdown with time string",
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "sahurPassed": "Sahur passed \u2022 {time}",
+  "@sahurPassed": {
+    "description": "Sahur time passed",
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "showIftarCountdown": "Show Iftar countdown",
+  "@showIftarCountdown": {
+    "description": "Setting to show Iftar countdown in Times card"
+  },
+  "showSahurCountdown": "Show Sahur countdown",
+  "@showSahurCountdown": {
+    "description": "Setting to show Sahur countdown in Times card"
+  },
+
   "todayIn10Seconds": "Today in 10 seconds",
   "@todayIn10Seconds": {
     "description": "Today in 10 seconds card title"
@@ -1129,7 +1188,7 @@
     "description": "Difficult mood label"
   },
   
-  "monthViewTitle": "Month View",
+  "monthViewTitle": "Monthly View",
   "@monthViewTitle": {
     "description": "Month view screen title"
   },
@@ -1529,7 +1588,7 @@
     "description": "At Maghrib label"
   },
   
-  "nightPlanReminder": "Night plan reminder",
+  "nightPlanReminder": "Time for night worship",
   "@nightPlanReminder": {
     "description": "Night plan reminder label"
   },
@@ -1633,7 +1692,24 @@
   "@prayerTimesPreview": {
     "description": "Prayer times preview label"
   },
-  
+  "prayerTimesVaryDaily": "Times are calculated per day and change through Ramadan.",
+  "@prayerTimesVaryDaily": {
+    "description": "Hint that prayer times vary each day"
+  },
+  "refreshTimesTooltip": "Recalculate times (e.g. after changing location)",
+  "@refreshTimesTooltip": {
+    "description": "Tooltip for refresh button on Times card"
+  },
+  "timesForDate": "Times for {date}",
+  "@timesForDate": {
+    "description": "Label showing which date the prayer times are for",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
   "test": "Test",
   "@test": {
     "description": "Test button"

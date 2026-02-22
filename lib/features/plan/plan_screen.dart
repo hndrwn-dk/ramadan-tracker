@@ -15,6 +15,8 @@ import 'package:ramadan_tracker/features/plan/widgets/today_remaining_card.dart'
 import 'package:ramadan_tracker/features/plan/widgets/plan_block_card.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
+import 'package:ramadan_tracker/widgets/quran_icon.dart';
 import 'package:intl/intl.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
@@ -495,6 +497,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                       child: _buildTargetCard(
                         context,
                         icon: Icons.menu_book,
+                        iconWidget: QuranIcon(size: 20, color: _getIconColor(context, quranProgress, quranCompleted)),
                         label: getHabitDisplayName(context, 'quran_pages'),
                         current: quranProgress,
                         target: quranTarget,
@@ -507,6 +510,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                       child: _buildTargetCard(
                         context,
                         icon: Icons.favorite,
+                        iconWidget: DhikrIcon(size: 20, color: _getIconColor(context, dhikrProgress, dhikrCompleted)),
                         label: getHabitDisplayName(context, 'dhikr'),
                         current: dhikrProgress,
                         target: dhikrTarget,
@@ -553,6 +557,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   Widget _buildTargetCard(
     BuildContext context, {
     required IconData icon,
+    Widget? iconWidget,
     required String label,
     required int current,
     required int target,
@@ -560,7 +565,8 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     required bool isCompleted,
   }) {
     final progress = target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
-    
+    final iconColor = _getIconColor(context, current, isCompleted);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -578,11 +584,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: _getIconColor(context, current, isCompleted),
-              ),
+              iconWidget ?? Icon(icon, size: 20, color: iconColor),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -666,7 +668,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
             PlanBlockCard(
               label: AppLocalizations.of(context)!.planMorning,
               block: plan.morning,
-              icon: Icons.wb_sunny,
+              icon: Icons.no_meals,
               timeWindow: timeWindows['morning'],
               seasonId: seasonId,
               dayIndex: dayIndex,
@@ -684,7 +686,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
             PlanBlockCard(
               label: AppLocalizations.of(context)!.planNight,
               block: plan.night,
-              icon: Icons.nights_stay,
+              icon: Icons.dark_mode,
               timeWindow: timeWindows['night'],
               seasonId: seasonId,
               dayIndex: dayIndex,
@@ -741,6 +743,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 _buildProgressItem(
                   context,
                   icon: Icons.menu_book,
+                  iconWidget: QuranIcon(size: 20, color: Theme.of(context).colorScheme.primary),
                   label: getHabitDisplayName(context, 'quran_pages'),
                   value: AppLocalizations.of(context)!.pagesRemaining(plan.quranRemainingPages),
                   subtitle: AppLocalizations.of(context)!.pagesPerDay(plan.quranDailyTarget),
@@ -757,6 +760,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 _buildProgressItem(
                   context,
                   icon: Icons.favorite,
+                  iconWidget: DhikrIcon(size: 20, color: Theme.of(context).colorScheme.primary),
                   label: AppLocalizations.of(context)!.dhikrTargetLabel,
                   value: '${plan.dhikrTarget} ${AppLocalizations.of(context)!.daily}',
                   subtitle: null,
@@ -821,6 +825,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   Widget _buildProgressItem(
     BuildContext context, {
     required IconData icon,
+    Widget? iconWidget,
     required String label,
     required String value,
     String? subtitle,
@@ -833,11 +838,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
             color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          child: iconWidget ?? Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -908,12 +909,18 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   Future<Map<String, String?>> _getTimeWindows(BuildContext context, int seasonId, int dayIndex) async {
     final l10n = AppLocalizations.of(context)!;
     final database = ref.read(databaseProvider);
+    final nightHour = int.tryParse(await database.kvSettingsDao.getValue('night_plan_hour') ?? '2') ?? 2;
+    final nightMin = int.tryParse(await database.kvSettingsDao.getValue('night_plan_minute') ?? '30') ?? 30;
+    final nightStart = DateTime(2000, 1, 1, nightHour, nightMin);
+    final nightEnd = DateTime(2000, 1, 1, 4, 0);
+    final nightWindow = '${l10n.afterIsha} ${DateFormat('h:mm a').format(nightStart)} - ${DateFormat('h:mm a').format(nightEnd)}';
+
     final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
     if (season == null) {
       return {
         'morning': l10n.afterFajr,
         'day': l10n.midday,
-        'night': l10n.afterIsha,
+        'night': nightWindow,
       };
     }
 
@@ -929,7 +936,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       return {
         'morning': l10n.afterFajr,
         'day': l10n.midday,
-        'night': l10n.afterIsha,
+        'night': nightWindow,
       };
     }
 
@@ -939,14 +946,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       return {
         'morning': l10n.afterFajr,
         'day': l10n.midday,
-        'night': l10n.afterIsha,
+        'night': nightWindow,
       };
     }
 
     try {
       final startDate = DateTime.parse(season.startDate);
       final date = startDate.add(Duration(days: dayIndex - 1));
-      // Calculate all prayer times
       final prayerTimes = PrayerTimeService.calculatePrayerTimes(
         date: date,
         latitude: lat,
@@ -961,18 +967,17 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       final fajr = prayerTimes.fajr;
       final dhuhr = prayerTimes.dhuhr;
       final asr = prayerTimes.asr;
-      final isha = prayerTimes.isha;
 
       return {
         'morning': '${l10n.afterFajr} ${DateFormat('h:mm a').format(fajr)}',
         'day': '${DateFormat('h:mm a').format(dhuhr)} - ${DateFormat('h:mm a').format(asr)}',
-        'night': '${l10n.afterIsha} ${DateFormat('h:mm a').format(isha)}',
+        'night': nightWindow,
       };
     } catch (e) {
       return {
         'morning': l10n.afterFajr,
         'day': l10n.midday,
-        'night': l10n.afterIsha,
+        'night': nightWindow,
       };
     }
   }

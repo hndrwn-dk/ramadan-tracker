@@ -224,10 +224,10 @@ abstract class AppLocalizations {
   /// **'Follow system theme (default)'**
   String get themeAutoDesc;
 
-  /// Season Management section title
+  /// My Ramadan section title
   ///
   /// In en, this message translates to:
-  /// **'Season Management'**
+  /// **'My Ramadan'**
   String get seasonManagementTitle;
 
   /// Season Management section subtitle
@@ -259,6 +259,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Configure prayer times and notification reminders'**
   String get timesRemindersSubtitle;
+
+  /// No description provided for @prayerOffsetTipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prayer times off by 1 hour?'**
+  String get prayerOffsetTipTitle;
+
+  /// No description provided for @prayerOffsetTipBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If prayer times look off by about 1 hour, you can set an Offset in Settings.'**
+  String get prayerOffsetTipBody;
+
+  /// No description provided for @prayerOffsetTipCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Offset'**
+  String get prayerOffsetTipCta;
 
   /// Backup & Restore section title
   ///
@@ -295,6 +313,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose your preferred language'**
   String get languageSubtitle;
+
+  /// Short reason why user should choose language
+  ///
+  /// In en, this message translates to:
+  /// **'Menus and content will appear in this language throughout the app.'**
+  String get languageReason;
 
   /// English language option
   ///
@@ -479,7 +503,7 @@ abstract class AppLocalizations {
   /// Month view screen title
   ///
   /// In en, this message translates to:
-  /// **'Month View'**
+  /// **'Monthly View'**
   String get monthViewTitle;
 
   /// Month view legend title
@@ -854,6 +878,30 @@ abstract class AppLocalizations {
   /// **'Taraweeh'**
   String get habitTaraweeh;
 
+  /// No description provided for @taraweehRakaat11.
+  ///
+  /// In en, this message translates to:
+  /// **'11 rakaat'**
+  String get taraweehRakaat11;
+
+  /// No description provided for @taraweehRakaat23.
+  ///
+  /// In en, this message translates to:
+  /// **'23 rakaat'**
+  String get taraweehRakaat23;
+
+  /// No description provided for @taraweehRakaatPerDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rakaat per day:'**
+  String get taraweehRakaatPerDayLabel;
+
+  /// Taraweeh rakaat progress
+  ///
+  /// In en, this message translates to:
+  /// **'{current}/{target} rakaat'**
+  String taraweehRakaatProgress(int current, int target);
+
   /// Sedekah habit name
   ///
   /// In en, this message translates to:
@@ -871,6 +919,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'5 Prayers'**
   String get habitPrayers;
+
+  /// Tahajud habit name
+  ///
+  /// In en, this message translates to:
+  /// **'Tahajud'**
+  String get habitTahajud;
 
   /// 5 Prayers detailed mode label
   ///
@@ -953,13 +1007,13 @@ abstract class AppLocalizations {
   /// Night plan reminder label
   ///
   /// In en, this message translates to:
-  /// **'Night plan reminder'**
+  /// **'Time for night worship'**
   String get nightPlanReminder;
 
-  /// Night plan reminder description
+  /// Night plan reminder description; includes Qiyam and Tahajud
   ///
   /// In en, this message translates to:
-  /// **'Reminder to plan your night activities'**
+  /// **'Reminder to plan your night activities (Qiyam & Tahajud)'**
   String get reminderToPlanNightActivities;
 
   /// Calculation method label
@@ -1321,6 +1375,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Maghrib'**
   String get maghrib;
+
+  /// Countdown to Iftar time
+  ///
+  /// In en, this message translates to:
+  /// **'Iftar in {hours}h {minutes}m'**
+  String iftarCountdown(int hours, int minutes);
+
+  /// Iftar countdown with time string
+  ///
+  /// In en, this message translates to:
+  /// **'Iftar in {time}'**
+  String iftarIn(String time);
+
+  /// Iftar time passed with Maghrib time
+  ///
+  /// In en, this message translates to:
+  /// **'Iftar passed • {time}'**
+  String iftarPassed(String time);
+
+  /// Sahur countdown with time string
+  ///
+  /// In en, this message translates to:
+  /// **'Sahur in {time}'**
+  String sahurIn(String time);
+
+  /// Sahur time passed
+  ///
+  /// In en, this message translates to:
+  /// **'Sahur passed • {time}'**
+  String sahurPassed(String time);
+
+  /// Setting to show Iftar countdown in Times card
+  ///
+  /// In en, this message translates to:
+  /// **'Show Iftar countdown'**
+  String get showIftarCountdown;
+
+  /// Setting to show Sahur countdown in Times card
+  ///
+  /// In en, this message translates to:
+  /// **'Show Sahur countdown'**
+  String get showSahurCountdown;
 
   /// Today in 10 seconds card title
   ///
@@ -1897,6 +1993,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Prayer Times Preview'**
   String get prayerTimesPreview;
+
+  /// Hint that prayer times vary each day
+  ///
+  /// In en, this message translates to:
+  /// **'Times are calculated per day and change through Ramadan.'**
+  String get prayerTimesVaryDaily;
+
+  /// Tooltip for refresh button on Times card
+  ///
+  /// In en, this message translates to:
+  /// **'Recalculate times (e.g. after changing location)'**
+  String get refreshTimesTooltip;
+
+  /// Label showing which date the prayer times are for
+  ///
+  /// In en, this message translates to:
+  /// **'Times for {date}'**
+  String timesForDate(String date);
 
   /// Test button
   ///

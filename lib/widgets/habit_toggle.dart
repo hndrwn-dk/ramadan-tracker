@@ -5,6 +5,7 @@ class HabitToggle extends StatelessWidget {
   final bool value;
   final VoidCallback onTap;
   final IconData? icon;
+  final Widget? iconWidget;
 
   const HabitToggle({
     super.key,
@@ -12,29 +13,24 @@ class HabitToggle extends StatelessWidget {
     required this.value,
     required this.onTap,
     this.icon,
+    this.iconWidget,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.1)
+        : Colors.grey.withOpacity(0.3);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: value
-              ? Theme.of(context).colorScheme.primaryContainer
-              : Theme.of(context).cardColor,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: value
-                ? Theme.of(context).colorScheme.primary
-                : (isDark 
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.3)),
-            width: value ? 2 : 1,
-          ),
+          border: Border.all(color: borderColor, width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -43,23 +39,19 @@ class HabitToggle extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  if (icon != null) ...[
-                    Icon(
-                      icon,
-                      size: 20,
-                      color: value
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).textTheme.bodyMedium?.color,
-                    ),
+                  if (icon != null || iconWidget != null) ...[
+                    iconWidget ??
+                        Icon(
+                          icon!,
+                          size: 20,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
                     const SizedBox(width: 12),
                   ],
                   Flexible(
                     child: Text(
                       label,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: value
-                                ? Theme.of(context).colorScheme.onPrimaryContainer
-                                : null,
                             fontWeight: value ? FontWeight.w600 : FontWeight.normal,
                           ),
                     ),

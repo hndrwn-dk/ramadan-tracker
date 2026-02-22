@@ -65,6 +65,7 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
     final l10n = AppLocalizations.of(context)!;
     final last10Start = _days - 9;
     final last10Date = _startDate.add(Duration(days: last10Start - 1));
+    final isSmallScreen = MediaQuery.sizeOf(context).height < 600;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -77,138 +78,155 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
                   fontWeight: FontWeight.bold,
                 ),
           ),
-          const SizedBox(height: 32),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.seasonLabel,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ) ?? const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _labelController,
-                decoration: InputDecoration(
-                  hintText: l10n.ramadanYearHint(DateTime.now().year),
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  widget.data.seasonLabel = value;
-                },
-                onTap: () {
-                  // Update hint when field is empty
-                  if (_labelController.text.isEmpty || _labelController.text == 'Ramadan ${DateTime.now().year}') {
-                    final now = DateTime.now();
-                    _labelController.text = l10n.ramadanYearHint(now.year);
-                    widget.data.seasonLabel = _labelController.text;
-                  }
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.daysLabel,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ) ?? const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      value: _days,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
+          SizedBox(height: isSmallScreen ? 16 : 24),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.seasonLabel,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ) ?? const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
-                      items: [
-                        DropdownMenuItem(value: 29, child: Text(l10n.daysCount(29))),
-                        DropdownMenuItem(value: 30, child: Text(l10n.daysCount(30))),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _days = value;
-                            widget.data.days = value;
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.startDate,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ) ?? const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _selectDate,
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
+                      SizedBox(height: isSmallScreen ? 4 : 8),
+                      TextField(
+                        controller: _labelController,
+                        decoration: InputDecoration(
+                          hintText: l10n.ramadanYearHint(DateTime.now().year),
+                          border: const OutlineInputBorder(),
+                          isDense: isSmallScreen,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        onChanged: (value) {
+                          widget.data.seasonLabel = value;
+                        },
+                        onTap: () {
+                          if (_labelController.text.isEmpty || _labelController.text == 'Ramadan ${DateTime.now().year}') {
+                            final now = DateTime.now();
+                            _labelController.text = l10n.ramadanYearHint(now.year);
+                            widget.data.seasonLabel = _labelController.text;
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isSmallScreen ? 16 : 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(DateFormat('MMM d, yyyy').format(_startDate)),
-                            const Icon(Icons.calendar_today, size: 20),
+                            Text(
+                              l10n.daysLabel,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ) ?? const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            SizedBox(height: isSmallScreen ? 4 : 8),
+                            DropdownButtonFormField<int>(
+                              value: _days,
+                              decoration: InputDecoration(
+                                border: const OutlineInputBorder(),
+                                isDense: isSmallScreen,
+                              ),
+                              items: [
+                                DropdownMenuItem(value: 29, child: Text(l10n.daysCount(29))),
+                                DropdownMenuItem(value: 30, child: Text(l10n.daysCount(30))),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _days = value;
+                                    widget.data.days = value;
+                                  });
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.preview,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.startDate,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ) ?? const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            SizedBox(height: isSmallScreen ? 4 : 8),
+                            InkWell(
+                              onTap: _selectDate,
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  border: const OutlineInputBorder(),
+                                  isDense: isSmallScreen,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        DateFormat('MMM d, yyyy').format(_startDate),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const Icon(Icons.calendar_today, size: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.day1StartsOn(DateFormat('MMM d, yyyy').format(_startDate)),
+                  SizedBox(height: isSmallScreen ? 16 : 24),
+                  Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.preview,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          SizedBox(height: isSmallScreen ? 4 : 8),
+                          Text(
+                            l10n.day1StartsOn(DateFormat('MMM d, yyyy').format(_startDate)),
+                          ),
+                          Text(
+                            l10n.last10NightsBeginOn(last10Start, DateFormat('MMM d, yyyy').format(last10Date)),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  Text(
-                    l10n.last10NightsBeginOn(last10Start, DateFormat('MMM d, yyyy').format(last10Date)),
-                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
-          const Spacer(),
           Row(
             children: [
               Expanded(

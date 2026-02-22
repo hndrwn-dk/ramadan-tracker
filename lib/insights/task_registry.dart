@@ -56,7 +56,7 @@ class TaskRegistry {
     TaskKey.fasting: TaskDefinition(
       key: TaskKey.fasting,
       title: 'Fasting',
-      icon: Icons.wb_sunny,
+      icon: Icons.no_meals,
       type: TaskType.boolean,
       habitKey: 'fasting',
     ),

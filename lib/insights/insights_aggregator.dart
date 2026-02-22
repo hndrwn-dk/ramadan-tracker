@@ -605,6 +605,13 @@ class InsightsAggregator {
       metadata['completionRate'] = completionRate;
       metadata['mostMissed'] = mostMissed;
       metadata['prayerCounts'] = prayerCounts;
+    } else if (taskKey == TaskKey.taraweeh) {
+      final totalRakaat = dayValues.values.fold<int>(0, (a, b) => a + b);
+      final rakaatPerDay = profile.targets[TaskKey.taraweeh] ?? 11;
+      final daysInRange = endDayIndex - startDayIndex + 1;
+      final targetRakaat = rakaatPerDay * daysInRange;
+      metadata['totalRakaat'] = totalRakaat;
+      metadata['targetRakaat'] = targetRakaat;
     } else if (taskKey == TaskKey.itikaf) {
       // Last 10 nights
       final last10Start = max(1, profile.days - 9);

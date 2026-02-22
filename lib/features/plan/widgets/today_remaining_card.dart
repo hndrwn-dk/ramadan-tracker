@@ -5,6 +5,13 @@ import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
+import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
+import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
+import 'package:ramadan_tracker/widgets/prayers_icon.dart';
+import 'package:ramadan_tracker/widgets/quran_icon.dart';
+import 'package:ramadan_tracker/widgets/tahajud_icon.dart';
+import 'package:ramadan_tracker/widgets/taraweeh_icon.dart';
 
 class TodayRemainingCard extends ConsumerWidget {
   final int seasonId;
@@ -37,6 +44,12 @@ class TodayRemainingCard extends ConsumerWidget {
           items.add(_buildRemainingItem(
             context,
             icon: Icons.menu_book,
+            iconWidget: QuranIcon(
+              size: 20,
+              color: quranRemaining <= 0
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
             label: getHabitDisplayName(context, 'quran_pages'),
             value: quranRemaining > 0 ? '$quranRemaining ${l10n.pages}' : l10n.done,
             isCompleted: quranRemaining <= 0,
@@ -50,6 +63,12 @@ class TodayRemainingCard extends ConsumerWidget {
           items.add(_buildRemainingItem(
             context,
             icon: Icons.favorite,
+            iconWidget: DhikrIcon(
+              size: 20,
+              color: dhikrRemaining <= 0
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
             label: getHabitDisplayName(context, 'dhikr'),
             value: dhikrRemaining > 0 ? l10n.remaining(dhikrRemaining) : l10n.done,
             isCompleted: dhikrRemaining <= 0,
@@ -64,6 +83,12 @@ class TodayRemainingCard extends ConsumerWidget {
             items.add(_buildRemainingItem(
               context,
               icon: Icons.volunteer_activism,
+              iconWidget: SedekahIcon(
+                size: 20,
+                color: sedekahRemaining > 0
+                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.7)
+                    : Theme.of(context).colorScheme.primary,
+              ),
               label: getHabitDisplayName(context, 'sedekah'),
               value: SedekahUtils.formatCurrency(sedekahRemaining, currency),
               isCompleted: false,
@@ -78,6 +103,12 @@ class TodayRemainingCard extends ConsumerWidget {
           items.add(_buildRemainingItem(
             context,
             icon: Icons.mosque,
+            iconWidget: PrayersIcon(
+              size: 20,
+              color: prayersRemaining <= 0
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
             label: getHabitDisplayName(context, 'prayers'),
             value: prayersRemaining > 0 ? l10n.remaining(prayersRemaining) : l10n.allDone,
             isCompleted: prayersRemaining <= 0,
@@ -91,9 +122,34 @@ class TodayRemainingCard extends ConsumerWidget {
           items.add(_buildRemainingItem(
             context,
             icon: Icons.nights_stay,
+            iconWidget: TaraweehIcon(
+              size: 20,
+              color: taraweehDone
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
             label: getHabitDisplayName(context, 'taraweeh'),
             value: taraweehDone ? l10n.done : l10n.notDone,
             isCompleted: taraweehDone,
+          ));
+        }
+
+        // Tahajud (part of Qiyam / night)
+        if (remaining['tahajudEnabled'] == true) {
+          final tahajudDone = remaining['tahajudDone'] as bool;
+          final l10n = AppLocalizations.of(context)!;
+          items.add(_buildRemainingItem(
+            context,
+            icon: Icons.self_improvement,
+            iconWidget: TahajudIcon(
+              size: 20,
+              color: tahajudDone
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+            label: getHabitDisplayName(context, 'tahajud'),
+            value: tahajudDone ? l10n.done : l10n.notDone,
+            isCompleted: tahajudDone,
           ));
         }
 
@@ -104,6 +160,12 @@ class TodayRemainingCard extends ConsumerWidget {
           items.add(_buildRemainingItem(
             context,
             icon: Icons.stars,
+            iconWidget: ItikafIcon(
+              size: 20,
+              color: itikafDone
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
             label: getHabitDisplayName(context, 'itikaf'),
             value: itikafDone ? l10n.done : l10n.notDone,
             isCompleted: itikafDone,
@@ -160,10 +222,14 @@ class TodayRemainingCard extends ConsumerWidget {
   Widget _buildRemainingItem(
     BuildContext context, {
     required IconData icon,
+    Widget? iconWidget,
     required String label,
     required String value,
     required bool isCompleted,
   }) {
+    final iconColor = isCompleted
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.onSurface.withOpacity(0.7);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -176,13 +242,7 @@ class TodayRemainingCard extends ConsumerWidget {
                   : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: isCompleted
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
+            child: iconWidget ?? Icon(icon, size: 20, color: iconColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -284,6 +344,12 @@ class TodayRemainingCard extends ConsumerWidget {
         : null;
     final taraweehDone = taraweehEntry?.valueBool ?? false;
 
+    final tahajudHabit = habits.where((h) => h.key == 'tahajud').firstOrNull;
+    final tahajudEntry = tahajudHabit != null
+        ? entries.where((e) => e.habitId == tahajudHabit.id).firstOrNull
+        : null;
+    final tahajudDone = tahajudEntry?.valueBool ?? false;
+
     final itikafHabit = habits.where((h) => h.key == 'itikaf').firstOrNull;
     final itikafEntry = itikafHabit != null
         ? entries.where((e) => e.habitId == itikafHabit.id).firstOrNull
@@ -296,6 +362,7 @@ class TodayRemainingCard extends ConsumerWidget {
       'sedekahEnabled': enabledHabits['sedekah'] ?? false,
       'prayersEnabled': enabledHabits['prayers'] ?? false,
       'taraweehEnabled': enabledHabits['taraweeh'] ?? false,
+      'tahajudEnabled': enabledHabits['tahajud'] ?? false,
       'itikafEnabled': enabledHabits['itikaf'] ?? false,
       'quranRemaining': quranRemaining,
       'dhikrRemaining': dhikrRemaining,
@@ -304,6 +371,7 @@ class TodayRemainingCard extends ConsumerWidget {
       'sedekahCurrency': sedekahCurrency,
       'prayersRemaining': prayersRemaining,
       'taraweehDone': taraweehDone,
+      'tahajudDone': tahajudDone,
       'itikafDone': itikafDone,
       'showItikaf': showItikaf,
     };

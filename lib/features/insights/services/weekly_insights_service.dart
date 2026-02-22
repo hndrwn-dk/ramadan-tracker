@@ -495,7 +495,7 @@ class WeeklyInsightsService {
     double? avgCompleted;
     int? perfectDaysCount;
 
-    if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'itikaf') {
+    if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'tahajud' || habitKey == 'itikaf') {
       for (int day = startDayIndex; day <= endDayIndex; day++) {
         if (habitKey == 'itikaf') {
           final last10Start = season.days - 9;

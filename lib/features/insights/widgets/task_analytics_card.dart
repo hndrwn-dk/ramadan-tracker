@@ -8,6 +8,7 @@ class TaskAnalyticsCard extends StatelessWidget {
   final String habitKey;
   final String habitName;
   final IconData icon;
+  final Widget? iconWidget;
   final String status; // 'Done', 'Partial', 'Miss'
   final String keyMetricText;
   final List<DayStatus> heatmapDays;
@@ -23,6 +24,7 @@ class TaskAnalyticsCard extends StatelessWidget {
     required this.habitKey,
     required this.habitName,
     required this.icon,
+    this.iconWidget,
     required this.status,
     required this.keyMetricText,
     required this.heatmapDays,
@@ -47,7 +49,7 @@ class TaskAnalyticsCard extends StatelessWidget {
           // Header: Icon + Name + Status
           Row(
             children: [
-              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+              iconWidget ?? Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
