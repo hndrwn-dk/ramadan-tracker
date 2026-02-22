@@ -1731,7 +1731,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.version),
-            subtitle: const Text('1.0.1'),
+            subtitle: const Text('1.0.1 (3)'),
             onTap: () {
               _versionTapCount++;
               if (_versionTapCount >= 7 && !_debugEnabled) {
