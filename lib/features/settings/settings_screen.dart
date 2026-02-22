@@ -8,7 +8,6 @@ import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/theme_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
-import 'package:ramadan_tracker/features/settings/backup_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:intl/intl.dart';
@@ -37,7 +36,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     'season': false,
     'habits': false,
     'times': false,
-    'backup': false,
     'debug': false,
     'about': false,
   };
@@ -108,8 +106,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildHabitsSettings(),
             const SizedBox(height: 16),
             _buildTimesAndReminders(),
-            const SizedBox(height: 16),
-            _buildBackupRestore(),
             const SizedBox(height: 16),
             if (_debugEnabled) ...[
               _buildDebugSection(),
@@ -1248,89 +1244,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildBackupRestore() {
-    final l10n = AppLocalizations.of(context)!;
-    final isExpanded = _expandedSections['backup'] ?? false;
-
-    return PremiumCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () => _toggleSection('backup'),
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.backup_outlined,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.backupRestoreTitle,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.backupRestoreSubtitle,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.upload),
-            title: Text(l10n.exportBackup),
-            subtitle: Text(l10n.saveDataAsJson, style: const TextStyle(fontSize: 12)),
-            onTap: _exportBackup,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.download),
-            title: Text(l10n.importBackup),
-            subtitle: Text(l10n.restoreDataFromJson, style: const TextStyle(fontSize: 12)),
-            onTap: _importBackup,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-              ],
-            ),
-            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildDebugSection() {
     final isExpanded = _expandedSections['debug'] ?? false;
     final logCount = LogService.getLogs().length;
@@ -2024,80 +1937,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     // Invalidate providers to refresh UI
     ref.invalidate(seasonHabitsProvider(seasonId));
-  }
-
-  Future<void> _exportBackup() async {
-    try {
-      final database = ref.read(databaseProvider);
-      final backupData = await BackupService.exportBackup(database);
-
-      await Share.share(backupData);
-    } catch (e) {
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.exportFailed(e.toString()))),
-        );
-      }
-    }
-  }
-
-  Future<void> _importBackup() async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.importBackup),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l10n.pasteBackupJson),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              maxLines: 10,
-              decoration: InputDecoration(
-                hintText: l10n.pasteJsonBackupData,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.import),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && controller.text.isNotEmpty) {
-      try {
-        final database = ref.read(databaseProvider);
-        await BackupService.importBackup(database, controller.text);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.backupImportedSuccessfully)),
-          );
-          ref.invalidate(allSeasonsProvider);
-          ref.invalidate(currentSeasonProvider);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.importFailed(e.toString()))),
-          );
-        }
-      }
-    }
   }
 
   String _getHabitDisplayName(AppLocalizations l10n, String habitKey) {
