@@ -8,6 +8,7 @@ class SeasonTaskAnalyticsRow extends StatelessWidget {
   final String habitKey;
   final String habitName;
   final IconData icon;
+  final Widget? iconWidget;
   final TaskSeasonAnalytics analytics;
   final SeasonModel season;
   final VoidCallback onAnalyticsTap;
@@ -17,6 +18,7 @@ class SeasonTaskAnalyticsRow extends StatelessWidget {
     required this.habitKey,
     required this.habitName,
     required this.icon,
+    this.iconWidget,
     required this.analytics,
     required this.season,
     required this.onAnalyticsTap,
@@ -30,7 +32,9 @@ class SeasonTaskAnalyticsRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+              iconWidget != null
+                  ? SizedBox(width: 20, height: 20, child: iconWidget)
+                  : Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -51,7 +55,7 @@ class SeasonTaskAnalyticsRow extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Mini visual: sparkline for numeric, mini strip for boolean
-          if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'itikaf')
+          if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'tahajud' || habitKey == 'itikaf')
             _buildMiniStrip(context)
           else if (habitKey == 'quran_pages' || habitKey == 'dhikr' || habitKey == 'sedekah')
             _buildMiniSparkline(context),
@@ -70,16 +74,27 @@ class SeasonTaskAnalyticsRow extends StatelessWidget {
   }
 
   String _buildMetricsText() {
-    if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'itikaf') {
+    if (habitKey == 'fasting' || habitKey == 'tahajud' || habitKey == 'itikaf') {
       final totalDays = habitKey == 'itikaf' ? 10 : season.days;
       return 'Done ${analytics.doneCount ?? 0}/$totalDays • Missed ${analytics.missCount ?? 0} • Best streak: ${analytics.bestStreak ?? 0} days';
-    } else if (habitKey == 'prayers') {
+    }
+    if (habitKey == 'taraweeh') {
+      final totalDays = season.days;
+      final rakaat = analytics.totalRakaat != null && analytics.targetRakaat != null
+          ? '${analytics.totalRakaat}/${analytics.targetRakaat} rakaat'
+          : null;
+      final days = 'Done ${analytics.doneCount ?? 0}/$totalDays • Missed ${analytics.missCount ?? 0} • Best streak: ${analytics.bestStreak ?? 0} days';
+      return rakaat != null ? '$rakaat • $days' : days;
+    }
+    if (habitKey == 'prayers') {
       return 'Perfect days ${analytics.perfectDays ?? 0}/${season.days} • Avg ${(analytics.avgPerDay ?? 0).toStringAsFixed(1)}/5 prayers per day';
-    } else if (habitKey == 'quran_pages' || habitKey == 'dhikr') {
+    }
+    if (habitKey == 'quran_pages' || habitKey == 'dhikr') {
       final unit = habitKey == 'quran_pages' ? 'pages' : 'count';
       final best = analytics.bestDay != null ? '${analytics.bestDay!.value.toInt()}' : '0';
       return 'Total: ${(analytics.total ?? 0).toStringAsFixed(0)} • Avg: ${(analytics.avg ?? 0).toStringAsFixed(1)}/$unit per day • Met target: ${analytics.metTargetDays ?? 0}/${season.days} • Best day: $best';
-    } else if (habitKey == 'sedekah') {
+    }
+    if (habitKey == 'sedekah') {
       final best = analytics.bestDay != null ? '${analytics.bestDay!.value.toInt()}' : '0';
       return 'Total: ${(analytics.total ?? 0).toStringAsFixed(0)} • Avg: ${(analytics.avg ?? 0).toStringAsFixed(0)} per day • Met goal: ${analytics.metTargetDays ?? 0}/${season.days} • Best day: $best';
     }

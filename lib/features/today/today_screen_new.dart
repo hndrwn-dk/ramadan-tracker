@@ -13,6 +13,10 @@ import 'package:ramadan_tracker/domain/services/quran_service.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/widgets/habit_toggle.dart';
 import 'package:ramadan_tracker/widgets/quran_tracker.dart';
+import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
+import 'package:ramadan_tracker/widgets/prayers_icon.dart';
+import 'package:ramadan_tracker/widgets/tahajud_icon.dart';
+import 'package:ramadan_tracker/widgets/taraweeh_icon.dart';
 import 'package:ramadan_tracker/widgets/sedekah_tracker.dart';
 import 'package:ramadan_tracker/widgets/counter_widget.dart';
 import 'package:ramadan_tracker/features/settings/settings_screen.dart';
@@ -294,7 +298,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   ) {
     final enabledHabits = (seasonHabits as List).where((sh) => sh.isEnabled).toList();
     
-    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'itikaf'];
+    final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'tahajud', 'itikaf'];
     final sortedHabits = <Widget>[];
 
     for (final habitKey in habitOrder) {
@@ -311,9 +315,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       if (habit.type.toString() == 'HabitType.bool') {
         final value = entry?.valueBool ?? false;
         IconData? icon;
-        if (habitKey == 'fasting') icon = Icons.wb_sunny;
+        if (habitKey == 'fasting') icon = Icons.no_meals;
         if (habitKey == 'taraweeh') icon = Icons.nights_stay;
         if (habitKey == 'itikaf') icon = Icons.mosque;
+        if (habitKey == 'tahajud') icon = Icons.self_improvement;
+        if (habitKey == 'prayers') icon = Icons.mosque;
+        final iconWidget = habitKey == 'tahajud'
+            ? TahajudIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+            : habitKey == 'prayers'
+                ? PrayersIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                : habitKey == 'itikaf'
+                    ? ItikafIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                    : habitKey == 'taraweeh'
+                        ? TaraweehIcon(size: 20, color: Theme.of(context).textTheme.bodyMedium?.color)
+                        : null;
 
         sortedHabits.add(
           Padding(
@@ -322,6 +337,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               label: habit.name,
               value: value,
               icon: icon,
+              iconWidget: iconWidget,
               onTap: () {
                 _toggleBoolHabit(seasonId, dayIndex, habit.id, !value);
               },

@@ -54,6 +54,9 @@ class TaskSeasonAnalytics {
   final int? perfectDays;
   final double? avgPerDay;
   final int? totalMissedPrayers;
+  // Taraweeh rakaat
+  final int? totalRakaat;
+  final int? targetRakaat;
 
   TaskSeasonAnalytics({
     required this.habitKey,
@@ -67,6 +70,8 @@ class TaskSeasonAnalytics {
     this.perfectDays,
     this.avgPerDay,
     this.totalMissedPrayers,
+    this.totalRakaat,
+    this.targetRakaat,
   });
 }
 
@@ -571,11 +576,12 @@ class SeasonInsightsService {
       season.days,
     );
     
-    if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'itikaf') {
+    if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'tahajud' || habitKey == 'itikaf') {
       int doneCount = 0;
       int missCount = 0;
       int bestStreak = 0;
       int tempStreak = 0;
+      int totalRakaat = 0;
       
       final last10Start = habitKey == 'itikaf' ? season.days - 9 : 1;
       
@@ -612,6 +618,16 @@ class SeasonInsightsService {
           missCount++;
           tempStreak = 0;
         }
+        if (habitKey == 'taraweeh') {
+          totalRakaat += entry.valueInt ?? 0;
+        }
+      }
+      
+      int? targetRakaat;
+      if (habitKey == 'taraweeh') {
+        final raw = await database.kvSettingsDao.getValue('taraweeh_rakaat_per_day');
+        final perDay = int.tryParse(raw ?? '') ?? 11;
+        targetRakaat = perDay * season.days;
       }
       
       return TaskSeasonAnalytics(
@@ -619,6 +635,8 @@ class SeasonInsightsService {
         doneCount: doneCount,
         missCount: missCount,
         bestStreak: bestStreak,
+        totalRakaat: habitKey == 'taraweeh' ? totalRakaat : null,
+        targetRakaat: targetRakaat,
       );
     } else if (habitKey == 'prayers') {
       int perfectDays = 0;

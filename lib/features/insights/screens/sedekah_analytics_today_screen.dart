@@ -8,6 +8,7 @@ import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
+import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
 
 /// Today-only financial review screen for Sedekah.
 class SedekahAnalyticsTodayScreen extends ConsumerStatefulWidget {
@@ -186,7 +187,7 @@ class _SedekahAnalyticsTodayScreenState extends ConsumerState<SedekahAnalyticsTo
             )
           else
             ListTile(
-              leading: Icon(Icons.volunteer_activism, color: Theme.of(context).colorScheme.primary),
+              leading: SedekahIcon(size: 24, color: Theme.of(context).colorScheme.primary),
               title: Text('Today\'s donation'),
               subtitle: Text(SedekahUtils.formatCurrency(amount.toDouble(), currency)),
               trailing: const Icon(Icons.check_circle, color: Colors.green),

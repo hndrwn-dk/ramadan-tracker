@@ -14,6 +14,7 @@ import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart' show currentDayIndexProvider;
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/features/insights/services/insights_scoring_service.dart';
 
@@ -150,6 +151,10 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
     } else if (habit.key == 'prayers') {
       final prayerDetail = await database.prayerDetailsDao.getPrayerDetails(widget.seasonId, dayIndex);
       data['prayerDetail'] = prayerDetail;
+    } else if (habit.key == 'taraweeh') {
+      final targetRakaatRaw = await database.kvSettingsDao.getValue('taraweeh_rakaat_per_day');
+      data['rakaat'] = entry.valueInt ?? 0;
+      data['targetRakaat'] = int.tryParse(targetRakaatRaw ?? '') ?? 11;
     }
 
     // Load missed days data
@@ -185,6 +190,7 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
       switch (habit.key) {
         case 'fasting':
         case 'taraweeh':
+        case 'tahajud':
         case 'itikaf':
           final entry = allEntries.firstWhere(
             (e) => e.dayIndex == day && e.habitId == habit.id,
@@ -258,8 +264,9 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
           // Task name + icon
           Row(
             children: [
-              Icon(
-                _getHabitIcon(habit.key),
+              getHabitIconWidget(
+                context,
+                habit.key,
                 size: 24,
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -387,8 +394,63 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
     final habit = data['habit'] as HabitModel;
     
     switch (habit.key) {
-      case 'fasting':
       case 'taraweeh':
+        final entry = data['entry'] as DailyEntry;
+        final done = entry.valueBool == true;
+        final rakaat = data['rakaat'] as int? ?? 0;
+        final targetRakaat = data['targetRakaat'] as int? ?? 11;
+        final updatedAt = entry.updatedAt > 0 ? DateTime.fromMillisecondsSinceEpoch(entry.updatedAt) : null;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  done ? Icons.check_circle : Icons.cancel,
+                  color: done ? Colors.green : Colors.red,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    done ? AppLocalizations.of(context)!.completed : AppLocalizations.of(context)!.notCompleted,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: done ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Rakaat',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                Text(
+                  '$rakaat/$targetRakaat rakaat',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+            if (updatedAt != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${AppLocalizations.of(context)!.lastUpdated}: ${DateFormat('MMM d, h:mm a').format(updatedAt)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+              ),
+            ],
+          ],
+        );
+      case 'fasting':
+      case 'tahajud':
       case 'itikaf':
         final entry = data['entry'] as DailyEntry;
         final done = entry.valueBool == true;
@@ -1093,6 +1155,7 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
       switch (habit.key) {
         case 'fasting':
         case 'taraweeh':
+        case 'tahajud':
         case 'itikaf':
           final entry = allEntries.firstWhere(
             (e) => e.dayIndex == day && e.habitId == habit.id,
@@ -1157,6 +1220,7 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
       switch (habit.key) {
         case 'fasting':
         case 'taraweeh':
+        case 'tahajud':
         case 'itikaf':
           final entry = allEntries.firstWhere(
             (e) => e.dayIndex == day && e.habitId == habit.id,
@@ -1337,6 +1401,7 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
     switch (habit.key) {
       case 'fasting':
       case 'taraweeh':
+      case 'tahajud':
       case 'itikaf':
         final entry = data['entry'] as DailyEntry;
         return entry.valueBool == true ? 'Done' : 'Miss';
@@ -1397,13 +1462,15 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
   IconData _getHabitIcon(String habitKey) {
     switch (habitKey) {
       case 'fasting':
-        return Icons.wb_sunny;
+        return Icons.no_meals;
       case 'quran_pages':
         return Icons.menu_book;
       case 'dhikr':
         return Icons.favorite;
       case 'taraweeh':
         return Icons.nights_stay;
+      case 'tahajud':
+        return Icons.self_improvement;
       case 'sedekah':
         return Icons.volunteer_activism;
       case 'prayers':
@@ -1425,6 +1492,8 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
         return 'Dhikr';
       case 'taraweeh':
         return 'Taraweeh';
+      case 'tahajud':
+        return 'Tahajud';
       case 'sedekah':
         return 'Sedekah';
       case 'prayers':

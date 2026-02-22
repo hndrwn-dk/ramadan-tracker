@@ -109,19 +109,29 @@ class LocationHelper {
     // Indonesia - multiple timezones
     if (latitude >= -11.0 && latitude <= 6.0 && 
         longitude >= 95.0 && longitude <= 141.0) {
-      // Western Indonesia (WIB): lon 95-105
+      // Java island (WIB): lat -8.5 to -5.5, lon 105-115
+      // Includes: Jakarta (~-6.2, 106.8), Bandung, Yogyakarta, Surabaya, Bali
+      if (latitude >= -8.5 && latitude <= -5.5 && longitude >= 105.0 && longitude < 115.0) {
+        return 'Asia/Jakarta';
+      }
+      // Sumatra (WIB): lon 95-105
       if (longitude >= 95.0 && longitude < 105.0) {
         return 'Asia/Jakarta';
       }
-      // Central Indonesia (WITA): lon 105-120
-      if (longitude >= 105.0 && longitude < 120.0) {
+      // Western Kalimantan (WIB): lon 108-114, lat -3 to 1
+      if (latitude >= -3.0 && latitude <= 1.0 && longitude >= 108.0 && longitude < 114.0) {
+        return 'Asia/Jakarta';
+      }
+      // Central Indonesia (WITA): lon 115-135 (Kalimantan Tengah/Timur, Sulawesi, NTT)
+      if (longitude >= 115.0 && longitude < 135.0) {
         return 'Asia/Makassar';
       }
-      // Eastern Indonesia (WIT): lon 120-141
-      if (longitude >= 120.0 && longitude <= 141.0) {
+      // Eastern Indonesia (WIT): lon 135-141 (Papua)
+      if (longitude >= 135.0 && longitude <= 141.0) {
         return 'Asia/Jayapura';
       }
-      return 'Asia/Jakarta'; // Default to Jakarta
+      // Default to Jakarta (WIB) for most Indonesian locations
+      return 'Asia/Jakarta';
     }
     
     // Malaysia

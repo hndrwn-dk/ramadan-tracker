@@ -72,7 +72,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get themeAutoDesc => 'Ikuti tema sistem (default)';
 
   @override
-  String get seasonManagementTitle => 'Manajemen Musim';
+  String get seasonManagementTitle => 'Ramadan Saya';
 
   @override
   String get seasonManagementSubtitle => 'Buat, lihat, dan hapus musim Ramadan';
@@ -92,6 +92,16 @@ class AppLocalizationsId extends AppLocalizations {
       'Konfigurasi waktu sholat dan pengingat notifikasi';
 
   @override
+  String get prayerOffsetTipTitle => 'Waktu sholat berbeda 1 jam?';
+
+  @override
+  String get prayerOffsetTipBody =>
+      'Jika waktu sholat terlihat berbeda +/- 1 jam, kamu bisa atur Offset di Pengaturan.';
+
+  @override
+  String get prayerOffsetTipCta => 'Atur Offset';
+
+  @override
   String get backupRestoreTitle => 'Cadangan & Pulihkan';
 
   @override
@@ -108,6 +118,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get languageSubtitle => 'Pilih bahasa yang Anda inginkan';
+
+  @override
+  String get languageReason =>
+      'Menu dan konten akan tampil dalam bahasa ini di seluruh aplikasi.';
 
   @override
   String get english => 'Bahasa Inggris';
@@ -408,6 +422,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get habitTaraweeh => 'Tarawih';
 
   @override
+  String get taraweehRakaat11 => '11 rakaat';
+
+  @override
+  String get taraweehRakaat23 => '23 rakaat';
+
+  @override
+  String get taraweehRakaatPerDayLabel => 'Rakaat per hari:';
+
+  @override
+  String taraweehRakaatProgress(int current, int target) {
+    return '$current/$target rakaat';
+  }
+
+  @override
   String get habitSedekah => 'Sedekah';
 
   @override
@@ -415,6 +443,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get habitPrayers => 'Sholat 5 Waktu';
+
+  @override
+  String get habitTahajud => 'Tahajud';
 
   @override
   String get habitPrayersDetailed => 'Sholat 5 Waktu (detail)';
@@ -467,11 +498,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Dapatkan notifikasi saat waktu berbuka';
 
   @override
-  String get nightPlanReminder => 'Pengingat Rencana Malam';
+  String get nightPlanReminder => 'Waktunya ibadah malam';
 
   @override
   String get reminderToPlanNightActivities =>
-      'Pengingat untuk merencanakan aktivitas malam';
+      'Pengingat untuk merencanakan aktivitas malam (Qiyam & Tahajud)';
 
   @override
   String get calculationMethod => 'Metode Perhitungan';
@@ -677,6 +708,37 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get maghrib => 'Maghrib';
+
+  @override
+  String iftarCountdown(int hours, int minutes) {
+    return 'Iftar dalam ${hours}j ${minutes}m';
+  }
+
+  @override
+  String iftarIn(String time) {
+    return 'Iftar dalam $time';
+  }
+
+  @override
+  String iftarPassed(String time) {
+    return 'Iftar berlalu • $time';
+  }
+
+  @override
+  String sahurIn(String time) {
+    return 'Sahur dalam $time';
+  }
+
+  @override
+  String sahurPassed(String time) {
+    return 'Sahur berlalu • $time';
+  }
+
+  @override
+  String get showIftarCountdown => 'Tampilkan countdown Iftar';
+
+  @override
+  String get showSahurCountdown => 'Tampilkan countdown Sahur';
 
   @override
   String get todayIn10Seconds => 'Hari ini dalam 10 detik';
@@ -1000,6 +1062,19 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get prayerTimesPreview => 'Pratinjau Waktu Sholat';
+
+  @override
+  String get prayerTimesVaryDaily =>
+      'Waktu dihitung per hari dan berubah sepanjang Ramadan.';
+
+  @override
+  String get refreshTimesTooltip =>
+      'Perbarui waktu (misal setelah ubah lokasi)';
+
+  @override
+  String timesForDate(String date) {
+    return 'Waktu untuk $date';
+  }
 
   @override
   String get test => 'Uji';

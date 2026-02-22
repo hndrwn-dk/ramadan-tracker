@@ -43,6 +43,13 @@ import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
+import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
+import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
+import 'package:ramadan_tracker/widgets/prayers_icon.dart';
+import 'package:ramadan_tracker/widgets/quran_icon.dart';
+import 'package:ramadan_tracker/widgets/tahajud_icon.dart';
+import 'package:ramadan_tracker/widgets/taraweeh_icon.dart';
 
 /// Refactored Insights Screen with proper range-based scoring and comparison.
 class InsightsScreen extends ConsumerStatefulWidget {
@@ -56,23 +63,22 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   InsightsRange _selectedRange = InsightsRange.today;
   DateTime? _selectedDate; // For Today tab date selection (null = today)
   int _refreshKey = 0; // Key to force FutureBuilder refresh
-  
+  bool _todayDataInvalidatedThisSession = false;
+
   @override
   bool get wantKeepAlive => false; // Don't keep alive to allow refresh
-  
+
   @override
   void initState() {
     super.initState();
   }
-  
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh when screen becomes visible again
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final currentTabIndex = ref.read(tabIndexProvider);
-        // Only refresh if we're on Insights tab
         if (currentTabIndex == 3) {
           setState(() {
             _refreshKey++;
@@ -85,10 +91,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // Listen to tab changes to refresh when returning to Insights tab
     ref.listen<int>(tabIndexProvider, (previous, next) {
-      // When tab changes to Insights (index 3) from another tab, refresh
       if (previous != 3 && next == 3 && mounted) {
+        _todayDataInvalidatedThisSession = false;
+        final now = DateTime.now();
+        final todayDateOnly = DateTime(now.year, now.month, now.day);
+        ref.invalidate(insightsDataProviderWithDate((range: InsightsRange.today, date: todayDateOnly)));
         setState(() {
           _refreshKey++;
         });
@@ -181,15 +189,37 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
 
   Widget _buildInsights(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    // For Today tab with date selection, use the date-aware provider
-    final insightsAsync = _selectedRange == InsightsRange.today && _selectedDate != null
-        ? ref.watch(insightsDataProviderWithDate((range: _selectedRange, date: _selectedDate)))
+    final now = DateTime.now();
+    final todayDateOnly = DateTime(now.year, now.month, now.day);
+    final todayParam = (range: _selectedRange, date: _selectedDate ?? todayDateOnly);
+
+    if (_selectedRange == InsightsRange.today && !_todayDataInvalidatedThisSession) {
+      _todayDataInvalidatedThisSession = true;
+      ref.refresh(insightsDataProviderWithDate(todayParam));
+    }
+    if (_selectedRange != InsightsRange.today) {
+      _todayDataInvalidatedThisSession = false;
+    }
+
+    final insightsAsync = _selectedRange == InsightsRange.today
+        ? ref.watch(insightsDataProviderWithDate(todayParam))
         : ref.watch(insightsDataProvider(_selectedRange));
 
     return insightsAsync.when(
       data: (data) {
         if (data.daysCount == 0) {
           return _buildEmptyState(context, ref);
+        }
+        // If Today tab but data is for a different day (stale cache), force refresh and show loading
+        if (_selectedRange == InsightsRange.today) {
+          final today = DateTime(now.year, now.month, now.day);
+          final dataDay = DateTime(data.startDate.year, data.startDate.month, data.startDate.day);
+          if (dataDay != today) {
+            ref.refresh(insightsDataProviderWithDate(todayParam));
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
         }
         // Show different UI for 7 Days tab
         if (_selectedRange == InsightsRange.sevenDays) {
@@ -342,8 +372,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       setState(() {
         _selectedDate = picked;
       });
-      // Invalidate insights data to refresh with new date
-      ref.invalidate(insightsDataProvider(_selectedRange));
+      ref.invalidate(insightsDataProviderWithDate((range: InsightsRange.today, date: picked)));
     }
   }
 
@@ -641,13 +670,17 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         final l10n = AppLocalizations.of(context)!;
         final taraweehStats = data.perHabitStats['taraweeh'];
         if (taraweehStats != null && taraweehStats.totalDays != null) {
-          final done = taraweehStats.doneDays ?? 0;
-          final total = taraweehStats.totalDays!;
+          final targetRakaat = taraweehStats.targetValue;
+          final totalRakaat = taraweehStats.totalValue ?? 0;
+          final subtitle = (targetRakaat != null && targetRakaat > 0)
+              ? l10n.taraweehRakaatProgress(totalRakaat, targetRakaat)
+              : l10n.doneNights(taraweehStats.doneDays ?? 0, taraweehStats.totalDays!);
           highlights.add(_buildHighlightCard(
             context,
             icon: Icons.nights_stay,
+            iconWidget: TaraweehIcon(size: 32, color: Theme.of(context).colorScheme.primary),
             title: l10n.tarawihProgress,
-            subtitle: l10n.doneNights(done, total),
+            subtitle: subtitle,
           ));
         }
         final itikafStats = data.perHabitStats['itikaf'];
@@ -655,6 +688,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           highlights.add(_buildHighlightCard(
             context,
             icon: Icons.mosque,
+            iconWidget: ItikafIcon(size: 32, color: Theme.of(context).colorScheme.primary),
             title: l10n.itikafLast10Nights,
             subtitle: l10n.nights(itikafStats.nightsDone!),
           ));
@@ -712,12 +746,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     );
   }
 
-  Widget _buildHighlightCard(BuildContext context, {required IconData icon, required String title, required String subtitle}) {
+  Widget _buildHighlightCard(BuildContext context, {required IconData icon, Widget? iconWidget, required String title, required String subtitle}) {
     return PremiumCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+          iconWidget ?? Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -804,7 +838,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(_getHabitIcon(habitKey), size: 20, color: Theme.of(context).colorScheme.primary),
+          getHabitIconWidget(context, habitKey, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -897,6 +931,21 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
               habitKey: habitKey,
               habitName: _getHabitDisplayName(habitKey),
               icon: _getHabitIcon(habitKey),
+              iconWidget: habitKey == 'quran_pages'
+                  ? QuranIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                  : habitKey == 'prayers'
+                      ? PrayersIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                      : habitKey == 'itikaf'
+                          ? ItikafIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                          : habitKey == 'taraweeh'
+                              ? TaraweehIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                              : habitKey == 'dhikr'
+                                  ? DhikrIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                  : habitKey == 'sedekah'
+                                      ? SedekahIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                      : habitKey == 'tahajud'
+                                          ? TahajudIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                          : null,
               status: status,
               keyMetricText: keyMetricText,
               heatmapDays: heatmapDays,
@@ -987,6 +1036,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     final dhikrPlan = await database.dhikrPlanDao.getPlan(season.id);
     final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled');
     final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
+    final taraweehRakaatRaw = await database.kvSettingsDao.getValue('taraweeh_rakaat_per_day');
+    final taraweehRakaatPerDay = int.tryParse(taraweehRakaatRaw ?? '') ?? 11;
     
     // Build heatmap days and calculate metrics
     final l10n = AppLocalizations.of(context)!;
@@ -1013,6 +1064,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     switch (habitKey) {
       case 'fasting':
       case 'taraweeh':
+      case 'tahajud':
       case 'itikaf':
         final done = todayEntry?.valueBool == true;
         todayCompletion = done ? 1.0 : 0.0;
@@ -1023,6 +1075,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           final last10Start = season.days - 9;
           final itikafDays = allEntries.where((e) => e.habitId == habit.id && e.dayIndex >= last10Start && e.valueBool == true).length;
           keyMetricText = l10n.doneItikaf(itikafDays);
+        } else if (habitKey == 'taraweeh') {
+          final totalRakaat = allEntries.where((e) => e.habitId == habit.id).fold<int>(0, (sum, e) => sum + (e.valueInt ?? 0));
+          final targetRakaat = taraweehRakaatPerDay * season.days;
+          keyMetricText = targetRakaat > 0 ? l10n.taraweehRakaatProgress(totalRakaat, targetRakaat) : l10n.thisRamadan(doneDays, season.days);
         }
         break;
       case 'quran_pages':
@@ -1087,6 +1143,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       switch (habitKey) {
         case 'fasting':
         case 'taraweeh':
+        case 'tahajud':
         case 'itikaf':
           final entry = allEntries.firstWhere(
             (e) => e.dayIndex == day && e.habitId == habit.id,
@@ -1336,6 +1393,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     switch (habitKey) {
       case 'fasting':
       case 'taraweeh':
+      case 'tahajud':
       case 'itikaf':
         final done = stats.doneDays != null && stats.doneDays! > 0;
         badge = Container(
@@ -1566,6 +1624,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   String _getTodaySubtitle(String habitKey, HabitStats stats, WidgetRef ref) {
     switch (habitKey) {
       case 'fasting':
+      case 'tahajud':
         return stats.doneDays != null && stats.doneDays! > 0 ? 'Done' : 'Not done';
       case 'quran_pages':
         final pages = stats.avgValue?.round() ?? 0;
@@ -1576,6 +1635,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         final target = stats.targetValue ?? 0;
         return 'Today $count/$target';
       case 'taraweeh':
+        final target = stats.targetValue;
+        final current = stats.totalValue ?? 0;
+        if (target != null && target > 0) {
+          return AppLocalizations.of(context)!.taraweehRakaatProgress(current, target);
+        }
         return stats.doneDays != null && stats.doneDays! > 0 ? 'Done' : 'Not done';
       case 'sedekah':
         // Will be computed from today's data
@@ -1593,6 +1657,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   String _getSevenDaysSubtitle(String habitKey, HabitStats stats, WidgetRef ref) {
     switch (habitKey) {
       case 'fasting':
+      case 'tahajud':
         return 'Done ${stats.doneDays ?? 0}/${stats.totalDays ?? 0} days';
       case 'quran_pages':
         final avg = stats.avgValue?.round() ?? 0;
@@ -1605,6 +1670,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         final completed = stats.daysMetTarget ?? 0;
         return 'Avg $avg/$target • completed $completed/7';
       case 'taraweeh':
+        final target = stats.targetValue;
+        final current = stats.totalValue ?? 0;
+        if (target != null && target > 0) {
+          return AppLocalizations.of(context)!.taraweehRakaatProgress(current, target);
+        }
         return 'Done ${stats.doneDays ?? 0}/${stats.totalDays ?? 0} days';
       case 'sedekah':
         // Will show total and hit target
@@ -1622,6 +1692,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   String _getSeasonSubtitle(String habitKey, HabitStats stats, WidgetRef ref) {
     switch (habitKey) {
       case 'fasting':
+      case 'tahajud':
         return 'Done ${stats.doneDays ?? 0}/${stats.totalDays ?? 0} days';
       case 'quran_pages':
         final avg = stats.avgValue?.round() ?? 0;
@@ -1634,6 +1705,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         final completed = stats.daysMetTarget ?? 0;
         return 'Avg $avg/$target • completed $completed days';
       case 'taraweeh':
+        final target = stats.targetValue;
+        final current = stats.totalValue ?? 0;
+        if (target != null && target > 0) {
+          return AppLocalizations.of(context)!.taraweehRakaatProgress(current, target);
+        }
         return 'Done ${stats.doneDays ?? 0}/${stats.totalDays ?? 0} days';
       case 'sedekah':
         // Will show total and avg
@@ -1986,13 +2062,15 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   IconData _getHabitIcon(String habitKey) {
     switch (habitKey) {
       case 'fasting':
-        return Icons.wb_sunny;
+        return Icons.no_meals;
       case 'quran_pages':
         return Icons.menu_book;
       case 'dhikr':
         return Icons.favorite;
       case 'taraweeh':
         return Icons.nights_stay;
+      case 'tahajud':
+        return Icons.self_improvement;
       case 'sedekah':
         return Icons.volunteer_activism;
       case 'prayers':
@@ -2041,6 +2119,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                 highlights.add(_buildHighlightCard(
                   context,
                   icon: Icons.menu_book,
+                  iconWidget: QuranIcon(size: 32, color: Theme.of(context).colorScheme.primary),
                   title: 'Quran on track',
                   subtitle: '${avgPages.round()}/$target pages',
                 ));
@@ -2057,9 +2136,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             // Prayers
             final prayersStats = highlightsData['prayersStats'] as HabitStats?;
             if (prayersStats != null && prayersStats.all5Days != null && prayersStats.all5Days! > 0) {
-              highlights.add(_buildHighlightCard(
+                highlights.add(_buildHighlightCard(
                 context,
                 icon: Icons.mosque,
+                iconWidget: PrayersIcon(size: 32, color: Theme.of(context).colorScheme.primary),
                 title: 'All 5 prayers done',
                 subtitle: 'Complete',
               ));
@@ -2859,6 +2939,21 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                         habitKey: habitKey,
                         habitName: _getHabitDisplayNameHelper(habitKey),
                         icon: _getHabitIconHelper(habitKey),
+                        iconWidget: habitKey == 'quran_pages'
+                            ? QuranIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                            : habitKey == 'prayers'
+                                ? PrayersIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                : habitKey == 'itikaf'
+                                    ? ItikafIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                    : habitKey == 'taraweeh'
+                                        ? TaraweehIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                        : habitKey == 'dhikr'
+                                            ? DhikrIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                            : habitKey == 'sedekah'
+                                                ? SedekahIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                                : habitKey == 'tahajud'
+                                                    ? TahajudIcon(size: 20, color: Theme.of(context).colorScheme.primary)
+                                                    : null,
                         taskStatus: taskStatus,
                         season: season,
                         startDayIndex: range.startDayIndex,
@@ -3262,6 +3357,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                         habitKey: habitKey,
                         habitName: _getHabitDisplayNameHelper(habitKey),
                         icon: _getHabitIconHelper(habitKey),
+                        iconWidget: getHabitIconWidget(
+                          context,
+                          habitKey,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                         analytics: analytics,
                         season: season,
                         onAnalyticsTap: () {
@@ -3431,6 +3532,8 @@ String _getHabitDisplayNameHelper(String habitKey) {
       return 'Dhikr';
     case 'taraweeh':
       return 'Taraweeh';
+    case 'tahajud':
+      return 'Tahajud';
     case 'sedekah':
       return 'Sedekah';
     case 'prayers':
@@ -3445,13 +3548,15 @@ String _getHabitDisplayNameHelper(String habitKey) {
 IconData _getHabitIconHelper(String habitKey) {
   switch (habitKey) {
     case 'fasting':
-      return Icons.wb_sunny;
+      return Icons.no_meals;
     case 'quran_pages':
       return Icons.menu_book;
     case 'dhikr':
       return Icons.favorite;
     case 'taraweeh':
       return Icons.nights_stay;
+    case 'tahajud':
+      return Icons.self_improvement;
     case 'sedekah':
       return Icons.volunteer_activism;
     case 'prayers':
@@ -3611,7 +3716,7 @@ class _WeeklyReviewSheet extends ConsumerWidget {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            leading: Icon(_getHabitIconHelper(entry.key), color: Theme.of(context).colorScheme.primary),
+                            leading: getHabitIconWidget(context, entry.key, size: 24, color: Theme.of(context).colorScheme.primary),
                             title: Text(_getHabitDisplayNameHelper(entry.key)),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
@@ -3955,8 +4060,9 @@ class _WhatMissingSheet extends ConsumerWidget {
                                     padding: const EdgeInsets.all(16),
                                     child: Row(
                                       children: [
-                                        Icon(
-                                          _getHabitIconHelper(task['key'] as String),
+                                        getHabitIconWidget(
+                                          context,
+                                          task['key'] as String,
                                           size: 24,
                                           color: Theme.of(context).colorScheme.primary,
                                         ),
@@ -4056,6 +4162,7 @@ class _WhatMissingSheet extends ConsumerWidget {
       switch (habitKey) {
         case 'fasting':
         case 'taraweeh':
+        case 'tahajud':
         case 'itikaf':
           isMissing = entry.valueBool != true;
           reason = 'Not completed';
@@ -4119,6 +4226,7 @@ class _WhatMissingSheet extends ConsumerWidget {
           switch (habitKey) {
             case 'fasting':
             case 'taraweeh':
+            case 'tahajud':
             case 'itikaf':
               final dayEntry = allEntries.firstWhere(
                 (e) => e.dayIndex == day && e.habitId == habit.id,
@@ -4196,6 +4304,8 @@ class _WhatMissingSheet extends ConsumerWidget {
         return 'Dhikr';
       case 'taraweeh':
         return 'Taraweeh';
+      case 'tahajud':
+        return 'Tahajud';
       case 'sedekah':
         return 'Sedekah';
       case 'prayers':
@@ -4210,13 +4320,15 @@ class _WhatMissingSheet extends ConsumerWidget {
   IconData _getHabitIconHelper(String habitKey) {
     switch (habitKey) {
       case 'fasting':
-        return Icons.wb_sunny;
+        return Icons.no_meals;
       case 'quran_pages':
         return Icons.menu_book;
       case 'dhikr':
         return Icons.favorite;
       case 'taraweeh':
         return Icons.nights_stay;
+      case 'tahajud':
+        return Icons.self_improvement;
       case 'sedekah':
         return Icons.volunteer_activism;
       case 'prayers':

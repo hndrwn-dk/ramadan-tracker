@@ -15,6 +15,7 @@ import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/widgets/prayers_icon.dart';
 
 class DaySummarySheet extends ConsumerWidget {
   final int seasonId;
@@ -170,9 +171,14 @@ class DaySummarySheet extends ConsumerWidget {
               ),
             ),
           ),
-          // Actions
+          // Actions (add bottom safe area so buttons are not cut off by nav bar on some devices)
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              20 + MediaQuery.of(context).padding.bottom,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -187,9 +193,7 @@ class DaySummarySheet extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      // Set selected day index to navigate to specific day
                       ref.read(selectedDayIndexProvider.notifier).state = dayIndex;
-                      // Navigate to Today screen
                       ref.read(tabIndexProvider.notifier).state = 0;
                     },
                     child: Text(l10n.viewDayButton),
@@ -216,7 +220,7 @@ class DaySummarySheet extends ConsumerWidget {
           data: (seasonHabits) {
             return habitsAsync.when(
               data: (allHabits) {
-                final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'itikaf'];
+                final habitOrder = ['fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah', 'prayers', 'tahajud', 'itikaf'];
 
                 // Check if in last 10 days
                 final seasonAsync = ref.watch(currentSeasonProvider);
@@ -300,6 +304,10 @@ class DaySummarySheet extends ConsumerWidget {
         final value = status['value'] as String;
         final isCompleted = status['isCompleted'] as bool;
         final icon = status['icon'] as IconData?;
+        final habitKey = status['habitKey'] as String?;
+        final iconColor = isCompleted
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
 
         return Container(
           padding: const EdgeInsets.all(12),
@@ -312,14 +320,10 @@ class DaySummarySheet extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isCompleted
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
+              if (icon != null || habitKey != null) ...[
+                habitKey != null
+                    ? getHabitIconWidget(context, habitKey, size: 20, color: iconColor)
+                    : Icon(icon, size: 20, color: iconColor),
                 const SizedBox(width: 12),
               ],
               Expanded(
@@ -370,6 +374,7 @@ class DaySummarySheet extends ConsumerWidget {
     switch (habitKey) {
       case 'fasting':
       case 'taraweeh':
+      case 'tahajud':
       case 'itikaf':
         final isCompleted = entry?.valueBool ?? false;
         String label;
@@ -377,6 +382,8 @@ class DaySummarySheet extends ConsumerWidget {
           label = l10n.habitFasting;
         } else if (habitKey == 'taraweeh') {
           label = l10n.habitTaraweeh;
+        } else if (habitKey == 'tahajud') {
+          label = l10n.habitTahajud;
         } else {
           label = l10n.habitItikaf;
         }
@@ -384,7 +391,8 @@ class DaySummarySheet extends ConsumerWidget {
           'label': label,
           'value': isCompleted ? l10n.done : l10n.notDone,
           'isCompleted': isCompleted,
-          'icon': habitKey == 'fasting' ? Icons.wb_sunny : Icons.nights_stay,
+          'icon': getHabitIcon(habitKey),
+          'habitKey': habitKey,
         };
 
       case 'quran_pages':
@@ -396,6 +404,7 @@ class DaySummarySheet extends ConsumerWidget {
           'value': l10n.quranPagesFormat(pagesRead, target),
           'isCompleted': pagesRead >= target,
           'icon': Icons.menu_book,
+          'habitKey': habitKey,
         };
 
       case 'dhikr':
@@ -406,6 +415,7 @@ class DaySummarySheet extends ConsumerWidget {
           'value': l10n.dhikrCountFormat(count, target),
           'isCompleted': count >= target,
           'icon': Icons.favorite,
+          'habitKey': habitKey,
         };
 
       case 'sedekah':
@@ -432,6 +442,7 @@ class DaySummarySheet extends ConsumerWidget {
           'value': valueText,
           'isCompleted': isCompleted,
           'icon': Icons.volunteer_activism,
+          'habitKey': habitKey,
         };
 
       case 'prayers':
@@ -451,6 +462,7 @@ class DaySummarySheet extends ConsumerWidget {
             'isCompleted': completed == 5,
             'icon': Icons.mosque,
             'showDetails': true,
+            'habitKey': habitKey,
           };
         }
         // Fallback if no prayer details found
@@ -459,6 +471,7 @@ class DaySummarySheet extends ConsumerWidget {
           'value': '0 / 5 ${l10n.completed}',
           'isCompleted': false,
           'icon': Icons.mosque,
+          'habitKey': habitKey,
         };
 
       default:
@@ -467,6 +480,7 @@ class DaySummarySheet extends ConsumerWidget {
           'value': 'Unknown',
           'isCompleted': false,
           'icon': null,
+          'habitKey': habitKey,
         };
     }
   }
@@ -507,8 +521,7 @@ class DaySummarySheet extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.mosque,
+                  PrayersIcon(
                     size: 20,
                     color: allCompleted
                         ? Theme.of(context).colorScheme.primary

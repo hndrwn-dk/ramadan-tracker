@@ -9,6 +9,7 @@ class CounterWidget extends StatefulWidget {
   final List<int> quickAddChips;
   final ValueChanged<int>? onQuickAdd;
   final IconData? icon;
+  final Widget? iconWidget;
   final int? target;
   final String? targetLabel;
 
@@ -21,6 +22,7 @@ class CounterWidget extends StatefulWidget {
     this.quickAddChips = const [],
     this.onQuickAdd,
     this.icon,
+    this.iconWidget,
     this.target,
     this.targetLabel,
   });
@@ -39,11 +41,8 @@ class _CounterWidgetState extends State<CounterWidget> {
       children: [
         Row(
           children: [
-            if (widget.icon != null) ...[
-              Icon(
-                widget.icon,
-                size: 20,
-              ),
+            if (widget.iconWidget != null || widget.icon != null) ...[
+              widget.iconWidget ?? Icon(widget.icon, size: 20),
               const SizedBox(width: 12),
             ],
             Text(

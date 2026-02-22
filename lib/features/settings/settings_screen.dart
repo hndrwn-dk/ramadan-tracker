@@ -44,6 +44,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _pendingCountKey = GlobalKey<_PendingNotificationCountState>();
   bool _debugEnabled = false;
   int _versionTapCount = 0;
+  int? _sahurOffsetSlider;
 
   void _toggleSection(String key) {
     setState(() {
@@ -60,7 +61,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+    ref.listen(openSettingsSectionProvider, (prev, next) {
+      if (next == 'times') {
+        setState(() => _expandedSections['times'] = true);
+        ref.read(openSettingsSectionProvider.notifier).state = null;
+      }
+    });
+    final openSection = ref.read(openSettingsSectionProvider);
+    if (openSection == 'times' && !(_expandedSections['times'] ?? false)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _expandedSections['times'] = true);
+          ref.read(openSettingsSectionProvider.notifier).state = null;
+        }
+      });
+    }
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -646,10 +661,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         final settings = snapshot.data!;
         final sahurEnabled = settings['sahur_enabled'] == 'true';
-        final sahurOffset = int.tryParse(settings['sahur_offset'] ?? '30') ?? 30;
+        final sahurOffset = (int.tryParse(settings['sahur_offset'] ?? '30') ?? 30).clamp(1, 45);
         final iftarEnabled = settings['iftar_enabled'] == 'true';
         final iftarOffset = int.tryParse(settings['iftar_offset'] ?? '0') ?? 0;
         final nightPlanEnabled = settings['night_plan_enabled'] == 'true';
+        final nightPlanHour = int.tryParse(settings['night_plan_hour'] ?? '2') ?? 2;
+        final nightPlanMinute = int.tryParse(settings['night_plan_minute'] ?? '30') ?? 30;
+        final nightPlanTimeStr = '${nightPlanHour.toString().padLeft(2, '0')}:${nightPlanMinute.toString().padLeft(2, '0')}';
         final method = settings['prayer_method'] ?? 'mwl';
         final fajrAdj = int.tryParse(settings['prayer_fajr_adj'] ?? '0') ?? 0;
         final maghribAdj = int.tryParse(settings['prayer_maghrib_adj'] ?? '0') ?? 0;
@@ -672,6 +690,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 setState(() {});
               },
             ),
+            if (sahurEnabled)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.minBeforeFajr(_sahurOffsetSlider ?? sahurOffset),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    Slider(
+                      value: (_sahurOffsetSlider ?? sahurOffset).toDouble(),
+                      min: 1,
+                      max: 45,
+                      divisions: 44,
+                      onChanged: (value) {
+                        setState(() => _sahurOffsetSlider = value.round());
+                      },
+                      onChangeEnd: (value) async {
+                        final n = value.round();
+                        await ref.read(databaseProvider).kvSettingsDao.setValue('sahur_offset', n.toString());
+                        setState(() {
+                          _sahurOffsetSlider = null;
+                        });
+                        _rescheduleReminders();
+                      },
+                    ),
+                  ],
+                ),
+              ),
             const Divider(height: 1),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -692,11 +740,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const Divider(height: 1),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              title: Text(l10n.showIftarCountdown),
+              value: settings['times_show_iftar_countdown'] != 'false',
+              onChanged: (value) async {
+                await ref.read(databaseProvider).kvSettingsDao.setValue('times_show_iftar_countdown', value.toString());
+                setState(() {});
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.showSahurCountdown),
+              value: settings['times_show_sahur_countdown'] == 'true',
+              onChanged: (value) async {
+                await ref.read(databaseProvider).kvSettingsDao.setValue('times_show_sahur_countdown', value.toString());
+                setState(() {});
+              },
+            ),
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               title: Text(l10n.nightPlanReminder),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('21:00'),
+                  Text(nightPlanTimeStr),
                   Text(l10n.reminderToPlanNightActivities, style: const TextStyle(fontSize: 11)),
                 ],
               ),
@@ -821,6 +888,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 0, right: 0),
+              child: Text(
+                l10n.prayerTimesVaryDaily,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+            ),
             const Divider(height: 24),
             FutureBuilder<List<NotificationInfo>>(
               future: NotificationService.getPendingNotifications(),
@@ -932,6 +1008,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'iftar_enabled': await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true',
       'iftar_offset': await database.kvSettingsDao.getValue('iftar_offset') ?? '0',
       'night_plan_enabled': await database.kvSettingsDao.getValue('night_plan_enabled') ?? 'true',
+      'night_plan_hour': await database.kvSettingsDao.getValue('night_plan_hour') ?? '2',
+      'night_plan_minute': await database.kvSettingsDao.getValue('night_plan_minute') ?? '30',
       'prayer_method': await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl',
       'prayer_fajr_adj': await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0',
       'prayer_maghrib_adj': await database.kvSettingsDao.getValue('prayer_maghrib_adj') ?? '0',
@@ -939,6 +1017,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'goal_reminder_dhikr_enabled': await database.kvSettingsDao.getValue('goal_reminder_dhikr_enabled') ?? 'true',
       'goal_reminder_sedekah_enabled': await database.kvSettingsDao.getValue('goal_reminder_sedekah_enabled') ?? 'true',
       'goal_reminder_taraweeh_enabled': await database.kvSettingsDao.getValue('goal_reminder_taraweeh_enabled') ?? 'true',
+      'times_show_iftar_countdown': await database.kvSettingsDao.getValue('times_show_iftar_countdown') ?? 'true',
+      'times_show_sahur_countdown': await database.kvSettingsDao.getValue('times_show_sahur_countdown') ?? 'false',
     };
   }
 
@@ -1855,9 +1935,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.invalidate(currentSeasonProvider);
       
       // Check if there are any seasons left
+      debugPrint('=== Settings: Checking remaining seasons after delete ===');
       final remainingSeasons = await database.ramadanSeasonsDao.getAllSeasons();
+      debugPrint('Remaining seasons count: ${remainingSeasons.length}');
       if (remainingSeasons.isEmpty) {
         // No seasons left, navigate to onboarding immediately
+        debugPrint('No seasons left, navigating to OnboardingFlow...');
         ref.invalidate(shouldShowOnboardingProvider);
         if (mounted) {
           // Navigate to onboarding flow and clear navigation stack
@@ -1867,22 +1950,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             (route) => false,
           );
+          debugPrint('Navigated to OnboardingFlow');
         }
+      } else {
+        debugPrint('Seasons still exist, not showing onboarding');
       }
     }
   }
 
   Future<void> _showCreateSeasonDialog() async {
-    // Navigate to create season flow instead of simple dialog
-    await Navigator.push(
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => const CreateSeasonFlow(),
       ),
     );
-    
-    // Refresh after returning
-    setState(() {});
+    if (result == true && mounted) {
+      ref.invalidate(allSeasonsProvider);
+      ref.invalidate(currentSeasonProvider);
+      setState(() {});
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.seasonCreatedSuccessfully)),
+      );
+    } else {
+      setState(() {});
+    }
   }
 
   Future<List<dynamic>> _ensureAllHabitsInitialized(int seasonId, List<HabitModel> habits) async {
@@ -2023,6 +2116,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return l10n.habitItikaf;
       case 'prayers':
         return l10n.habitPrayers;
+      case 'tahajud':
+        return l10n.habitTahajud;
       default:
         // Fallback to original name if translation not found
         return habitKey;

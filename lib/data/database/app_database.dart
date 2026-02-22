@@ -181,6 +181,13 @@ class AppDatabase extends _$AppDatabase {
         sortOrder: 7,
         isActiveDefault: false,
       ),
+      HabitsCompanion.insert(
+        key: 'tahajud',
+        name: 'Tahajud',
+        type: 'bool',
+        sortOrder: 8,
+        isActiveDefault: false,
+      ),
     ];
 
     // Only insert habits that don't exist yet

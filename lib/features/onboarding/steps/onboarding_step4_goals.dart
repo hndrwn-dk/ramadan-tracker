@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
@@ -22,14 +24,27 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
   late TextEditingController _customPagesController;
   late TextEditingController _sedekahAmountController;
 
+  static String _formatIdrAmount(int amount) {
+    if (amount <= 0) return '';
+    return NumberFormat('#,###', 'id_ID').format(amount);
+  }
+
+  static int _parseIdrAmount(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(digits) ?? 0;
+  }
+
   @override
   void initState() {
     super.initState();
     _customPagesController = TextEditingController(
       text: widget.data.customQuranPages.toString(),
     );
+    final amount = widget.data.sedekahAmount;
     _sedekahAmountController = TextEditingController(
-      text: widget.data.sedekahAmount > 0 ? widget.data.sedekahAmount.toString() : '',
+      text: amount > 0
+          ? (widget.data.sedekahCurrency == 'IDR' ? _formatIdrAmount(amount) : amount.toString())
+          : '',
     );
     // Auto-enable sedekah goal if sedekah habit is selected but toggle is off
     if (widget.data.selectedHabits.contains('sedekah') && !widget.data.sedekahGoalEnabled) {
@@ -228,8 +243,16 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
                             hintText: l10n.enterAmount,
                             border: const OutlineInputBorder(),
                           ),
+                          inputFormatters: widget.data.sedekahCurrency == 'IDR'
+                              ? [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                                  _IdrAmountInputFormatter(),
+                                ]
+                              : [FilteringTextInputFormatter.digitsOnly],
                           onChanged: (value) {
-                            widget.data.sedekahAmount = int.tryParse(value) ?? 0;
+                            widget.data.sedekahAmount = widget.data.sedekahCurrency == 'IDR'
+                                ? _parseIdrAmount(value)
+                                : (int.tryParse(value) ?? 0);
                           },
                         ),
                       ],
@@ -264,6 +287,11 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
                             if (value != null) {
                               setState(() {
                                 widget.data.sedekahCurrency = value;
+                                if (value == 'IDR' && widget.data.sedekahAmount > 0) {
+                                  _sedekahAmountController.text = _formatIdrAmount(widget.data.sedekahAmount);
+                                } else if (value != 'IDR' && widget.data.sedekahAmount > 0) {
+                                  _sedekahAmountController.text = widget.data.sedekahAmount.toString();
+                                }
                               });
                             }
                           },
@@ -296,6 +324,30 @@ class _OnboardingStep4GoalsState extends State<OnboardingStep4Goals> {
           const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+}
+
+class _IdrAmountInputFormatter extends TextInputFormatter {
+  static final _idrFormat = NumberFormat('#,###', 'id_ID');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final amount = int.tryParse(digits) ?? 0;
+    if (amount == 0) {
+      return TextEditingValue(
+        text: '',
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
+    final formatted = _idrFormat.format(amount);
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

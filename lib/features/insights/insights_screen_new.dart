@@ -9,6 +9,8 @@ import 'package:ramadan_tracker/features/insights/models/insights_range.dart';
 import 'package:ramadan_tracker/features/insights/models/insights_data.dart';
 import 'package:ramadan_tracker/features/insights/providers/insights_provider.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/widgets/quran_icon.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 
 /// Refactored Insights Screen with proper range-based scoring and comparison.
@@ -282,6 +284,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
         highlights.add(_buildHighlightCard(
           context,
           icon: Icons.menu_book,
+          iconWidget: QuranIcon(size: 32, color: Theme.of(context).colorScheme.primary),
           title: 'Total Quran pages',
           subtitle: '${quranStats.totalValue} pages',
         ));
@@ -316,12 +319,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     );
   }
 
-  Widget _buildHighlightCard(BuildContext context, {required IconData icon, required String title, required String subtitle}) {
+  Widget _buildHighlightCard(BuildContext context, {required IconData icon, Widget? iconWidget, required String title, required String subtitle}) {
     return PremiumCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+          iconWidget ?? Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -389,7 +392,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(_getHabitIcon(habitKey), size: 20, color: Theme.of(context).colorScheme.primary),
+          getHabitIconWidget(context, habitKey, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -676,7 +679,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
   IconData _getHabitIcon(String habitKey) {
     switch (habitKey) {
       case 'fasting':
-        return Icons.wb_sunny;
+        return Icons.no_meals;
       case 'quran_pages':
         return Icons.menu_book;
       case 'dhikr':

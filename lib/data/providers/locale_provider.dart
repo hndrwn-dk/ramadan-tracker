@@ -22,6 +22,13 @@ final _localeFutureProvider = FutureProvider<Locale>((ref) async {
   return _parseLocale(localeString);
 });
 
+/// True if the user has chosen a language (app_language is set). Used to show language picker before onboarding on first launch.
+final languageChosenProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final database = ref.read(databaseProvider);
+  final value = await database.kvSettingsDao.getValue('app_language');
+  return value != null && value.isNotEmpty;
+});
+
 final localeProvider = StateNotifierProvider<LocaleNotifier, AsyncValue<Locale>>((ref) {
   final futureValue = ref.watch(_localeFutureProvider);
   return LocaleNotifier(ref, futureValue);
@@ -36,8 +43,8 @@ class LocaleNotifier extends StateNotifier<AsyncValue<Locale>> {
     final database = _ref.read(databaseProvider);
     await database.kvSettingsDao.setValue('app_language', localeString);
     state = AsyncValue.data(_parseLocale(localeString));
-    // Invalidate the future provider to refresh
     _ref.invalidate(_localeFutureProvider);
+    _ref.invalidate(languageChosenProvider);
   }
 }
 

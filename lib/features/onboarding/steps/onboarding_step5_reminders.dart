@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/utils/location_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'dart:io';
 
 class OnboardingStep5Reminders extends ConsumerStatefulWidget {
@@ -39,6 +40,11 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
     _cityController = TextEditingController();
     _latitudeController = TextEditingController();
     _longitudeController = TextEditingController();
+    // Indonesia/Kemenag uses 20 deg Fajr, 18 deg Isha in PrayerTimeService; no default offset.
+    if (widget.data.calculationMethod == 'indonesia' && widget.data.fajrAdjust == 0 && widget.data.maghribAdjust == 0) {
+      widget.data.fajrAdjust = 0;
+      widget.data.maghribAdjust = 0;
+    }
     _loadTimezone();
   }
 
@@ -48,6 +54,16 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
     _latitudeController.dispose();
     _longitudeController.dispose();
     super.dispose();
+  }
+
+  double get _nightPlanSliderValue {
+    final h = widget.data.nightPlanHour.clamp(2, 4);
+    final m = widget.data.nightPlanMinute;
+    return ((h - 2) * 2 + (m >= 30 ? 1 : 0)).toDouble().clamp(0, 4);
+  }
+
+  String _formatNightPlanTime(int hour, int minute) {
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _loadTimezone() async {
@@ -64,6 +80,12 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
     } catch (e) {
       tz = 'UTC';
     }
+    
+    // If timezone is still UTC and coordinates are available, detect from coordinates
+    if ((tz == 'UTC' || tz.isEmpty) && widget.data.latitude != null && widget.data.longitude != null) {
+      tz = LocationHelper.detectTimezone(widget.data.latitude!, widget.data.longitude!);
+    }
+    
     setState(() {
       widget.data.timezone = tz;
     });
@@ -126,6 +148,10 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
         widget.data.longitude = position.longitude;
         widget.data.calculationMethod = detectedMethod;
         widget.data.timezone = detectedTimezone;
+        if (detectedMethod == 'indonesia' && widget.data.fajrAdjust == 0 && widget.data.maghribAdjust == 0) {
+          widget.data.fajrAdjust = 0;
+          widget.data.maghribAdjust = 0;
+        }
         _loadingLocation = false;
         _showManualLocation = false;
       });
@@ -156,6 +182,10 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
         widget.data.longitude = lon;
         widget.data.calculationMethod = detectedMethod;
         widget.data.timezone = detectedTimezone;
+        if (detectedMethod == 'indonesia' && widget.data.fajrAdjust == 0 && widget.data.maghribAdjust == 0) {
+          widget.data.fajrAdjust = 0;
+          widget.data.maghribAdjust = 0;
+        }
         _showManualLocation = false;
       });
       _updatePreview();
@@ -169,6 +199,17 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
 
   Future<void> _updatePreview() async {
     if (widget.data.latitude == null || widget.data.longitude == null) return;
+
+    // Auto-detect timezone from coordinates if still UTC
+    if (widget.data.timezone == 'UTC' || widget.data.timezone.isEmpty) {
+      final detectedTimezone = LocationHelper.detectTimezone(
+        widget.data.latitude!,
+        widget.data.longitude!,
+      );
+      setState(() {
+        widget.data.timezone = detectedTimezone;
+      });
+    }
 
     try {
       final times = PrayerTimeService.getFajrAndMaghrib(
@@ -246,34 +287,29 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
           ),
           if (widget.data.sahurEnabled) ...[
             Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16),
-              child: Row(
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    l10n.offset,
+                    l10n.minBeforeFajr(widget.data.sahurOffsetMinutes.clamp(1, 45)),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SegmentedButton<int>(
-                      segments: [
-                        ButtonSegment(value: 15, label: Text(l10n.minutesShort(15))),
-                        ButtonSegment(value: 30, label: Text(l10n.minutesShort(30))),
-                        ButtonSegment(value: 45, label: Text(l10n.minutesShort(45))),
-                      ],
-                      selected: {widget.data.sahurOffsetMinutes},
-                      onSelectionChanged: (Set<int> newSelection) {
-                        setState(() {
-                          widget.data.sahurOffsetMinutes = newSelection.first;
-                        });
-                        _updatePreview();
-                      },
-                    ),
+                  Slider(
+                    value: (widget.data.sahurOffsetMinutes.clamp(1, 45)).toDouble(),
+                    min: 1,
+                    max: 45,
+                    divisions: 44,
+                    onChanged: (value) {
+                      setState(() {
+                        widget.data.sahurOffsetMinutes = value.round();
+                      });
+                      _updatePreview();
+                    },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
           ],
           SwitchListTile(
             title: Text(l10n.iftarReminder),
@@ -287,7 +323,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
           ),
           SwitchListTile(
             title: Text(l10n.nightPlanReminder),
-            subtitle: const Text('21:00'),
+            subtitle: Text(_formatNightPlanTime(widget.data.nightPlanHour, widget.data.nightPlanMinute)),
             value: widget.data.nightPlanEnabled,
             onChanged: (value) {
               setState(() {
@@ -295,6 +331,42 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
               });
             },
           ),
+          if (widget.data.nightPlanEnabled) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+              child: Row(
+                children: [
+                  Text('2:00', style: Theme.of(context).textTheme.bodySmall),
+                  Expanded(
+                    child: Slider(
+                      value: _nightPlanSliderValue,
+                      min: 0,
+                      max: 4,
+                      divisions: 4,
+                      label: _formatNightPlanTime(widget.data.nightPlanHour, widget.data.nightPlanMinute),
+                      onChanged: (value) {
+                        setState(() {
+                          final index = value.round();
+                          widget.data.nightPlanHour = 2 + index ~/ 2;
+                          widget.data.nightPlanMinute = (index % 2) * 30;
+                        });
+                      },
+                    ),
+                  ),
+                  Text('4:00', style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+              child: Text(
+                _formatNightPlanTime(widget.data.nightPlanHour, widget.data.nightPlanMinute),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           Text(
             l10n.goalRemindersTitle,
@@ -498,6 +570,10 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
               if (value != null) {
                 setState(() {
                   widget.data.calculationMethod = value;
+                  if (value == 'indonesia' && widget.data.fajrAdjust == 0 && widget.data.maghribAdjust == 0) {
+                    widget.data.fajrAdjust = 0;
+                    widget.data.maghribAdjust = 0;
+                  }
                 });
                 _updatePreview();
               }
@@ -546,6 +622,13 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                         _previewTimes!['maghrib']!.add(Duration(minutes: widget.data.iftarOffsetMinutes)),
                         isReminder: true,
                       ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.prayerTimesVaryDaily,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                          ),
+                    ),
                   ],
                 ),
               ),
@@ -581,6 +664,29 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
   }
 
   Widget _buildTimeRow(BuildContext context, String label, DateTime time, {bool isReminder = false}) {
+    // Convert UTC time (from getFajrAndMaghrib) to target timezone for display
+    DateTime displayTime = time;
+    try {
+      if (widget.data.timezone != 'UTC' && widget.data.timezone.isNotEmpty) {
+        final targetLocation = tz.getLocation(widget.data.timezone);
+        // time is stored as UTC, convert to target timezone
+        final timeUtc = time.isUtc ? time : time.toUtc();
+        final timeTz = tz.TZDateTime.from(timeUtc, targetLocation);
+        // Extract hour/minute in target timezone
+        displayTime = DateTime(
+          timeTz.year,
+          timeTz.month,
+          timeTz.day,
+          timeTz.hour,
+          timeTz.minute,
+          timeTz.second,
+        );
+      }
+    } catch (e) {
+      // Use time as-is if conversion fails
+      displayTime = time;
+    }
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -593,7 +699,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                 ),
           ),
           Text(
-            DateFormat('HH:mm').format(time),
+            DateFormat('HH:mm').format(displayTime),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

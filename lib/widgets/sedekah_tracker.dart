@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
 
 final _sedekahCurrencyProvider = FutureProvider.autoDispose<String>((ref) async {
   final database = ref.watch(databaseProvider);
@@ -65,7 +66,7 @@ class _SedekahTrackerState extends ConsumerState<SedekahTracker> {
           children: [
             Row(
               children: [
-                const Icon(Icons.volunteer_activism, size: 20),
+                const SedekahIcon(size: 20),
                 const SizedBox(width: 12),
                 Text(
                   getHabitDisplayName(context, 'sedekah'),
@@ -270,16 +271,13 @@ class _SedekahTrackerState extends ConsumerState<SedekahTracker> {
     final normalizedCurrency = _normalizeCurrency(currency);
     final isIDR = normalizedCurrency == 'IDR' || normalizedCurrency == 'RP';
     final isMajorCurrency = ['SGD', 'MYR', 'USD', 'EUR', 'GBP'].contains(normalizedCurrency);
-    
+    // 3 presets + Custom = 4 options total
     if (isIDR) {
-      // For IDR: +2k, +5k, +10k, +50k, +100k
-      return [2000.0, 5000.0, 10000.0, 50000.0, 100000.0];
+      return [2000.0, 5000.0, 10000.0];
     } else if (isMajorCurrency) {
-      // For major currencies: +2, +5, +10, +50, +100
-      return [2.0, 5.0, 10.0, 50.0, 100.0];
+      return [2.0, 5.0, 10.0];
     } else {
-      // Default: use same as major currencies
-      return [2.0, 5.0, 10.0, 50.0, 100.0];
+      return [2.0, 5.0, 10.0];
     }
   }
 

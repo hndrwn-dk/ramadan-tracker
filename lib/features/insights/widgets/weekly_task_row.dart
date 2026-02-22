@@ -8,6 +8,7 @@ class WeeklyTaskRow extends StatelessWidget {
   final String habitKey;
   final String habitName;
   final IconData icon;
+  final Widget? iconWidget;
   final WeeklyTaskStatus taskStatus;
   final SeasonModel season;
   final int startDayIndex;
@@ -19,6 +20,7 @@ class WeeklyTaskRow extends StatelessWidget {
     required this.habitKey,
     required this.habitName,
     required this.icon,
+    this.iconWidget,
     required this.taskStatus,
     required this.season,
     required this.startDayIndex,
@@ -35,7 +37,7 @@ class WeeklyTaskRow extends StatelessWidget {
           // Header: Icon + Name
           Row(
             children: [
-              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+              iconWidget ?? Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -100,7 +102,7 @@ class WeeklyTaskRow extends StatelessWidget {
   }
 
   String _buildCompletionText() {
-    if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'itikaf') {
+    if (habitKey == 'fasting' || habitKey == 'taraweeh' || habitKey == 'tahajud' || habitKey == 'itikaf') {
       return 'Done ${taskStatus.doneCount}/7';
     } else if (habitKey == 'prayers') {
       final avgCompleted = taskStatus.avgCompleted ?? 0.0;

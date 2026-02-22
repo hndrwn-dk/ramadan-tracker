@@ -152,6 +152,26 @@ class DailyEntriesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Set both valueBool and valueInt (e.g. Taraweeh: done + rakaat 11 or 23).
+  Future<void> setBoolAndIntValue(
+    int seasonId,
+    int dayIndex,
+    int habitId,
+    bool boolVal,
+    int? intVal,
+  ) {
+    return into(dailyEntries).insertOnConflictUpdate(
+      DailyEntriesCompanion.insert(
+        seasonId: seasonId,
+        dayIndex: dayIndex,
+        habitId: habitId,
+        valueBool: Value(boolVal),
+        valueInt: Value(intVal),
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+  }
+
   Future<void> setNote(
     int seasonId,
     int dayIndex,

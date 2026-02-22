@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/data/providers/quran_provider.dart';
 import 'package:ramadan_tracker/domain/services/quran_service.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/quran_icon.dart';
 
 class QuranTracker extends ConsumerStatefulWidget {
   final int seasonId;
@@ -42,11 +43,8 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
             pagesRead: pagesRead,
             pagesPerJuz: pagesPerJuz,
           );
-          final currentJuz = QuranService.getCurrentJuz(
-            pagesRead: pagesRead,
-            pagesPerJuz: pagesPerJuz,
-          );
           final dailyTargetPages = quranPlan?.dailyTargetPages ?? (pagesPerJuz * juzTarget);
+          final juzDisplay = _formatJuzDisplay(juzProgress);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +54,7 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.menu_book, size: 20),
+                      const QuranIcon(size: 20),
                       const SizedBox(width: 12),
                       Text(
                         getHabitDisplayName(context, 'quran_pages'),
@@ -73,7 +71,7 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          AppLocalizations.of(context)!.juzProgress(juzProgress.toStringAsFixed(1), juzTarget),
+                          AppLocalizations.of(context)!.juzProgress(juzDisplay, juzTarget),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.bold,
@@ -205,6 +203,14 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
       loading: () => const CircularProgressIndicator(),
       error: (_, __) => const Text('Error'),
     );
+  }
+
+  /// Format juz for display: max 30, no "30.2" (juz is 1-30 only).
+  static String _formatJuzDisplay(double juzProgress) {
+    if (juzProgress >= 30) return '30';
+    if (juzProgress >= 1) return juzProgress.floor().toString();
+    if (juzProgress > 0) return juzProgress.toStringAsFixed(1);
+    return '0';
   }
 
   void _updatePages(WidgetRef ref, int newPages) {

@@ -74,20 +74,31 @@ class _CreateSeasonFlowState extends ConsumerState<CreateSeasonFlow> {
   }
 
   Future<void> _finish() async {
+    debugPrint('=== CreateSeasonFlow._finish() Started ===');
     try {
-      // Use the same save logic as onboarding
+      debugPrint('Calling _data.save()...');
       await _data.save(ref);
-      
+      debugPrint('_data.save() completed successfully');
+
       ref.invalidate(allSeasonsProvider);
       ref.invalidate(currentSeasonProvider);
-      
+
       if (mounted) {
-        Navigator.pop(context);
-        _showSuccessDialog(context);
+        debugPrint('Navigating back with success...');
+        Navigator.pop(context, true);
+        debugPrint('=== CreateSeasonFlow._finish() Completed ===');
+      } else {
+        debugPrint('Widget not mounted, skipping navigation');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('=== ERROR in CreateSeasonFlow._finish() ===');
+      debugPrint('Error: $e');
+      debugPrint('Stack: $stackTrace');
+      debugPrint('=== End Error ===');
       if (mounted) {
-        _showErrorDialog(context, e.toString());
+        _showErrorDialog(context, e.toString(), () {
+          if (mounted) Navigator.pop(context, false);
+        });
       }
     }
   }
@@ -273,11 +284,11 @@ class _CreateSeasonFlowState extends ConsumerState<CreateSeasonFlow> {
     );
   }
 
-  void _showErrorDialog(BuildContext context, String error) {
+  void _showErrorDialog(BuildContext context, String error, [VoidCallback? onClose]) {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         icon: Icon(
           Icons.error_outline,
           color: Colors.red,
@@ -287,7 +298,10 @@ class _CreateSeasonFlowState extends ConsumerState<CreateSeasonFlow> {
         content: Text(l10n.seasonCreatedError(error)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              onClose?.call();
+            },
             child: Text(l10n.close),
           ),
         ],

@@ -62,6 +62,8 @@ class InsightsService {
     final dhikrPlan = await database.dhikrPlanDao.getPlan(season.id);
     final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled');
     final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
+    final taraweehRakaatPerDayRaw = await database.kvSettingsDao.getValue('taraweeh_rakaat_per_day');
+    final taraweehRakaatPerDay = int.tryParse(taraweehRakaatPerDayRaw ?? '') ?? 11;
 
     // Filter data to range
     final entriesByDay = <int, List<DailyEntryModel>>{};
@@ -167,6 +169,7 @@ class InsightsService {
       dhikrPlan: dhikrPlan,
       sedekahGoalEnabled: sedekahGoalEnabled,
       sedekahGoalAmount: sedekahGoalAmount,
+      taraweehRakaatPerDay: taraweehRakaatPerDay,
     );
 
     return InsightsData(
@@ -232,6 +235,7 @@ class InsightsService {
     DhikrPlanData? dhikrPlan,
     String? sedekahGoalEnabled,
     String? sedekahGoalAmount,
+    int taraweehRakaatPerDay = 11,
   }) async {
     final stats = <String, HabitStats>{};
     final last10Start = max(1, season.days - 9);
@@ -345,6 +349,9 @@ class InsightsService {
         );
       } else if (habitKey == 'taraweeh') {
         int doneDays = 0;
+        int totalRakaat = 0;
+        final daysInRange = endDayIndex - startDayIndex + 1;
+        final targetRakaat = taraweehRakaatPerDay * daysInRange;
         for (int day = startDayIndex; day <= endDayIndex; day++) {
           final entries = entriesByDay[day] ?? [];
           final entry = entries.firstWhere(
@@ -357,10 +364,13 @@ class InsightsService {
             ),
           );
           if (entry.valueBool == true) doneDays++;
+          totalRakaat += entry.valueInt ?? 0;
         }
         stats[habitKey] = HabitStats(
           doneDays: doneDays,
-          totalDays: endDayIndex - startDayIndex + 1,
+          totalDays: daysInRange,
+          totalValue: totalRakaat,
+          targetValue: targetRakaat,
         );
       } else if (habitKey == 'sedekah') {
         int totalAmount = 0;
@@ -414,6 +424,26 @@ class InsightsService {
         stats[habitKey] = HabitStats(
           nightsDone: nightsDone,
           nightsCompletedDates: nightsCompletedDates,
+        );
+      } else if (habitKey == 'tahajud') {
+        int doneDays = 0;
+        for (int day = startDayIndex; day <= endDayIndex; day++) {
+          final entries = entriesByDay[day] ?? [];
+          final entry = entries.firstWhere(
+            (e) => e.habitId == habit.id,
+            orElse: () => DailyEntryModel(
+              seasonId: season.id,
+              dayIndex: day,
+              habitId: habit.id,
+              updatedAt: DateTime.now(),
+            ),
+          );
+          if (entry.valueBool == true) doneDays++;
+        }
+        final daysInRange = endDayIndex - startDayIndex + 1;
+        stats[habitKey] = HabitStats(
+          doneDays: doneDays,
+          totalDays: daysInRange,
         );
       }
     }

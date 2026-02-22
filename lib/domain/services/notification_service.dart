@@ -1027,7 +1027,7 @@ class NotificationService {
       }
 
       final sahurEnabled = await database.kvSettingsDao.getValue('sahur_enabled') ?? 'true';
-      final sahurOffset = int.tryParse(await database.kvSettingsDao.getValue('sahur_offset') ?? '30') ?? 30;
+      final sahurOffset = (int.tryParse(await database.kvSettingsDao.getValue('sahur_offset') ?? '30') ?? 30).clamp(1, 45);
       final iftarEnabled = await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true';
       final iftarOffset = int.tryParse(await database.kvSettingsDao.getValue('iftar_offset') ?? '0') ?? 0;
       final nightPlanEnabled = await database.kvSettingsDao.getValue('night_plan_enabled') ?? 'true';
@@ -1557,7 +1557,7 @@ class NotificationService {
     return false;
   }
 
-  // Sahur reminder - uses timezone location from parameter
+  // Sahur reminder - fajrTime is UTC; convert to local before scheduling.
   static Future<void> scheduleSahurReminder({
     required DateTime fajrTime,
     required int offsetMinutes,
@@ -1565,17 +1565,17 @@ class NotificationService {
     required String body,
     required tz.Location location,
   }) async {
-    final reminderTime = fajrTime.subtract(Duration(minutes: offsetMinutes));
+    final fajrUtc = fajrTime.isUtc ? fajrTime : DateTime.utc(fajrTime.year, fajrTime.month, fajrTime.day, fajrTime.hour, fajrTime.minute, fajrTime.second);
+    final reminderUtc = fajrUtc.subtract(Duration(minutes: offsetMinutes));
+    final reminderLocal = tz.TZDateTime.from(reminderUtc, location);
     final tzNow = tz.TZDateTime.now(location);
-    
-    // Create scheduled time in the correct timezone
     var scheduledTime = tz.TZDateTime(
       location,
-      reminderTime.year,
-      reminderTime.month,
-      reminderTime.day,
-      reminderTime.hour,
-      reminderTime.minute,
+      reminderLocal.year,
+      reminderLocal.month,
+      reminderLocal.day,
+      reminderLocal.hour,
+      reminderLocal.minute,
     );
     
     if (scheduledTime.isBefore(tzNow)) {
@@ -1592,7 +1592,7 @@ class NotificationService {
       debugPrint('  Timezone: ${location.name}');
       debugPrint('  Fajr: $fajrTime');
       debugPrint('  Offset: $offsetMinutes min');
-      debugPrint('  Reminder time (local): $reminderTime');
+      debugPrint('  Reminder time (local): $reminderLocal');
       debugPrint('  Scheduled (TZ): $scheduledTime');
       debugPrint('  Current (TZ): $tzNow');
       debugPrint('  Time until scheduled: ${timeUntilScheduled.inMinutes} minutes');
@@ -1711,6 +1711,7 @@ class NotificationService {
   }
 
   // Schedule Sahur reminder for a specific date (season-wide scheduling)
+  // fajrTime is in UTC (from PrayerTimeService.getCachedOrCalculate); convert to local before scheduling.
   static Future<bool> scheduleSahurReminderForDate({
     required DateTime date,
     required DateTime fajrTime,
@@ -1721,17 +1722,17 @@ class NotificationService {
     int batchIndex = 0,
     int batchSize = 10,
   }) async {
-    final reminderTime = fajrTime.subtract(Duration(minutes: offsetMinutes));
+    final fajrUtc = fajrTime.isUtc ? fajrTime : DateTime.utc(fajrTime.year, fajrTime.month, fajrTime.day, fajrTime.hour, fajrTime.minute, fajrTime.second);
+    final reminderUtc = fajrUtc.subtract(Duration(minutes: offsetMinutes));
+    final reminderLocal = tz.TZDateTime.from(reminderUtc, location);
     final tzNow = tz.TZDateTime.now(location);
-    
-    // Create scheduled time in the correct timezone for the specific date
-    var scheduledTime = tz.TZDateTime(
+    final scheduledTime = tz.TZDateTime(
       location,
-      date.year,
-      date.month,
-      date.day,
-      reminderTime.hour,
-      reminderTime.minute,
+      reminderLocal.year,
+      reminderLocal.month,
+      reminderLocal.day,
+      reminderLocal.hour,
+      reminderLocal.minute,
     );
     
     // Skip if time is in the past (with 1 second buffer)
@@ -1778,6 +1779,7 @@ class NotificationService {
   }
 
   // Schedule Iftar reminder for a specific date (season-wide scheduling)
+  // maghribTime is in UTC (from PrayerTimeService.getCachedOrCalculate); convert to local before scheduling.
   static Future<bool> scheduleIftarReminderForDate({
     required DateTime date,
     required DateTime maghribTime,
@@ -1788,17 +1790,17 @@ class NotificationService {
     int batchIndex = 0,
     int batchSize = 10,
   }) async {
-    final reminderTime = maghribTime.add(Duration(minutes: offsetMinutes));
+    final maghribUtc = maghribTime.isUtc ? maghribTime : DateTime.utc(maghribTime.year, maghribTime.month, maghribTime.day, maghribTime.hour, maghribTime.minute, maghribTime.second);
+    final reminderUtc = maghribUtc.add(Duration(minutes: offsetMinutes));
+    final reminderLocal = tz.TZDateTime.from(reminderUtc, location);
     final tzNow = tz.TZDateTime.now(location);
-    
-    // Create scheduled time in the correct timezone for the specific date
-    var scheduledTime = tz.TZDateTime(
+    final scheduledTime = tz.TZDateTime(
       location,
-      date.year,
-      date.month,
-      date.day,
-      reminderTime.hour,
-      reminderTime.minute,
+      reminderLocal.year,
+      reminderLocal.month,
+      reminderLocal.day,
+      reminderLocal.hour,
+      reminderLocal.minute,
     );
     
     // Skip if time is in the past (with 1 second buffer)
@@ -2116,10 +2118,12 @@ class NotificationService {
         
         // Schedule Night Plan (with rate limit batch index)
         if (nightPlanEnabled) {
+          final nightPlanHour = int.tryParse(await database.kvSettingsDao.getValue('night_plan_hour') ?? '2') ?? 2;
+          final nightPlanMinute = int.tryParse(await database.kvSettingsDao.getValue('night_plan_minute') ?? '30') ?? 30;
           final scheduled = await scheduleNightPlanReminderForDate(
             date: date,
-            hour: 21,
-            minute: 0,
+            hour: nightPlanHour.clamp(0, 23),
+            minute: nightPlanMinute.clamp(0, 59),
             title: nightPlanTitle ?? 'Night Plan',
             body: nightPlanBody ?? 'Review your plan for tonight',
             location: location,
@@ -2260,12 +2264,14 @@ class NotificationService {
     }
 
     if (nightPlanEnabled) {
+          final nightPlanHour = int.tryParse(await database.kvSettingsDao.getValue('night_plan_hour') ?? '2') ?? 2;
+          final nightPlanMinute = int.tryParse(await database.kvSettingsDao.getValue('night_plan_minute') ?? '30') ?? 30;
           final scheduled = await scheduleNightPlanReminderForDate(
             date: date,
-        hour: 21,
-        minute: 0,
-        title: nightPlanTitle ?? 'Night Plan',
-        body: nightPlanBody ?? 'Review your plan for tonight',
+            hour: nightPlanHour.clamp(0, 23),
+            minute: nightPlanMinute.clamp(0, 59),
+            title: nightPlanTitle ?? 'Night Plan',
+            body: nightPlanBody ?? 'Review your plan for tonight',
             location: location,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
@@ -2487,15 +2493,14 @@ class NotificationService {
     final today = _dateOnly(DateTime.now());
     final scheduleStart = seasonStart.isAfter(today) ? seasonStart : today;
     
-    // Limit Android scheduling to next 30 days to prevent rate limiting
-    // Schedule remaining days later (on app resume/startup)
-    final maxDaysAhead = 7; // Schedule only 1 week at a time to avoid Android rate limiting
+    // Schedule full season so each day gets its own Fajr/Maghrib (times vary day to day).
+    // Batch delay in the loop avoids Android rate limiting.
+    const maxDaysAhead = 31;
     final maxScheduleEnd = scheduleStart.add(Duration(days: maxDaysAhead - 1));
     final scheduleEnd = maxScheduleEnd.isBefore(seasonEnd) ? maxScheduleEnd : seasonEnd;
     
     if (maxScheduleEnd.isBefore(seasonEnd)) {
-      LogService.log('[NOTIF] Limiting initial schedule to next $maxDaysAhead days to prevent Android rate limiting');
-      LogService.log('[NOTIF] Remaining days will be scheduled on app resume/startup');
+      LogService.log('[NOTIF] Schedule capped at $maxDaysAhead days; remaining days on next app open');
     }
     
     LogService.log('[NOTIF] === Scheduling reminders (season-wide) ===');
