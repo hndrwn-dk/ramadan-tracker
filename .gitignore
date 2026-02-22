@@ -56,6 +56,5 @@ android/key.properties
 android/app/*.jks
 android/app/*.keystore
 
-# Release builds (uncomment if you want to ignore release files)
-# /releases/*.apk
-# /releases/*.aab
+# Release builds and Play Store materials (AAB, APK, release notes)
+bundle_releases/
