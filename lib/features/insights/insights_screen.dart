@@ -43,6 +43,7 @@ import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
 import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
@@ -926,6 +927,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             final heatmapDays = data['heatmapDays'] as List<DayStatus>;
             final hasMissedDays = data['hasMissedDays'] as bool;
             final latestMissedDay = data['latestMissedDay'] as int?;
+            final l10n = AppLocalizations.of(context)!;
+            final statusColor = (habitKey == 'fasting' && status == l10n.excused) ? Colors.amber : null;
             
             return TaskAnalyticsCard(
               habitKey: habitKey,
@@ -947,6 +950,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                                           ? TahajudIcon(size: 20, color: Theme.of(context).colorScheme.primary)
                                           : null,
               status: status,
+              statusColor: statusColor,
               keyMetricText: keyMetricText,
               heatmapDays: heatmapDays,
               currentDayIndex: currentDayIndex,
@@ -1062,7 +1066,20 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     // Calculate today's status and metrics
     double todayCompletion = 0.0;
     switch (habitKey) {
-      case 'fasting':
+      case 'fasting': {
+        final fastingStatus = FastingStatus.fromEntry(todayEntry?.valueInt, todayEntry?.valueBool);
+        todayCompletion = FastingStatus.isCompletedForDay(todayEntry?.valueInt, todayEntry?.valueBool) ? 1.0 : 0.0;
+        if (fastingStatus == FastingStatus.fasted) {
+          status = l10n.done;
+        } else if (FastingStatus.isExcused(fastingStatus)) {
+          status = l10n.excused;
+        } else {
+          status = l10n.miss;
+        }
+        final doneDays = allEntries.where((e) => e.habitId == habit.id && e.valueBool == true).length;
+        keyMetricText = l10n.thisRamadan(doneDays, season.days);
+        break;
+      }
       case 'taraweeh':
       case 'tahajud':
       case 'itikaf':
@@ -1140,8 +1157,21 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       double completion = 0.0;
       bool isMissed = false;
       
+      String? dayStatusLabel;
       switch (habitKey) {
-        case 'fasting':
+        case 'fasting': {
+          final entry = allEntries.firstWhere(
+            (e) => e.dayIndex == day && e.habitId == habit.id,
+            orElse: () => DailyEntry(seasonId: season.id, dayIndex: day, habitId: habit.id, valueBool: false, updatedAt: 0),
+          );
+          final fastingStatus = FastingStatus.fromEntry(entry.valueInt, entry.valueBool);
+          completion = FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool) ? 1.0 : 0.0;
+          isMissed = !FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool);
+          if (fastingStatus == FastingStatus.fasted) dayStatusLabel = 'Done';
+          else if (FastingStatus.isExcused(fastingStatus)) dayStatusLabel = 'Excused';
+          else dayStatusLabel = 'Miss';
+          break;
+        }
         case 'taraweeh':
         case 'tahajud':
         case 'itikaf':
@@ -1202,6 +1232,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         dayIndex: day,
         completion: completion,
         isToday: day == currentDayIndex,
+        statusLabel: dayStatusLabel,
       ));
       
       if (isMissed && (latestMissedDay == null || day > latestMissedDay)) {
@@ -2293,12 +2324,17 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         final fastingSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == fastingHabit.id);
         if (fastingSeasonHabit.isEnabled) {
           final fastingEntry = entries.firstWhere((e) => e.habitId == fastingHabit.id, orElse: () => DailyEntry(seasonId: season.id, dayIndex: dayIndex, habitId: fastingHabit.id, valueBool: false, updatedAt: 0));
-          final isDone = fastingEntry.valueBool == true;
+          final fastingStatus = FastingStatus.fromEntry(fastingEntry.valueInt, fastingEntry.valueBool);
+          final isFasted = fastingStatus == FastingStatus.fasted;
+          final isExcused = FastingStatus.isExcused(fastingStatus);
+          final l10n = AppLocalizations.of(context)!;
+          final chipLabel = isFasted ? l10n.done : (isExcused ? l10n.excused : l10n.miss);
+          final chipStatus = isFasted ? 'passed' : (isExcused ? 'excused' : 'missed');
           drivers.add(_buildScoreDriverChip(
-            context, 
-            'Fasting', 
-            isDone ? 'Done' : 'Miss',
-            status: isDone ? 'passed' : 'missed',
+            context,
+            'Fasting',
+            chipLabel,
+            status: chipStatus,
           ));
         }
 
@@ -2454,6 +2490,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       case 'partial':
         backgroundColor = Colors.orange.withOpacity(0.2);
         textColor = Colors.orange;
+        break;
+      case 'excused':
+        backgroundColor = Colors.amber.withOpacity(0.2);
+        textColor = Colors.amber.shade700;
         break;
       case 'missed':
         backgroundColor = Colors.red.withOpacity(0.2);

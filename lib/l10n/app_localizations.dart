@@ -614,6 +614,12 @@ abstract class AppLocalizations {
   /// **'Partial'**
   String get partial;
 
+  /// Excused status label (e.g. fasting)
+  ///
+  /// In en, this message translates to:
+  /// **'Excused'**
+  String get excused;
+
   /// Over status label
   ///
   /// In en, this message translates to:
@@ -859,6 +865,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fasting'**
   String get habitFasting;
+
+  /// No description provided for @fastingStatusFasted.
+  ///
+  /// In en, this message translates to:
+  /// **'Fasted'**
+  String get fastingStatusFasted;
+
+  /// No description provided for @fastingStatusNotDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not done'**
+  String get fastingStatusNotDone;
+
+  /// No description provided for @fastingStatusExcusedSick.
+  ///
+  /// In en, this message translates to:
+  /// **'Excused (sick)'**
+  String get fastingStatusExcusedSick;
+
+  /// No description provided for @fastingStatusExcusedNifas.
+  ///
+  /// In en, this message translates to:
+  /// **'Excused (postpartum / nifas)'**
+  String get fastingStatusExcusedNifas;
+
+  /// No description provided for @fastingStatusExcusedHaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Excused (menstruation / haid)'**
+  String get fastingStatusExcusedHaid;
+
+  /// No description provided for @fastingStatusExcusedOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Excused (other reason)'**
+  String get fastingStatusExcusedOther;
+
+  /// No description provided for @fastingNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add note (optional)'**
+  String get fastingNoteHint;
+
+  /// No description provided for @fastingSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fasting summary'**
+  String get fastingSummaryTitle;
+
+  /// No description provided for @fastingSummaryDay.
+  ///
+  /// In en, this message translates to:
+  /// **'day'**
+  String get fastingSummaryDay;
+
+  /// No description provided for @fastingSummaryDays.
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get fastingSummaryDays;
 
   /// Quran habit name
   ///

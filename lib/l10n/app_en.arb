@@ -425,7 +425,11 @@
   "@partial": {
     "description": "Partial status label"
   },
-  
+  "excused": "Excused",
+  "@excused": {
+    "description": "Excused status label (e.g. fasting)"
+  },
+
   "over": "Over",
   "@over": {
     "description": "Over status label"
@@ -580,7 +584,17 @@
   "@habitFasting": {
     "description": "Fasting habit name"
   },
-  
+  "fastingStatusFasted": "Fasted",
+  "fastingStatusNotDone": "Not done",
+  "fastingStatusExcusedSick": "Excused (sick)",
+  "fastingStatusExcusedNifas": "Excused (postpartum / nifas)",
+  "fastingStatusExcusedHaid": "Excused (menstruation / haid)",
+  "fastingStatusExcusedOther": "Excused (other reason)",
+  "fastingNoteHint": "Add note (optional)",
+  "fastingSummaryTitle": "Fasting summary",
+  "fastingSummaryDay": "day",
+  "fastingSummaryDays": "days",
+
   "habitQuran": "Quran",
   "@habitQuran": {
     "description": "Quran habit name"

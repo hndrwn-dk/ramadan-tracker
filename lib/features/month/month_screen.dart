@@ -216,7 +216,7 @@ class MonthScreen extends ConsumerWidget {
                                         if (enabledHabits.isEmpty) {
                                           return const SizedBox.shrink();
                                         }
-                                        
+
                                         return FutureBuilder<double>(
                                           future: CompletionService.calculateCompletionScore(
                                             seasonId: seasonId,
@@ -229,11 +229,10 @@ class MonthScreen extends ConsumerWidget {
                                           builder: (context, snapshot) {
                                             final score = snapshot.data ?? 0.0;
                                             final hasEntries = entries.isNotEmpty;
-                                            
-                                            // Ring with opacity fill based on completion
+                                            Widget scoreWidget = const SizedBox.shrink();
                                             if (hasEntries || score > 0) {
                                               final opacity = (score / 100).clamp(0.0, 1.0);
-                                              return Container(
+                                              scoreWidget = Container(
                                                 width: 16,
                                                 height: 16,
                                                 margin: const EdgeInsets.only(top: 2),
@@ -258,7 +257,7 @@ class MonthScreen extends ConsumerWidget {
                                                     : null,
                                               );
                                             }
-                                            return const SizedBox.shrink();
+                                            return scoreWidget;
                                           },
                                         );
                                       },
