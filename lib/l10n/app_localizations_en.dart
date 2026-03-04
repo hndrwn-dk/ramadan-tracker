@@ -273,6 +273,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get partial => 'Partial';
 
   @override
+  String get excused => 'Excused';
+
+  @override
   String get over => 'Over';
 
   @override
@@ -411,6 +414,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitFasting => 'Fasting';
+
+  @override
+  String get fastingStatusFasted => 'Fasted';
+
+  @override
+  String get fastingStatusNotDone => 'Not done';
+
+  @override
+  String get fastingStatusExcusedSick => 'Excused (sick)';
+
+  @override
+  String get fastingStatusExcusedNifas => 'Excused (postpartum / nifas)';
+
+  @override
+  String get fastingStatusExcusedHaid => 'Excused (menstruation / haid)';
+
+  @override
+  String get fastingStatusExcusedOther => 'Excused (other reason)';
+
+  @override
+  String get fastingNoteHint => 'Add note (optional)';
+
+  @override
+  String get fastingSummaryTitle => 'Fasting summary';
+
+  @override
+  String get fastingSummaryDay => 'day';
+
+  @override
+  String get fastingSummaryDays => 'days';
 
   @override
   String get habitQuran => 'Quran';

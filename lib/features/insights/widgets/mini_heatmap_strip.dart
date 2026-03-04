@@ -6,11 +6,14 @@ class DayStatus {
   final int dayIndex;
   final double completion; // 0.0 to 1.0 (for numeric habits) or 0.0/1.0 (for binary)
   final bool isToday;
+  /// Optional: 'Done', 'Partial', 'Excused', 'Miss' (e.g. fasting excused days)
+  final String? statusLabel;
 
   DayStatus({
     required this.dayIndex,
     required this.completion,
     this.isToday = false,
+    this.statusLabel,
   });
 }
 
@@ -50,6 +53,8 @@ class MiniHeatmapStrip extends StatelessWidget {
               children: [
                 _buildLegendItem(context, 'Done', Colors.green),
                 const SizedBox(width: 8),
+                _buildLegendItem(context, 'Excused', Colors.amber),
+                const SizedBox(width: 8),
                 _buildLegendItem(context, 'Partial', Colors.orange),
                 const SizedBox(width: 8),
                 _buildLegendItem(context, 'Miss', Colors.red.withOpacity(0.3)),
@@ -68,7 +73,7 @@ class MiniHeatmapStrip extends StatelessWidget {
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: _getDayColor(context, day.completion),
+                  color: _getDayColor(context, day),
                   borderRadius: BorderRadius.circular(4),
                   border: day.isToday
                       ? Border.all(
@@ -109,14 +114,12 @@ class MiniHeatmapStrip extends StatelessWidget {
     );
   }
 
-  Color _getDayColor(BuildContext context, double completion) {
-    if (completion >= 1.0) {
-      return Colors.green;
-    } else if (completion > 0.0) {
-      return Colors.orange;
-    } else {
-      return Colors.red.withOpacity(0.3);
-    }
+  Color _getDayColor(BuildContext context, DayStatus day) {
+    if (day.statusLabel == 'Excused') return Colors.amber;
+    final c = day.completion;
+    if (c >= 1.0) return Colors.green;
+    if (c > 0.0) return Colors.orange;
+    return Colors.red.withOpacity(0.3);
   }
 }
 

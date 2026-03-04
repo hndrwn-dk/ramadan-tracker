@@ -35,6 +35,7 @@ import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:flutter/services.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
@@ -1199,6 +1200,22 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
             ),
           );
+        } else if (habitKey == 'fasting') {
+          final fastingStatus = FastingStatus.fromEntry(entry?.valueInt, entry?.valueBool);
+          final isCompleted = FastingStatus.isCompletedForDay(entry?.valueInt, entry?.valueBool);
+          sortedHabits.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildFastingRow(
+                seasonId: seasonId,
+                dayIndex: dayIndex,
+                habitId: habit.id,
+                status: fastingStatus,
+                isCompleted: isCompleted,
+                note: entry?.note,
+              ),
+            ),
+          );
         } else {
           // Other boolean habits (HabitToggle has its own border)
           sortedHabits.add(
@@ -1639,8 +1656,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           // If sedekah goal disabled, consider completed if value > 0
           isCompleted = (finalEntry.valueInt ?? 0) > 0;
         }
+      } else if (habitKey == 'fasting') {
+        isCompleted = FastingStatus.isCompletedForDay(finalEntry.valueInt, finalEntry.valueBool);
       } else {
-        // Boolean habits (fasting, taraweeh, itikaf, prayers)
+        // Boolean habits (taraweeh, itikaf, prayers)
         isCompleted = finalEntry.isCompleted;
       }
 
@@ -1673,6 +1692,221 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       rakaat != null,
       rakaat,
     );
+    ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+  }
+
+  String _fastingStatusLabel(int status) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (status) {
+      case FastingStatus.fasted:
+        return l10n.fastingStatusFasted;
+      case FastingStatus.excusedSick:
+        return l10n.fastingStatusExcusedSick;
+      case FastingStatus.excusedNifas:
+        return l10n.fastingStatusExcusedNifas;
+      case FastingStatus.excusedHaid:
+        return l10n.fastingStatusExcusedHaid;
+      case FastingStatus.excusedOther:
+        return l10n.fastingStatusExcusedOther;
+      default:
+        return l10n.fastingStatusNotDone;
+    }
+  }
+
+  Widget _buildFastingRow({
+    required int seasonId,
+    required int dayIndex,
+    required int habitId,
+    required int status,
+    required bool isCompleted,
+    String? note,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.1)
+        : Colors.grey.withOpacity(0.3);
+    final subtitle = status == FastingStatus.excusedOther && note != null && note.isNotEmpty
+        ? '${_fastingStatusLabel(status)}: $note'
+        : _fastingStatusLabel(status);
+    return InkWell(
+      onTap: () => _showFastingOptionsSheet(seasonId, dayIndex, habitId, currentStatus: status, currentNote: note),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.no_meals,
+                    size: 20,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.habitFasting,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: isCompleted ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isCompleted
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.transparent,
+                shape: BoxShape.circle,
+                border: isCompleted
+                    ? null
+                    : Border.all(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.3)
+                            : Colors.grey.withOpacity(0.5),
+                        width: 2,
+                      ),
+              ),
+              child: Icon(
+                isCompleted ? Icons.check : Icons.circle,
+                size: 18,
+                color: isCompleted
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Colors.transparent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showFastingOptionsSheet(int seasonId, int dayIndex, int habitId, {int? currentStatus, String? currentNote}) async {
+    HapticFeedback.lightImpact();
+    final l10n = AppLocalizations.of(context)!;
+    final statuses = [
+      FastingStatus.fasted,
+      FastingStatus.excusedSick,
+      FastingStatus.excusedNifas,
+      FastingStatus.excusedHaid,
+      FastingStatus.excusedOther,
+    ];
+    final selected = currentStatus ?? FastingStatus.notDone;
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Text(
+                l10n.habitFasting,
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              ...statuses.map((s) {
+                final isSelected = s == selected;
+                return ListTile(
+                  title: Text(
+                    _fastingStatusLabel(s),
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected ? Theme.of(ctx).colorScheme.primary : null,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? Icon(Icons.check_circle, color: Theme.of(ctx).colorScheme.primary, size: 24)
+                      : null,
+                  onTap: () => Navigator.pop(ctx, s),
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (chosen != null) {
+      if (chosen == FastingStatus.excusedOther) {
+        final note = await _showFastingNoteDialog(initialNote: currentNote);
+        await _setFastingStatus(seasonId, dayIndex, habitId, chosen, note: note);
+      } else {
+        await _setFastingStatus(seasonId, dayIndex, habitId, chosen);
+      }
+    }
+  }
+
+  Future<String?> _showFastingNoteDialog({String? initialNote}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: initialNote ?? '');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.fastingStatusExcusedOther),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: l10n.fastingNoteHint,
+            border: const OutlineInputBorder(),
+          ),
+          maxLines: 2,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return result;
+  }
+
+  Future<void> _setFastingStatus(int seasonId, int dayIndex, int habitId, int status, {String? note}) async {
+    final database = ref.read(databaseProvider);
+    await database.dailyEntriesDao.setFastingStatus(seasonId, dayIndex, habitId, status, note: note);
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
   }
 

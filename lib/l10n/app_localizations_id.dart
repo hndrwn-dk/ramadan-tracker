@@ -273,6 +273,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get partial => 'Sebagian';
 
   @override
+  String get excused => 'Terkecualikan';
+
+  @override
   String get over => 'Melebihi';
 
   @override
@@ -411,6 +414,36 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get habitFasting => 'Puasa';
+
+  @override
+  String get fastingStatusFasted => 'Berpuasa';
+
+  @override
+  String get fastingStatusNotDone => 'Belum selesai';
+
+  @override
+  String get fastingStatusExcusedSick => 'Tidak puasa (sakit)';
+
+  @override
+  String get fastingStatusExcusedNifas => 'Tidak puasa (nifas)';
+
+  @override
+  String get fastingStatusExcusedHaid => 'Tidak puasa (haid)';
+
+  @override
+  String get fastingStatusExcusedOther => 'Tidak puasa (alasan lain)';
+
+  @override
+  String get fastingNoteHint => 'Tambah catatan (opsional)';
+
+  @override
+  String get fastingSummaryTitle => 'Ringkasan puasa';
+
+  @override
+  String get fastingSummaryDay => 'hari';
+
+  @override
+  String get fastingSummaryDays => 'hari';
 
   @override
   String get habitQuran => 'Al-Quran';

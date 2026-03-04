@@ -15,6 +15,7 @@ import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/widgets/prayers_icon.dart';
 
 class DaySummarySheet extends ConsumerWidget {
@@ -372,15 +373,46 @@ class DaySummarySheet extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     
     switch (habitKey) {
-      case 'fasting':
+      case 'fasting': {
+        final status = FastingStatus.fromEntry(entry?.valueInt, entry?.valueBool);
+        final isCompleted = FastingStatus.isCompletedForDay(entry?.valueInt, entry?.valueBool);
+        String valueText;
+        switch (status) {
+          case FastingStatus.fasted:
+            valueText = l10n.fastingStatusFasted;
+            break;
+          case FastingStatus.excusedSick:
+            valueText = l10n.fastingStatusExcusedSick;
+            break;
+          case FastingStatus.excusedNifas:
+            valueText = l10n.fastingStatusExcusedNifas;
+            break;
+          case FastingStatus.excusedHaid:
+            valueText = l10n.fastingStatusExcusedHaid;
+            break;
+          case FastingStatus.excusedOther:
+            valueText = l10n.fastingStatusExcusedOther;
+            if (entry?.note != null && entry!.note!.isNotEmpty) {
+              valueText = '$valueText: ${entry.note}';
+            }
+            break;
+          default:
+            valueText = l10n.fastingStatusNotDone;
+        }
+        return {
+          'label': l10n.habitFasting,
+          'value': valueText,
+          'isCompleted': isCompleted,
+          'icon': getHabitIcon(habitKey),
+          'habitKey': habitKey,
+        };
+      }
       case 'taraweeh':
       case 'tahajud':
-      case 'itikaf':
+      case 'itikaf': {
         final isCompleted = entry?.valueBool ?? false;
         String label;
-        if (habitKey == 'fasting') {
-          label = l10n.habitFasting;
-        } else if (habitKey == 'taraweeh') {
+        if (habitKey == 'taraweeh') {
           label = l10n.habitTaraweeh;
         } else if (habitKey == 'tahajud') {
           label = l10n.habitTahajud;
@@ -394,6 +426,7 @@ class DaySummarySheet extends ConsumerWidget {
           'icon': getHabitIcon(habitKey),
           'habitKey': habitKey,
         };
+      }
 
       case 'quran_pages':
         final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);

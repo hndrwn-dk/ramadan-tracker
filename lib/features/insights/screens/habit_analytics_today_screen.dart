@@ -16,6 +16,7 @@ import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/features/insights/services/insights_scoring_service.dart';
 
 /// Task Detail analytics screen for a specific habit and date.
@@ -189,6 +190,12 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
       
       switch (habit.key) {
         case 'fasting':
+          final fastingEntry = allEntries.firstWhere(
+            (e) => e.dayIndex == day && e.habitId == habit.id,
+            orElse: () => DailyEntry(seasonId: widget.seasonId, dayIndex: day, habitId: habit.id, valueBool: false, updatedAt: 0),
+          );
+          isMissed = !FastingStatus.isCompletedForDay(fastingEntry.valueInt, fastingEntry.valueBool);
+          break;
         case 'taraweeh':
         case 'tahajud':
         case 'itikaf':
@@ -449,7 +456,57 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
             ],
           ],
         );
-      case 'fasting':
+      case 'fasting': {
+        final entry = data['entry'] as DailyEntry;
+        final status = FastingStatus.fromEntry(entry.valueInt, entry.valueBool);
+        final isFasted = status == FastingStatus.fasted;
+        final isExcused = FastingStatus.isExcused(status);
+        final l10n = AppLocalizations.of(context)!;
+        final statusLabel = _fastingStatusLabel(l10n, status);
+        final updatedAt = entry.updatedAt > 0 ? DateTime.fromMillisecondsSinceEpoch(entry.updatedAt) : null;
+        final headlineText = isFasted ? l10n.completed : (isExcused ? l10n.excused : l10n.notCompleted);
+        final headlineColor = isFasted ? Colors.green : (isExcused ? Colors.amber : Colors.red);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isFasted ? Icons.check_circle : (isExcused ? Icons.info_outline : Icons.cancel),
+                  color: headlineColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    headlineText,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: headlineColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              statusLabel,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                  ),
+            ),
+            if (updatedAt != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${l10n.lastUpdated}: ${DateFormat('MMM d, h:mm a').format(updatedAt)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+              ),
+            ],
+          ],
+        );
+      }
       case 'tahajud':
       case 'itikaf':
         final entry = data['entry'] as DailyEntry;
@@ -860,19 +917,21 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
     String? toImprove;
     
     switch (habit.key) {
-      case 'fasting':
+      case 'fasting': {
         weight = InsightsScoringService.weightFasting;
         final entry = entriesModel.firstWhere(
           (e) => e.habitId == habit.id,
           orElse: () => DailyEntryModel(seasonId: widget.seasonId, dayIndex: dayIndex, habitId: habit.id, valueBool: false, updatedAt: DateTime.now()),
         );
         final l10n = AppLocalizations.of(context)!;
-        progress = entry.valueBool == true ? 1.0 : 0.0;
-        reason = progress >= 1.0 ? l10n.fastingCompleted : l10n.fastingNotCompleted;
-        if (progress < 1.0) {
+        final status = FastingStatus.fromEntry(entry.valueInt, entry.valueBool);
+        progress = FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool) ? 1.0 : 0.0;
+        reason = _fastingStatusLabel(l10n, status);
+        if (progress < 1.0 && !FastingStatus.isExcused(status)) {
           toImprove = l10n.completeFastingToGain(weight);
         }
         break;
+      }
       case 'prayers':
         weight = InsightsScoringService.weightPrayers;
         if (prayerDetail != null) {
@@ -1154,6 +1213,12 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
       
       switch (habit.key) {
         case 'fasting':
+          final fastingEntry = allEntries.firstWhere(
+            (e) => e.dayIndex == day && e.habitId == habit.id,
+            orElse: () => DailyEntry(seasonId: widget.seasonId, dayIndex: day, habitId: habit.id, valueBool: false, updatedAt: 0),
+          );
+          completion = FastingStatus.isCompletedForDay(fastingEntry.valueInt, fastingEntry.valueBool) ? 1.0 : 0.0;
+          break;
         case 'taraweeh':
         case 'tahajud':
         case 'itikaf':
@@ -1219,6 +1284,12 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
       bool isDone = false;
       switch (habit.key) {
         case 'fasting':
+          final fastingEntry = allEntries.firstWhere(
+            (e) => e.dayIndex == day && e.habitId == habit.id,
+            orElse: () => DailyEntry(seasonId: widget.seasonId, dayIndex: day, habitId: habit.id, valueBool: false, updatedAt: 0),
+          );
+          isDone = FastingStatus.isCompletedForDay(fastingEntry.valueInt, fastingEntry.valueBool);
+          break;
         case 'taraweeh':
         case 'tahajud':
         case 'itikaf':
@@ -1395,11 +1466,34 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
     );
   }
 
+  String _fastingStatusLabel(AppLocalizations l10n, int status) {
+    switch (status) {
+      case FastingStatus.fasted:
+        return l10n.fastingStatusFasted;
+      case FastingStatus.excusedSick:
+        return l10n.fastingStatusExcusedSick;
+      case FastingStatus.excusedNifas:
+        return l10n.fastingStatusExcusedNifas;
+      case FastingStatus.excusedHaid:
+        return l10n.fastingStatusExcusedHaid;
+      case FastingStatus.excusedOther:
+        return l10n.fastingStatusExcusedOther;
+      default:
+        return l10n.fastingStatusNotDone;
+    }
+  }
+
   String _getStatus(Map<String, dynamic> data) {
     final habit = data['habit'] as HabitModel;
     
     switch (habit.key) {
-      case 'fasting':
+      case 'fasting': {
+        final entry = data['entry'] as DailyEntry;
+        final status = FastingStatus.fromEntry(entry.valueInt, entry.valueBool);
+        if (status == FastingStatus.fasted) return 'Done';
+        if (FastingStatus.isExcused(status)) return 'Excused';
+        return 'Miss';
+      }
       case 'taraweeh':
       case 'tahajud':
       case 'itikaf':
@@ -1451,6 +1545,7 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
       case 'Done':
         return Colors.green;
       case 'Partial':
+      case 'Excused':
         return Colors.orange;
       case 'Miss':
         return Colors.red;

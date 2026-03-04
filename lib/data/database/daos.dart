@@ -172,6 +172,30 @@ class DailyEntriesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Fasting status: 0=notDone, 1=fasted, 2=excusedSick, 3=excusedNifas, 4=excusedHaid, 5=excusedOther.
+  /// valueBool is true only for fasted (1); excused days do not extend streak.
+  /// Optional [note] for excusedOther (stored in DailyEntry.note).
+  Future<void> setFastingStatus(
+    int seasonId,
+    int dayIndex,
+    int habitId,
+    int status, {
+    String? note,
+  }) {
+    final valueBool = status == 1;
+    return into(dailyEntries).insertOnConflictUpdate(
+      DailyEntriesCompanion.insert(
+        seasonId: seasonId,
+        dayIndex: dayIndex,
+        habitId: habitId,
+        valueBool: Value(valueBool),
+        valueInt: Value(status),
+        note: note != null && note.isNotEmpty ? Value(note) : const Value.absent(),
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+  }
+
   Future<void> setNote(
     int seasonId,
     int dayIndex,

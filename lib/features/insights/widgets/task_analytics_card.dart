@@ -130,6 +130,8 @@ class TaskAnalyticsCard extends StatelessWidget {
         return Colors.green;
       case 'Partial':
         return Colors.orange;
+      case 'Excused':
+        return Colors.amber;
       case 'Miss':
         return Colors.red;
       default:
