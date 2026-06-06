@@ -18,7 +18,31 @@ class BackupService {
       'dhikr_plans': [],
       'notes': [],
       'settings': [],
+      'sunnah_fasts': [],
+      'qadha_ledger': [],
     };
+
+    final sunnahFasts = await database.sunnahFastsDao.getAll();
+    backup['sunnah_fasts'] = sunnahFasts.map((f) => {
+      'date_ymd': f.dateYmd,
+      'status': f.status,
+      'type': f.type,
+      'is_qadha': f.isQadha,
+      'note': f.note,
+      'updated_at': f.updatedAt,
+    }).toList();
+
+    final qadhaEntries = await database.qadhaLedgerDao.getAll();
+    backup['qadha_ledger'] = qadhaEntries.map((q) => {
+      'kind': q.kind,
+      'direction': q.direction,
+      'days': q.days,
+      'amount': q.amount,
+      'date_ymd': q.dateYmd,
+      'source_season_id': q.sourceSeasonId,
+      'note': q.note,
+      'created_at': q.createdAt,
+    }).toList();
 
     final seasons = await database.ramadanSeasonsDao.getAllSeasons();
     backup['seasons'] = seasons.map((s) => {
@@ -132,6 +156,8 @@ class BackupService {
       await database.delete(database.dhikrPlan).go();
       await database.delete(database.notes).go();
       await database.delete(database.kvSettings).go();
+      await database.delete(database.sunnahFasts).go();
+      await database.delete(database.qadhaLedger).go();
 
       final seasons = backup['seasons'] as List;
       for (final s in seasons) {
@@ -233,6 +259,36 @@ class BackupService {
             title: Value(n['title'] as String?),
             body: n['body'] as String,
             createdAt: n['created_at'] as int,
+          ),
+        );
+      }
+
+      final sunnahFasts = (backup['sunnah_fasts'] as List?) ?? const [];
+      for (final f in sunnahFasts) {
+        await database.into(database.sunnahFasts).insert(
+          SunnahFastsCompanion.insert(
+            dateYmd: f['date_ymd'] as String,
+            status: Value(f['status'] as int? ?? 1),
+            type: Value(f['type'] as String?),
+            isQadha: Value(f['is_qadha'] as bool? ?? false),
+            note: Value(f['note'] as String?),
+            updatedAt: f['updated_at'] as int,
+          ),
+        );
+      }
+
+      final qadhaLedger = (backup['qadha_ledger'] as List?) ?? const [];
+      for (final q in qadhaLedger) {
+        await database.into(database.qadhaLedger).insert(
+          QadhaLedgerCompanion.insert(
+            kind: q['kind'] as String,
+            direction: q['direction'] as String,
+            days: Value(q['days'] as int? ?? 0),
+            amount: Value(q['amount'] as int? ?? 0),
+            dateYmd: Value(q['date_ymd'] as String?),
+            sourceSeasonId: Value(q['source_season_id'] as int?),
+            note: Value(q['note'] as String?),
+            createdAt: q['created_at'] as int,
           ),
         );
       }

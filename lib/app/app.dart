@@ -5,6 +5,7 @@ import 'package:ramadan_tracker/features/today/today_screen.dart';
 import 'package:ramadan_tracker/features/month/month_screen.dart';
 import 'package:ramadan_tracker/features/plan/plan_screen.dart';
 import 'package:ramadan_tracker/features/insights/insights_screen.dart';
+import 'package:ramadan_tracker/features/sunnah/sunnah_screen.dart';
 import 'package:ramadan_tracker/features/settings/settings_screen.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_wrapper.dart';
 import 'package:ramadan_tracker/widgets/theme.dart';
@@ -14,6 +15,7 @@ import 'package:ramadan_tracker/data/providers/locale_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
+import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 
@@ -81,6 +83,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     TodayScreen(),
     MonthScreen(),
     PlanScreen(),
+    SunnahScreen(),
     InsightsScreen(),
     SettingsScreen(),
   ];
@@ -144,6 +147,9 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
       }
       
       await NotificationService.rescheduleAllReminders(database: database);
+      await NotificationService.scheduleNextRamadanReminders(database: database);
+      await NotificationService.scheduleSunnahReminders(database: database);
+      await HomeWidgetService.update(database);
       debugPrint('=== _rescheduleNotifications completed ===');
       
       // Show pending notifications count (with error handling)
@@ -178,6 +184,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         onDestinationSelected: (index) {
           // Reset selected day index when navigating away from Today screen (index 0)
           if (currentIndex == 0 && index != 0) {
@@ -200,6 +207,11 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
             icon: const Icon(Icons.auto_awesome_outlined),
             selectedIcon: const Icon(Icons.auto_awesome),
             label: l10n.plan,
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.nightlight_outlined),
+            selectedIcon: Icon(Icons.nightlight),
+            label: 'Sunnah',
           ),
           NavigationDestination(
             icon: const Icon(Icons.insights_outlined),

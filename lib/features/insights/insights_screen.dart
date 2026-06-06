@@ -43,6 +43,7 @@ import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
+import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
@@ -928,7 +929,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             final hasMissedDays = data['hasMissedDays'] as bool;
             final latestMissedDay = data['latestMissedDay'] as int?;
             final l10n = AppLocalizations.of(context)!;
-            final statusColor = (habitKey == 'fasting' && status == l10n.excused) ? Colors.amber : null;
+            final statusColor = (status == l10n.excused) ? Colors.amber : null;
             
             return TaskAnalyticsCard(
               habitKey: habitKey,
@@ -1052,6 +1053,15 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     int? latestMissedDay;
     
     // Today's data
+    final fastingHabit = (habits.where((h) => h.key == 'fasting').toList()).firstOrNull;
+    final todayFastingEntry = fastingHabit != null
+        ? (allEntries.where((e) => e.dayIndex == currentDayIndex && e.habitId == fastingHabit.id).toList()).firstOrNull
+        : null;
+    final todayFastingStatus = todayFastingEntry != null
+        ? FastingStatus.fromEntry(todayFastingEntry.valueInt, todayFastingEntry.valueBool)
+        : FastingStatus.notDone;
+    final isTodayHaidOrNifas = FastingStatus.isHaidOrNifas(todayFastingStatus);
+
     final todayEntries = allEntries.where((e) => e.dayIndex == currentDayIndex && e.habitId == habit.id).toList();
     final todayEntry = todayEntries.isNotEmpty ? todayEntries.first : null;
     final todayQuran = allQuranDaily.firstWhere(
@@ -1083,9 +1093,14 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       case 'taraweeh':
       case 'tahajud':
       case 'itikaf':
-        final done = todayEntry?.valueBool == true;
-        todayCompletion = done ? 1.0 : 0.0;
-        status = done ? l10n.done : l10n.miss;
+        if (habitKey != 'itikaf' && isTodayHaidOrNifas) {
+          todayCompletion = 1.0;
+          status = l10n.excused;
+        } else {
+          final done = todayEntry?.valueBool == true;
+          todayCompletion = done ? 1.0 : 0.0;
+          status = done ? l10n.done : l10n.miss;
+        }
         final doneDays = allEntries.where((e) => e.habitId == habit.id && e.valueBool == true).length;
         keyMetricText = l10n.thisRamadan(doneDays, season.days);
         if (habitKey == 'itikaf') {
@@ -1098,15 +1113,21 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           keyMetricText = targetRakaat > 0 ? l10n.taraweehRakaatProgress(totalRakaat, targetRakaat) : l10n.thisRamadan(doneDays, season.days);
         }
         break;
-      case 'quran_pages':
+      case 'quran_pages': {
         final pages = todayQuran.pagesRead;
-        final target = quranPlan?.dailyTargetPages ?? seasonHabit.targetValue ?? habit.defaultTarget ?? 20;
-        todayCompletion = target > 0 ? (pages / target).clamp(0.0, 1.0) : (pages > 0 ? 1.0 : 0.0);
-        status = todayCompletion >= 1.0 ? l10n.done : (todayCompletion > 0 ? l10n.partial : l10n.miss);
+        final quranTarget = quranPlan?.dailyTargetPages ?? seasonHabit.targetValue ?? habit.defaultTarget ?? 20;
+        if (isTodayHaidOrNifas) {
+          todayCompletion = 1.0;
+          status = l10n.excused;
+        } else {
+          todayCompletion = quranTarget > 0 ? (pages / quranTarget).clamp(0.0, 1.0) : (pages > 0 ? 1.0 : 0.0);
+          status = todayCompletion >= 1.0 ? l10n.done : (todayCompletion > 0 ? l10n.partial : l10n.miss);
+        }
         final totalPages = allQuranDaily.fold<int>(0, (sum, q) => sum + q.pagesRead);
         final avgPages = season.days > 0 ? (totalPages / season.days).round() : 0;
-        keyMetricText = l10n.todayPagesAvg(pages, target, avgPages);
+        keyMetricText = l10n.todayPagesAvg(pages, quranTarget, avgPages);
         break;
+      }
       case 'dhikr':
         final count = todayEntry?.valueInt ?? 0;
         final target = dhikrPlan?.dailyTarget ?? seasonHabit.targetValue ?? habit.defaultTarget ?? 100;
@@ -1128,22 +1149,29 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         final totalFormatted = SedekahUtils.formatCurrency(totalAmount.toDouble(), currency);
         keyMetricText = l10n.todayAmountTotal(amountFormatted, targetFormatted, totalFormatted);
         break;
-      case 'prayers':
-        final completed = [
+      case 'prayers': {
+        int prayersCompleted = [
           todayPrayer.fajr,
           todayPrayer.dhuhr,
           todayPrayer.asr,
           todayPrayer.maghrib,
           todayPrayer.isha,
         ].where((p) => p).length;
-        todayCompletion = completed / 5.0;
-        status = completed == 5 ? l10n.done : (completed > 0 ? l10n.partial : l10n.miss);
+        if (isTodayHaidOrNifas) {
+          todayCompletion = 1.0;
+          status = l10n.excused;
+          prayersCompleted = 5;
+        } else {
+          todayCompletion = prayersCompleted / 5.0;
+          status = prayersCompleted == 5 ? l10n.done : (prayersCompleted > 0 ? l10n.partial : l10n.miss);
+        }
         final perfectDays = allPrayerDetails.where((p) {
           final count = [p.fajr, p.dhuhr, p.asr, p.maghrib, p.isha].where((prayer) => prayer).length;
           return count == 5;
         }).length;
-        keyMetricText = l10n.todayPrayersPerfect(completed, perfectDays, season.days);
+        keyMetricText = l10n.todayPrayersPerfect(prayersCompleted, perfectDays, season.days);
         break;
+      }
     }
     
     // Build heatmap for all Ramadan days
@@ -1227,7 +1255,16 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           isMissed = completed < 5;
           break;
       }
-      
+
+      if (fastingHabit != null && FastingStatus.habitKeysExcusedOnHaidNifas.contains(habitKey)) {
+        final dayFastingEntry = (allEntries.where((e) => e.dayIndex == day && e.habitId == fastingHabit.id).toList()).firstOrNull;
+        if (dayFastingEntry != null && FastingStatus.isHaidOrNifas(FastingStatus.fromEntry(dayFastingEntry.valueInt, dayFastingEntry.valueBool))) {
+          completion = 1.0;
+          isMissed = false;
+          dayStatusLabel = 'Excused';
+        }
+      }
+
       heatmapDays.add(DayStatus(
         dayIndex: day,
         completion: completion,

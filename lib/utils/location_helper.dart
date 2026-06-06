@@ -5,23 +5,23 @@ class LocationHelper {
   static String detectCalculationMethod(double latitude, double longitude) {
     // Singapore
     // Approximate bounds: lat 1.0-1.5, lon 103.5-104.5
-    if (latitude >= 1.0 && latitude <= 1.5 && 
+    if (latitude >= 1.0 && latitude <= 1.5 &&
         longitude >= 103.5 && longitude <= 104.5) {
       return 'singapore';
     }
-    
+
+    // Malaysia (before Indonesia so peninsular & East Malaysia get MWL + Asia/Kuala_Lumpur)
+    // Approximate bounds: lat 0.5 to 7.5, lon 99.5 to 119.5
+    if (latitude >= 0.5 && latitude <= 7.5 &&
+        longitude >= 99.5 && longitude <= 119.5) {
+      return 'mwl'; // Malaysia commonly uses MWL / JAKIM-style
+    }
+
     // Indonesia
     // Approximate bounds: lat -11 to 6, lon 95 to 141
-    if (latitude >= -11.0 && latitude <= 6.0 && 
+    if (latitude >= -11.0 && latitude <= 6.0 &&
         longitude >= 95.0 && longitude <= 141.0) {
       return 'indonesia';
-    }
-    
-    // Malaysia
-    // Approximate bounds: lat 0.5 to 7.5, lon 99.5 to 119.5
-    if (latitude >= 0.5 && latitude <= 7.5 && 
-        longitude >= 99.5 && longitude <= 119.5) {
-      return 'mwl'; // Malaysia commonly uses MWL
     }
     
     // United Arab Emirates (Dubai)
@@ -101,11 +101,17 @@ class LocationHelper {
   /// Returns common timezone for the region
   static String detectTimezone(double latitude, double longitude) {
     // Singapore
-    if (latitude >= 1.0 && latitude <= 1.5 && 
+    if (latitude >= 1.0 && latitude <= 1.5 &&
         longitude >= 103.5 && longitude <= 104.5) {
       return 'Asia/Singapore';
     }
-    
+
+    // Malaysia (before Indonesia so Malaysian users get Asia/Kuala_Lumpur)
+    if (latitude >= 0.5 && latitude <= 7.5 &&
+        longitude >= 99.5 && longitude <= 119.5) {
+      return 'Asia/Kuala_Lumpur';
+    }
+
     // Indonesia - multiple timezones
     if (latitude >= -11.0 && latitude <= 6.0 && 
         longitude >= 95.0 && longitude <= 141.0) {
@@ -133,13 +139,7 @@ class LocationHelper {
       // Default to Jakarta (WIB) for most Indonesian locations
       return 'Asia/Jakarta';
     }
-    
-    // Malaysia
-    if (latitude >= 0.5 && latitude <= 7.5 && 
-        longitude >= 99.5 && longitude <= 119.5) {
-      return 'Asia/Kuala_Lumpur';
-    }
-    
+
     // UAE
     if (latitude >= 22.5 && latitude <= 26.0 && 
         longitude >= 51.0 && longitude <= 56.5) {

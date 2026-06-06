@@ -3,6 +3,8 @@ import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/features/insights/services/insights_scoring_service.dart';
+import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 
 /// Season insights data models
 class SeasonDayStatus {
@@ -382,7 +384,16 @@ class SeasonInsightsService {
         final quranDaily = await database.quranDailyDao.getDaily(season.id, day);
         final prayerDetails = await database.prayerDetailsDao.getPrayerDetailsRange(season.id, day, day);
         final prayer = prayerDetails.isNotEmpty ? prayerDetails.first : null;
-        
+
+        final fastingHabit = (allHabits.where((h) => h.key == 'fasting').toList()).firstOrNull;
+        final fastingEntry = fastingHabit != null
+            ? (entries.where((e) => e.habitId == fastingHabit.id).toList()).firstOrNull
+            : null;
+        final fastingStatus = fastingEntry != null
+            ? FastingStatus.fromEntry(fastingEntry.valueInt, fastingEntry.valueBool)
+            : FastingStatus.notDone;
+        final isDayHaidOrNifas = FastingStatus.isHaidOrNifas(fastingStatus);
+
         for (final habit in allHabits) {
           final seasonHabit = seasonHabits.firstWhere(
             (sh) => sh.habitId == habit.id,
@@ -452,6 +463,9 @@ class SeasonInsightsService {
               );
               isMissed = (entry.valueInt ?? 0) < target;
             }
+          }
+          if (isDayHaidOrNifas && FastingStatus.habitKeysExcusedOnHaidNifas.contains(habit.key)) {
+            isMissed = false;
           }
           if (isMissed) {
             missed.add(habit.key);

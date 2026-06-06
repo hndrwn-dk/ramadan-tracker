@@ -27,4 +27,16 @@ class FastingStatus {
 
   static bool isExcused(int status) =>
       status == excusedSick || status == excusedNifas || status == excusedHaid || status == excusedOther;
+
+  /// True when status is haid or nifas (day is excused from prayers, tahajud, quran, taraweeh).
+  static bool isHaidOrNifas(int status) =>
+      status == excusedHaid || status == excusedNifas;
+
+  /// Habit keys that are excused (not required) on haid/nifas days.
+  static const List<String> habitKeysExcusedOnHaidNifas = [
+    'prayers',
+    'tahajud',
+    'quran_pages',
+    'taraweeh',
+  ];
 }

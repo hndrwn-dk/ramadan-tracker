@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/insights/models.dart';
 import 'package:ramadan_tracker/insights/task_registry.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:intl/intl.dart';
 
@@ -809,7 +810,10 @@ class InsightsAggregator {
       String? quickValue;
 
       if (taskDef.type == TaskType.boolean) {
-        if (!entry.isCompleted) {
+        final completed = taskDef.habitKey == 'fasting'
+            ? FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool)
+            : entry.isCompleted;
+        if (!completed) {
           needsAction = true;
           label = 'Mark ${taskDef.title}';
         }

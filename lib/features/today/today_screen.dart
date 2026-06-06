@@ -36,6 +36,9 @@ import 'package:flutter/services.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
+import 'package:ramadan_tracker/utils/ramadan_dates.dart';
+import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
@@ -73,7 +76,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               children: [
                 const Icon(Icons.nights_stay, size: 24),
                 const SizedBox(width: 8),
-                Text(l10n.appTitle),
+                Text(
+                  seasonAsync.maybeWhen(
+                    data: (season) =>
+                        season != null ? 'Ramadan' : l10n.appTitle,
+                    orElse: () => l10n.appTitle,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 4),
@@ -337,61 +346,111 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Widget _buildNoSeasonView() {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.calendar_today_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              l10n.noSeasonFound,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.createNewSeasonMessage,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Navigate to Settings tab
-                ref.read(tabIndexProvider.notifier).state = 4;
-              },
-              icon: const Icon(Icons.add),
-              label: Text(l10n.createNewSeason),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                // Restart onboarding
-                ref.invalidate(shouldShowOnboardingProvider);
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const MainScreen(),
-                  ),
-                  (route) => false,
-                );
-              },
-              child: Text(l10n.startSetup),
-            ),
-          ],
+    final s = SunnahStrings.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final daysUntil = RamadanDates.daysUntilNext(DateTime.now());
+    final ramadanNear = daysUntil != null && daysUntil <= 45;
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const SizedBox(height: 8),
+        Icon(
+          Icons.nightlight_round,
+          size: 56,
+          color: scheme.primary.withOpacity(0.6),
         ),
+        const SizedBox(height: 16),
+        Text(
+          s.t('Mode sepanjang tahun', 'Year-round mode'),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          s.t(
+            'Belum ada musim Ramadan. Lanjutkan ibadah harian dengan puasa sunnah, qadha, dan pantau acara Islam.',
+            'No Ramadan season yet. Keep up daily worship with sunnah fasts, qadha, and Islamic events.',
+          ),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface.withOpacity(0.7),
+              ),
+        ),
+        const SizedBox(height: 24),
+        if (ramadanNear) _buildRamadanNearCard(s, daysUntil),
+        if (ramadanNear) const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => ref.read(tabIndexProvider.notifier).state = 3,
+          icon: const Icon(Icons.nightlight_round),
+          label: Text(s.sunnahTitle),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
+          ),
+          icon: const Icon(Icons.add),
+          label: Text(s.t('Buat musim Ramadan', 'Create Ramadan season')),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRamadanNearCard(SunnahStrings s, int daysUntil) {
+    final scheme = Theme.of(context).colorScheme;
+    final msg = daysUntil <= 0
+        ? s.t('Ramadan sudah tiba!', 'Ramadan is here!')
+        : s.t('Ramadan tinggal $daysUntil hari lagi',
+            'Ramadan is in $daysUntil days');
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [scheme.primary, scheme.primaryContainer],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.celebration, color: scheme.onPrimary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  msg,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: scheme.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            s.t('Siapkan musimmu sekarang untuk Quran plan, Taraweeh, dan pengingat Sahur/Iftar.',
+                'Set up your season now for the Quran plan, Taraweeh, and Sahur/Iftar reminders.'),
+            style: TextStyle(color: scheme.onPrimary.withOpacity(0.9)),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.tonal(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
+            ),
+            child: Text(s.t('Siapkan musim Ramadan', 'Set up Ramadan season')),
+          ),
+        ],
       ),
     );
   }
@@ -442,7 +501,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       // Navigate to Settings tab
-                      ref.read(tabIndexProvider.notifier).state = 4;
+                      ref.read(tabIndexProvider.notifier).state = 5;
                     },
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(l10n.newSeason),
@@ -459,7 +518,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       // Navigate to Insights tab
-                      ref.read(tabIndexProvider.notifier).state = 3;
+                      ref.read(tabIndexProvider.notifier).state = 4;
                     },
                     icon: const Icon(Icons.insights, size: 18),
                     label: Text(l10n.viewInsights),
@@ -546,7 +605,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                             TextButton(
                               onPressed: () {
                                 // Navigate to settings
-                                ref.read(tabIndexProvider.notifier).state = 4;
+                                ref.read(tabIndexProvider.notifier).state = 5;
                               },
                               child: Text(AppLocalizations.of(context)!.enableLocation),
                             ),
@@ -753,7 +812,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     child: TextButton(
                       onPressed: () {
                         ref.read(openSettingsSectionProvider.notifier).state = 'times';
-                        ref.read(tabIndexProvider.notifier).state = 4;
+                        ref.read(tabIndexProvider.notifier).state = 5;
                       },
                       child: Text(l10n.prayerOffsetTipCta),
                     ),
@@ -1114,6 +1173,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       debugPrint('  SeasonHabit: habitId=${sh.habitId}, habitKey=${habit?.key}, isEnabled=${sh.isEnabled}');
     }
 
+    final fastingHabit = (habits as List).where((h) => h.key == 'fasting').firstOrNull;
+    final fastingEntry = fastingHabit != null
+        ? (entries as List).where((e) => e.habitId == fastingHabit.id).firstOrNull
+        : null;
+    final fastingStatus = fastingEntry != null
+        ? FastingStatus.fromEntry(fastingEntry.valueInt, fastingEntry.valueBool)
+        : FastingStatus.notDone;
+    final isDayHaidOrNifas = FastingStatus.isHaidOrNifas(fastingStatus);
+
     for (final habitKey in habitOrder) {
       final habit = (habits as List).where((h) => h.key == habitKey).firstOrNull;
       if (habit == null) {
@@ -1166,40 +1234,58 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         
         // Prayers always use detailed mode (track each prayer individually)
         if (habitKey == 'prayers') {
-          sortedHabits.add(
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _wrapHabitInCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: PrayerDetailsWidget(
-                    seasonId: seasonId,
-                    dayIndex: dayIndex,
+          if (isDayHaidOrNifas) {
+            sortedHabits.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildHaidNifasExcusedCard(context, getHabitDisplayName(context, habitKey)),
+              ),
+            );
+          } else {
+            sortedHabits.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _wrapHabitInCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: PrayerDetailsWidget(
+                      seasonId: seasonId,
+                      dayIndex: dayIndex,
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
+            );
+          }
         } else if (habitKey == 'taraweeh') {
-          final rakaat = entry?.valueInt;
-          final isDone = entry?.valueBool ?? false;
-          sortedHabits.add(
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _wrapHabitInCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildTaraweehRakaatContent(
-                    seasonId: seasonId,
-                    dayIndex: dayIndex,
-                    habitId: habit.id,
-                    isDone: isDone,
-                    selectedRakaat: rakaat,
+          if (isDayHaidOrNifas) {
+            sortedHabits.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildHaidNifasExcusedCard(context, getHabitDisplayName(context, habitKey)),
+              ),
+            );
+          } else {
+            final rakaat = entry?.valueInt;
+            final isDone = entry?.valueBool ?? false;
+            sortedHabits.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _wrapHabitInCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _buildTaraweehRakaatContent(
+                      seasonId: seasonId,
+                      dayIndex: dayIndex,
+                      habitId: habit.id,
+                      isDone: isDone,
+                      selectedRakaat: rakaat,
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
+            );
+          }
         } else if (habitKey == 'fasting') {
           final fastingStatus = FastingStatus.fromEntry(entry?.valueInt, entry?.valueBool);
           final isCompleted = FastingStatus.isCompletedForDay(entry?.valueInt, entry?.valueBool);
@@ -1214,6 +1300,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 isCompleted: isCompleted,
                 note: entry?.note,
               ),
+            ),
+          );
+        } else if (habitKey == 'tahajud' && isDayHaidOrNifas) {
+          sortedHabits.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildHaidNifasExcusedCard(context, getHabitDisplayName(context, habitKey)),
             ),
           );
         } else {
@@ -1235,21 +1328,30 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         }
       } else if (habitKey == 'quran_pages') {
         debugPrint('  Adding quran_pages to UI');
-        sortedHabits.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _wrapHabitInCard(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: QuranTracker(
-                  seasonId: seasonId,
-                  dayIndex: dayIndex,
-                  habitId: habit.id,
+        if (isDayHaidOrNifas) {
+          sortedHabits.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildHaidNifasExcusedCard(context, getHabitDisplayName(context, habitKey)),
+            ),
+          );
+        } else {
+          sortedHabits.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _wrapHabitInCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: QuranTracker(
+                    seasonId: seasonId,
+                    dayIndex: dayIndex,
+                    habitId: habit.id,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
+        }
       } else if (habitKey == 'dhikr') {
         final value = entry?.valueInt ?? 0;
         debugPrint('  Adding dhikr to UI (value=$value)');
@@ -1693,6 +1795,50 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       rakaat,
     );
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+  }
+
+  Widget _buildHaidNifasExcusedCard(BuildContext context, String habitLabel) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.amber.withOpacity(isDark ? 0.6 : 0.8),
+          width: 1,
+        ),
+        color: Colors.amber.withOpacity(isDark ? 0.12 : 0.08),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 20, color: Colors.amber.shade700),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  habitLabel,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.excused,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.amber.shade800,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _fastingStatusLabel(int status) {

@@ -133,31 +133,57 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
   }
 
+  Future<void> _skipSetup() async {
+    try {
+      final database = ref.read(databaseProvider);
+      await database.kvSettingsDao.setValue('onboarding_skipped', 'true');
+      ref.invalidate(shouldShowOnboardingProvider);
+      if (!mounted) return;
+      ref.read(tabIndexProvider.notifier).state = 0;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('Skip setup failed: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            if (_currentStep > 0)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: _previousStep,
                     ),
+                  if (_currentStep > 0)
                     Expanded(
                       child: LinearProgressIndicator(
                         value: _currentStep / 4,
                         backgroundColor: Colors.grey.withOpacity(0.2),
                       ),
+                    )
+                  else
+                    const Spacer(),
+                  TextButton(
+                    onPressed: _skipSetup,
+                    child: Text(
+                      Localizations.localeOf(context).languageCode == 'id'
+                          ? 'Lewati dulu'
+                          : 'Skip for now',
                     ),
-                    const SizedBox(width: 48),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
             Expanded(
               child: ClipRect(
                 child: AnimatedSwitcher(

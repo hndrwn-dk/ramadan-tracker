@@ -20,7 +20,7 @@ import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
-import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -30,6 +30,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  final Future<PackageInfo> _packageInfoFuture = PackageInfo.fromPlatform();
   final Map<String, bool> _expandedSections = {
     'appearance': false,
     'language': false,
@@ -1731,7 +1732,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.version),
-            subtitle: const Text('1.0.1 (3)'),
+            subtitle: FutureBuilder<PackageInfo>(
+              future: _packageInfoFuture,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final info = snapshot.data!;
+                  return Text('${info.version} (${info.buildNumber})');
+                }
+                return const Text('...');
+              },
+            ),
             onTap: () {
               _versionTapCount++;
               if (_versionTapCount >= 7 && !_debugEnabled) {

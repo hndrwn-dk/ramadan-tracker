@@ -1,14 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
-import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
+import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
+import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/location_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'dart:io';
 
 class OnboardingStep5Reminders extends ConsumerStatefulWidget {
   final OnboardingData data;
@@ -132,17 +134,25 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
       }
 
       Position position = await Geolocator.getCurrentPosition();
-      
+
       // Auto-detect calculation method and timezone based on location
       final detectedMethod = LocationHelper.detectCalculationMethod(
         position.latitude,
         position.longitude,
       );
-      final detectedTimezone = LocationHelper.detectTimezone(
+      var detectedTimezone = LocationHelper.detectTimezone(
         position.latitude,
         position.longitude,
       );
-      
+      // If no region matched (UTC), use device timezone so prayer times show in local time
+      if (detectedTimezone == 'UTC' || detectedTimezone.isEmpty) {
+        try {
+          detectedTimezone = await FlutterTimezone.getLocalTimezone();
+        } catch (_) {
+          // keep UTC
+        }
+      }
+
       setState(() {
         widget.data.latitude = position.latitude;
         widget.data.longitude = position.longitude;
@@ -169,14 +179,20 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
     }
   }
 
-  void _setManualLocation() {
+  Future<void> _setManualLocation() async {
     final lat = double.tryParse(_latitudeController.text);
     final lon = double.tryParse(_longitudeController.text);
     if (lat != null && lon != null) {
-      // Auto-detect calculation method and timezone based on location
       final detectedMethod = LocationHelper.detectCalculationMethod(lat, lon);
-      final detectedTimezone = LocationHelper.detectTimezone(lat, lon);
-      
+      var detectedTimezone = LocationHelper.detectTimezone(lat, lon);
+      if (detectedTimezone == 'UTC' || detectedTimezone.isEmpty) {
+        try {
+          detectedTimezone = await FlutterTimezone.getLocalTimezone();
+        } catch (_) {
+          // keep UTC
+        }
+      }
+
       setState(() {
         widget.data.latitude = lat;
         widget.data.longitude = lon;
@@ -200,14 +216,21 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
   Future<void> _updatePreview() async {
     if (widget.data.latitude == null || widget.data.longitude == null) return;
 
-    // Auto-detect timezone from coordinates if still UTC
+    // If still UTC (no region matched), use device timezone so times show in local time
     if (widget.data.timezone == 'UTC' || widget.data.timezone.isEmpty) {
-      final detectedTimezone = LocationHelper.detectTimezone(
+      var tzName = LocationHelper.detectTimezone(
         widget.data.latitude!,
         widget.data.longitude!,
       );
+      if (tzName == 'UTC' || tzName.isEmpty) {
+        try {
+          tzName = await FlutterTimezone.getLocalTimezone();
+        } catch (_) {
+          // keep UTC
+        }
+      }
       setState(() {
-        widget.data.timezone = detectedTimezone;
+        widget.data.timezone = tzName;
       });
     }
 
@@ -591,11 +614,14 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          l10n.prayerTimesPreview,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                        Expanded(
+                          child: Text(
+                            l10n.prayerTimesPreview,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         TextButton.icon(
                           onPressed: _testNotification,
@@ -692,12 +718,16 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: isReminder ? FontWeight.normal : FontWeight.w500,
-                ),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: isReminder ? FontWeight.normal : FontWeight.w500,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          const SizedBox(width: 8),
           Text(
             DateFormat('HH:mm').format(displayTime),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(

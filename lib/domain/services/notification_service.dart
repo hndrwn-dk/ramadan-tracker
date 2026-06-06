@@ -6,6 +6,9 @@ import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/domain/services/goal_reminder_service.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/utils/ramadan_dates.dart';
+import 'package:ramadan_tracker/utils/next_ramadan_reminder_strings.dart';
+import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
@@ -26,7 +29,9 @@ class NotificationService {
   static const int _baseIdNightPlan = 3000000;
   static const int _baseIdHabitReminder = 4000000;
   static const int _baseIdGoal = 5000000;
-  
+  static const int _baseIdNextRamadan = 6000000;
+  static const int _baseIdSunnah = 7000000;
+
   // Goal type indices
   static const int _goalTypeQuran = 0;
   static const int _goalTypeDhikr = 1;
@@ -1126,6 +1131,179 @@ class NotificationService {
     }
   }
 
+  /// Schedules one notification per upcoming Ramadan (e.g. 2027, 2028) at 7 days before start, 09:00 local.
+  /// Called after rescheduleAllReminders so season reminders are already scheduled.
+  static Future<void> scheduleNextRamadanReminders({required AppDatabase database}) async {
+    try {
+      final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
+      final tzIana = await readTimezoneFromDb(database);
+      await initializeTimezone(tzIana);
+      final location = tz.local;
+
+      final seasons = await database.ramadanSeasonsDao.getAllSeasons();
+      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+      const maxYearsAhead = 5;
+      final startYear = today.year;
+      int scheduled = 0;
+
+      for (int y = 0; y <= maxYearsAhead; y++) {
+        final year = startYear + y;
+        if (year > RamadanDates.maxYear) break;
+
+        final ramadanStart = RamadanDates.getRamadanStartForYear(year);
+        final fireDate = RamadanDates.getReminderFireDateForYear(year);
+        if (ramadanStart == null || fireDate == null) continue;
+        if (fireDate.isBefore(today)) continue;
+
+        final ramadanEnd = ramadanStart.add(const Duration(days: 30));
+        final hasSeasonForYear = seasons.any((s) {
+          final start = DateTime.parse(s.startDate);
+          return !start.isBefore(ramadanStart) && start.isBefore(ramadanEnd);
+        });
+        if (hasSeasonForYear) continue;
+
+        final scheduledTz = tz.TZDateTime(
+          location,
+          fireDate.year,
+          fireDate.month,
+          fireDate.day,
+          RamadanDates.reminderHour,
+          RamadanDates.reminderMinute,
+        );
+        final tzNow = tz.TZDateTime.now(location);
+        if (!scheduledTz.isAfter(tzNow)) continue;
+
+        final notificationId = _baseIdNextRamadan + year;
+        final title = NextRamadanReminderStrings.getTitle(locale, year);
+        final body = NextRamadanReminderStrings.getBody(locale);
+
+        if (Platform.isAndroid) {
+          await _createChannels();
+        }
+        final details = const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'ramadan_reminders',
+            'Ramadan Reminders',
+            channelDescription: 'Sahur, Iftar, and Ramadan reminders',
+            importance: Importance.max,
+            priority: Priority.max,
+            showWhen: true,
+            enableVibration: true,
+            playSound: true,
+            visibility: NotificationVisibility.public,
+            autoCancel: true,
+            channelAction: AndroidNotificationChannelAction.createIfNotExists,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        );
+
+        final ok = await _safeZonedSchedule(
+          id: notificationId,
+          title: title,
+          body: body,
+          scheduledDate: scheduledTz,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+        if (ok) scheduled++;
+      }
+
+      if (scheduled > 0) {
+        LogService.log('[NOTIF] Next Ramadan reminders scheduled: $scheduled');
+      }
+    } catch (e, stack) {
+      LogService.log('[NOTIF] scheduleNextRamadanReminders failed: $e');
+      if (kDebugMode) debugPrint('[NOTIF] scheduleNextRamadanReminders: $stack');
+    }
+  }
+
+  /// Schedules evening reminders for the night before each recommended sunnah
+  /// fast (Monday/Thursday + Ayyamul Bidh, Arafah, Asyura) for the next several
+  /// weeks. Uses base ID 7,000,000 so it never collides with season reminders.
+  static Future<void> scheduleSunnahReminders({required AppDatabase database}) async {
+    try {
+      final enabled = await database.kvSettingsDao.getValue('sunnah_reminder_enabled') ?? 'true';
+      if (enabled != 'true') return;
+
+      final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
+      final isId = locale == 'id';
+      final tzIana = await readTimezoneFromDb(database);
+      await initializeTimezone(tzIana);
+      final location = tz.local;
+      final tzNow = tz.TZDateTime.now(location);
+
+      const reminderHour = 19; // 19:00 the evening before
+      const horizonDays = 60;
+      int scheduled = 0;
+
+      if (Platform.isAndroid) {
+        await _createChannels();
+      }
+      final details = const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'ramadan_reminders',
+          'Ramadan Reminders',
+          channelDescription: 'Sahur, Iftar, and Ramadan reminders',
+          importance: Importance.max,
+          priority: Priority.max,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          visibility: NotificationVisibility.public,
+          autoCancel: true,
+          channelAction: AndroidNotificationChannelAction.createIfNotExists,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
+
+      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      for (int i = 1; i <= horizonDays; i++) {
+        final fastDay = today.add(Duration(days: i));
+        final types = SunnahFastingRules.typesFor(fastDay);
+        if (types.isEmpty) continue;
+        if (SunnahFastingRules.isRamadan(fastDay)) continue;
+
+        // Fire the evening before the fast day.
+        final eve = fastDay.subtract(const Duration(days: 1));
+        final scheduledTz = tz.TZDateTime(
+          location, eve.year, eve.month, eve.day, reminderHour, 0,
+        );
+        if (!scheduledTz.isAfter(tzNow)) continue;
+
+        final label = isId ? types.first.labelId() : types.first.labelEn();
+        final title = isId ? 'Puasa sunnah besok' : 'Sunnah fast tomorrow';
+        final body = isId
+            ? 'Besok: $label. Niatkan puasa malam ini.'
+            : 'Tomorrow: $label. Set your intention tonight.';
+
+        final ok = await _safeZonedSchedule(
+          id: _getNotificationId(_baseIdSunnah, fastDay),
+          title: title,
+          body: body,
+          scheduledDate: scheduledTz,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+        if (ok) scheduled++;
+      }
+
+      if (scheduled > 0) {
+        LogService.log('[NOTIF] Sunnah reminders scheduled: $scheduled');
+      }
+    } catch (e, stack) {
+      LogService.log('[NOTIF] scheduleSunnahReminders failed: $e');
+      if (kDebugMode) debugPrint('[NOTIF] scheduleSunnahReminders: $stack');
+    }
+  }
 
   static Future<void> initialize() async {
     tz_data.initializeTimeZones();

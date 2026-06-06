@@ -446,3 +446,99 @@ class PrayerDetailsDao extends DatabaseAccessor<AppDatabase>
   }
 }
 
+@DriftAccessor(tables: [SunnahFasts])
+class SunnahFastsDao extends DatabaseAccessor<AppDatabase>
+    with _$SunnahFastsDaoMixin {
+  SunnahFastsDao(AppDatabase db) : super(db);
+
+  static String dateKey(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  Future<SunnahFast?> getByDate(DateTime date) {
+    return (select(sunnahFasts)..where((s) => s.dateYmd.equals(dateKey(date))))
+        .getSingleOrNull();
+  }
+
+  Future<List<SunnahFast>> getRange(DateTime start, DateTime end) {
+    return (select(sunnahFasts)
+          ..where((s) =>
+              s.dateYmd.isBiggerOrEqualValue(dateKey(start)) &
+              s.dateYmd.isSmallerOrEqualValue(dateKey(end)))
+          ..orderBy([(s) => OrderingTerm.asc(s.dateYmd)]))
+        .get();
+  }
+
+  Future<List<SunnahFast>> getAll() {
+    return (select(sunnahFasts)
+          ..orderBy([(s) => OrderingTerm.asc(s.dateYmd)]))
+        .get();
+  }
+
+  Future<void> upsert(
+    DateTime date, {
+    required int status,
+    String? type,
+    bool isQadha = false,
+    String? note,
+  }) async {
+    await into(sunnahFasts).insertOnConflictUpdate(
+      SunnahFastsCompanion.insert(
+        dateYmd: dateKey(date),
+        status: Value(status),
+        type: Value(type),
+        isQadha: Value(isQadha),
+        note: Value(note),
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+  }
+
+  Future<void> remove(DateTime date) async {
+    await (delete(sunnahFasts)..where((s) => s.dateYmd.equals(dateKey(date))))
+        .go();
+  }
+}
+
+@DriftAccessor(tables: [QadhaLedger])
+class QadhaLedgerDao extends DatabaseAccessor<AppDatabase>
+    with _$QadhaLedgerDaoMixin {
+  QadhaLedgerDao(AppDatabase db) : super(db);
+
+  Future<List<QadhaLedgerData>> getAll() {
+    return (select(qadhaLedger)
+          ..orderBy([(q) => OrderingTerm.desc(q.createdAt)]))
+        .get();
+  }
+
+  Future<int> addEntry({
+    required String kind,
+    required String direction,
+    int days = 0,
+    int amount = 0,
+    String? dateYmd,
+    int? sourceSeasonId,
+    String? note,
+  }) {
+    return into(qadhaLedger).insert(
+      QadhaLedgerCompanion.insert(
+        kind: kind,
+        direction: direction,
+        days: Value(days),
+        amount: Value(amount),
+        dateYmd: Value(dateYmd),
+        sourceSeasonId: Value(sourceSeasonId),
+        note: Value(note),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+  }
+
+  Future<int> deleteEntry(int id) {
+    return (delete(qadhaLedger)..where((q) => q.id.equals(id))).go();
+  }
+}
+

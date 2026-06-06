@@ -108,6 +108,34 @@ class KvSettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
+/// Year-round sunnah fasting log, keyed by Gregorian date (not by season).
+/// status reuses FastingStatus: 0 notDone, 1 fasted, 2..5 excused.
+class SunnahFasts extends Table {
+  TextColumn get dateYmd => text()(); // 'YYYY-MM-DD' (local date)
+  IntColumn get status => integer().withDefault(const Constant(1))();
+  TextColumn get type => text().nullable()(); // SunnahType.key or 'custom'
+  BoolColumn get isQadha => boolean().withDefault(const Constant(false))();
+  TextColumn get note => text().nullable()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {dateYmd};
+}
+
+/// Qadha (make-up fasts) and Fidyah ledger. Each row is a debit ('owed') or
+/// credit ('paid') so the balance stays auditable.
+class QadhaLedger extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get kind => text()(); // 'qadha' | 'fidyah'
+  TextColumn get direction => text()(); // 'owed' | 'paid'
+  IntColumn get days => integer().withDefault(const Constant(0))();
+  IntColumn get amount => integer().withDefault(const Constant(0))();
+  TextColumn get dateYmd => text().nullable()();
+  IntColumn get sourceSeasonId => integer().nullable()();
+  TextColumn get note => text().nullable()();
+  IntColumn get createdAt => integer()();
+}
+
 class PrayerTimesCache extends Table {
   IntColumn get seasonId => integer()();
   TextColumn get dateYyyyMmDd => text()();

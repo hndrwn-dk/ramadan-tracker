@@ -2,6 +2,8 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
+import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 
 /// Centralized scoring service for Insights screen.
 /// Uses weighted scoring model:
@@ -48,6 +50,15 @@ class InsightsScoringService {
     int totalApplicableWeight = 0;
     int earnedWeight = 0;
 
+    final fastingHabit = (allHabits.where((h) => h.key == 'fasting').toList()).firstOrNull;
+    final fastingEntry = fastingHabit != null
+        ? (entries.where((e) => e.habitId == fastingHabit.id).toList()).firstOrNull
+        : null;
+    final fastingStatus = fastingEntry != null
+        ? FastingStatus.fromEntry(fastingEntry.valueInt, fastingEntry.valueBool)
+        : FastingStatus.notDone;
+    final isDayHaidOrNifas = FastingStatus.isHaidOrNifas(fastingStatus);
+
     // Process each enabled habit
     for (final seasonHabit in seasonHabits.where((sh) => sh.isEnabled)) {
       final habit = allHabits.firstWhere((h) => h.id == seasonHabit.habitId);
@@ -55,6 +66,11 @@ class InsightsScoringService {
 
       // Skip Itikaf if not in last 10 nights
       if (habitKey == 'itikaf' && !isInLast10Days) {
+        continue;
+      }
+
+      // On haid/nifas days, prayers/tahajud/quran/taraweeh are excused - exclude from score
+      if (isDayHaidOrNifas && FastingStatus.habitKeysExcusedOnHaidNifas.contains(habitKey)) {
         continue;
       }
 
@@ -74,7 +90,7 @@ class InsightsScoringService {
       // Calculate weight and progress based on habit type
       if (habitKey == 'fasting') {
         weight = weightFasting;
-        progress = entry.valueBool == true ? 1.0 : 0.0;
+        progress = FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool) ? 1.0 : 0.0;
       } else if (habitKey == 'prayers') {
         weight = weightPrayers;
         if (prayerDetail != null) {

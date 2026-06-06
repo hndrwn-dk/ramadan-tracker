@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/insights/models.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 
 class TaskDefinition {
   final TaskKey key;
@@ -29,6 +30,9 @@ class TaskDefinition {
 
     switch (type) {
       case TaskType.boolean:
+        if (habitKey == 'fasting') {
+          return FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool) ? 1.0 : 0.0;
+        }
         return entry.isCompleted ? 1.0 : 0.0;
 
       case TaskType.counter:

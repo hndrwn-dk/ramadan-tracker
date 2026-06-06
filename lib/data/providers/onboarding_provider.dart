@@ -7,6 +7,14 @@ final shouldShowOnboardingProvider = FutureProvider.autoDispose<bool>((ref) asyn
   final database = ref.watch(databaseProvider);
   
   try {
+    // If the user chose to skip setup, never force onboarding again. They can
+    // create a Ramadan season later (prompted when Ramadan is near).
+    final skipped = await database.kvSettingsDao.getValue('onboarding_skipped');
+    if (skipped == 'true') {
+      debugPrint('Onboarding check: User skipped setup, not showing onboarding');
+      return false;
+    }
+
     // Check if any season exists
     final seasons = await database.ramadanSeasonsDao.getAllSeasons();
     debugPrint('Onboarding check: Found ${seasons.length} seasons');

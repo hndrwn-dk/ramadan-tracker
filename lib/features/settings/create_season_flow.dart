@@ -234,6 +234,9 @@ class _CreateSeasonFlowState extends ConsumerState<CreateSeasonFlow> {
           const SizedBox(height: 4),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: isActive || isCompleted
                       ? Theme.of(context).colorScheme.primary

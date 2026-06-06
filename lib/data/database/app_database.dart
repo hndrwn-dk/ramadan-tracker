@@ -22,6 +22,8 @@ part 'daos.dart';
     PrayerDetails,
     KvSettings,
     PrayerTimesCache,
+    SunnahFasts,
+    QadhaLedger,
   ], daos: [
     RamadanSeasonsDao,
     HabitsDao,
@@ -34,12 +36,14 @@ part 'daos.dart';
     PrayerDetailsDao,
     KvSettingsDao,
     PrayerTimesCacheDao,
+    SunnahFastsDao,
+    QadhaLedgerDao,
   ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -66,6 +70,11 @@ class AppDatabase extends _$AppDatabase {
           await migrator.addColumn(notes, notes.mood);
           // Create PrayerDetails table
           await migrator.createTable(prayerDetails);
+        }
+        if (from < 6) {
+          // Year-round sunnah fasting + qadha/fidyah ledger
+          await migrator.createTable(sunnahFasts);
+          await migrator.createTable(qadhaLedger);
         }
       },
     );

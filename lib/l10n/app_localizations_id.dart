@@ -9,7 +9,7 @@ class AppLocalizationsId extends AppLocalizations {
   AppLocalizationsId([String locale = 'id']) : super(locale);
 
   @override
-  String get appTitle => 'Ramadan Tracker';
+  String get appTitle => 'Puasa & Ibadah';
 
   @override
   String get today => 'Hari Ini';

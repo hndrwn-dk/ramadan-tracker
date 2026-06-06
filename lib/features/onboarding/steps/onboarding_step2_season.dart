@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/utils/ramadan_dates.dart';
 
 class OnboardingStep2Season extends StatefulWidget {
   final OnboardingData data;
@@ -24,15 +25,40 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
   late DateTime _startDate;
   late int _days;
 
+  /// True when the start date was auto-filled from the Ramadan lookup table
+  /// (so we can show an "approximate" hint).
+  bool _prefilledFromTable = false;
+
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _labelController = TextEditingController(
-      text: widget.data.seasonLabel.isEmpty ? 'Ramadan ${now.year}' : widget.data.seasonLabel,
-    );
-    _startDate = widget.data.startDate ?? now;
+
+    // Prefill the start date from the next Ramadan in the lookup table so the
+    // user only has to confirm. Falls back to today if out of table range.
+    final suggested = RamadanDates.nextStartFrom(now);
+    DateTime initialStart;
+    if (widget.data.startDate != null) {
+      initialStart = widget.data.startDate!;
+    } else if (suggested != null) {
+      initialStart = suggested;
+      _prefilledFromTable = true;
+    } else {
+      initialStart = now;
+    }
+    _startDate = initialStart;
     _days = widget.data.days;
+
+    final defaultLabel = 'Ramadan ${initialStart.year}';
+    _labelController = TextEditingController(
+      text: widget.data.seasonLabel.isEmpty ? defaultLabel : widget.data.seasonLabel,
+    );
+
+    // Persist prefilled values so a straight "Continue" keeps the suggestion.
+    widget.data.startDate ??= initialStart;
+    if (widget.data.seasonLabel.isEmpty) {
+      widget.data.seasonLabel = _labelController.text;
+    }
   }
 
   @override
@@ -47,11 +73,12 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
         context: context,
         initialDate: _startDate,
         firstDate: DateTime.now().subtract(const Duration(days: 365)),
-        lastDate: DateTime.now().add(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 730)),
       );
       if (picked != null && mounted) {
         setState(() {
           _startDate = picked;
+          _prefilledFromTable = false;
         });
       }
     } catch (e) {
@@ -198,6 +225,30 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
                       ),
                     ],
                   ),
+                  if (_prefilledFromTable) ...[
+                    SizedBox(height: isSmallScreen ? 6 : 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            Localizations.localeOf(context).languageCode == 'id'
+                                ? 'Tanggal perkiraan. Sesuaikan dengan pengumuman setempat.'
+                                : 'Estimated date. Adjust to match your local announcement.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   SizedBox(height: isSmallScreen ? 16 : 24),
                   Card(
                     child: Padding(
