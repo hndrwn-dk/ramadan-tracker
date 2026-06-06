@@ -2,6 +2,7 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 
 class CompletionService {
   static Future<double> calculateCompletionScore({
@@ -99,8 +100,10 @@ class CompletionService {
           // If sedekah goal disabled, consider completed if value > 0
           habitScore = (entry.valueInt ?? 0) > 0 ? 1.0 : 0.0;
         }
+      } else if (habitKey == 'fasting') {
+        habitScore = FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool) ? 1.0 : 0.0;
       } else {
-        // Boolean habits (fasting, taraweeh, itikaf)
+        // Boolean habits (taraweeh, itikaf)
         habitScore = entry.isCompleted ? 1.0 : 0.0;
       }
 
