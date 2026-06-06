@@ -20,6 +20,7 @@ import 'package:ramadan_tracker/widgets/sedekah_tracker.dart';
 import 'package:ramadan_tracker/widgets/counter_widget.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 
@@ -512,8 +513,10 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
           // If sedekah goal disabled, consider completed if value > 0
           isCompleted = (entry.valueInt ?? 0) > 0;
         }
+      } else if (habitKey == 'fasting') {
+        isCompleted = FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool);
       } else {
-        // Boolean habits (fasting, taraweeh, itikaf, prayers)
+        // Boolean habits (taraweeh, itikaf, prayers)
         isCompleted = entry.isCompleted;
       }
 
