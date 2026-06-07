@@ -21,7 +21,7 @@ class SunnahStrings {
   String get todaySunnahPrompt =>
       t('Hari ini waktunya puasa sunnah', 'A sunnah fast is recommended today');
   String get noSunnahToday =>
-      t('Tidak ada puasa sunnah khusus hari ini', 'No special sunnah fast today');
+      t('Tidak ada puasa sunnah hari ini', 'No sunnah fast today');
   String get fasted => t('Berpuasa', 'Fasted');
   String get notFasted => t('Belum', 'Not yet');
   String get markFast => t('Tandai puasa', 'Mark fast');
@@ -35,7 +35,7 @@ class SunnahStrings {
   String get markAsQadha =>
       t('Hitung sebagai qadha Ramadan', 'Count as Ramadan make-up (qadha)');
   String get clear => t('Hapus', 'Clear');
-  String get streak => t('Streak Senin-Kamis', 'Mon-Thu streak');
+  String get streak => t('Streak S/K', 'Mon–Thu');
   String get weeksUnit => t('kali', 'times');
   String get thisYear => t('Tahun ini', 'This year');
   String get allTime => t('Total', 'All time');
@@ -84,4 +84,14 @@ class SunnahStrings {
   String get markZakatPaid => t('Tandai sudah dibayar', 'Mark as paid');
   String get zakatPaidStat => t('Zakat dibayar', 'Zakat paid');
   String get peopleUnit => t('jiwa', 'people');
+
+  String yearBreakdownTitleFor(int year) => id
+      ? 'Ringkasan puasa sunnah $year'
+      : 'Sunnah fasts in $year';
+  String get yearBreakdownHint => t(
+        'Lacak jenis puasa sunnah per tahun—bandingkan tahun ini dengan tahun depan.',
+        'Track each sunnah fast type per year—compare and grow year over year.',
+      );
+  String timesCount(int n) => id ? '$n×' : '${n}x';
+  String get syawalTarget => t('target 6 hari', 'goal: 6 days');
 }

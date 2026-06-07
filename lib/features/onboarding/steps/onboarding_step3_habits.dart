@@ -66,16 +66,22 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
                   if (widget.data.selectedHabits.contains('taraweeh')) ...[
                     Padding(
                       padding: const EdgeInsets.only(left: 48, top: 4, bottom: 8),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             l10n.taraweehRakaatPerDayLabel,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
-                          const SizedBox(width: 12),
-                          _buildRakaatChip(context, 11),
-                          const SizedBox(width: 8),
-                          _buildRakaatChip(context, 23),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildRakaatChip(context, 11),
+                              _buildRakaatChip(context, 23),
+                            ],
+                          ),
                         ],
                       ),
                     ),

@@ -51,7 +51,14 @@ class SunnahScreen extends ConsumerWidget {
           statsAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (stats) => _StatsRow(s: s, stats: stats),
+            data: (stats) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _StatsRow(s: s, stats: stats),
+                const SizedBox(height: 16),
+                _YearBreakdownSection(s: s, stats: stats),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           _QadhaEntryTile(s: s),
@@ -144,37 +151,67 @@ class _TodayCard extends ConsumerWidget {
         ? s.noSunnahToday
         : types.map((t) => isId ? t.labelId() : t.labelEn()).join(' / ');
 
+    final narrow = MediaQuery.sizeOf(context).width < 380;
+    final statusColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(s.today, style: Theme.of(context).textTheme.labelMedium),
+        Text(
+          typeLabel,
+          style: Theme.of(context).textTheme.titleMedium,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+    final actionButton = FilledButton(
+      onPressed: () => showSunnahStatusSheet(context, ref, date),
+      child: Text(fasted ? s.fasted : s.markFast),
+    );
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor:
-                  fasted ? Colors.green : scheme.surfaceVariant,
-              child: Icon(
-                fasted ? Icons.check : Icons.wb_sunny_outlined,
-                color: fasted ? Colors.white : scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: narrow
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(s.today,
-                      style: Theme.of(context).textTheme.labelMedium),
-                  Text(typeLabel,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor:
+                            fasted ? Colors.green : scheme.surfaceVariant,
+                        child: Icon(
+                          fasted ? Icons.check : Icons.wb_sunny_outlined,
+                          color:
+                              fasted ? Colors.white : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(child: statusColumn),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  actionButton,
+                ],
+              )
+            : Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor:
+                        fasted ? Colors.green : scheme.surfaceVariant,
+                    child: Icon(
+                      fasted ? Icons.check : Icons.wb_sunny_outlined,
+                      color: fasted ? Colors.white : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(child: statusColumn),
+                  const SizedBox(width: 8),
+                  actionButton,
                 ],
               ),
-            ),
-            FilledButton(
-              onPressed: () => showSunnahStatusSheet(context, ref, date),
-              child: Text(fasted ? s.fasted : s.markFast),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -211,11 +248,134 @@ class _StatsRow extends StatelessWidget {
                         color: Theme.of(context).colorScheme.primary,
                       )),
               const SizedBox(height: 4),
-              Text(label,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _YearBreakdownSection extends StatelessWidget {
+  final SunnahStrings s;
+  final SunnahStats stats;
+  const _YearBreakdownSection({required this.s, required this.stats});
+
+  int? _targetFor(SunnahType type) {
+    switch (type) {
+      case SunnahType.syawal:
+        return 6;
+      case SunnahType.asyura:
+      case SunnahType.arafah:
+      case SunnahType.tasua:
+        return 1;
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final year = DateTime.now().year;
+    final hasAny = stats.typeCountsThisYear.values.any((c) => c > 0);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              s.yearBreakdownTitleFor(year),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              s.yearBreakdownHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withOpacity(0.65),
+                  ),
+            ),
+            const SizedBox(height: 12),
+            if (!hasAny)
+              Text(
+                s.t(
+                  'Belum ada catatan tahun ini. Tandai puasa sunnah untuk mulai melacak.',
+                  'No logs yet this year. Mark a sunnah fast to start tracking.',
+                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurface.withOpacity(0.7),
+                    ),
+              )
+            else
+              ...sunnahBreakdownTypes.map((type) {
+                final count = stats.typeCountsThisYear[type.key] ?? 0;
+                final target = _targetFor(type);
+                final label = s.id ? type.labelId() : type.labelEn();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              label,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: count == 0
+                                        ? scheme.onSurface.withOpacity(0.45)
+                                        : null,
+                                  ),
+                            ),
+                          ),
+                          Text(
+                            s.timesCount(count),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: count == 0
+                                      ? scheme.onSurface.withOpacity(0.35)
+                                      : scheme.primary,
+                                ),
+                          ),
+                        ],
+                      ),
+                      if (target != null) ...[
+                        const SizedBox(height: 4),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (count / target).clamp(0.0, 1.0),
+                            minHeight: 6,
+                            backgroundColor: scheme.surfaceContainerHighest,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$count / $target',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: scheme.onSurface.withOpacity(0.55),
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }),
+          ],
         ),
       ),
     );

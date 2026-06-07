@@ -36,25 +36,65 @@ class SunnahStats {
   /// Total days fasted (sunnah) all time.
   final int totalAllTime;
 
+  /// Fasted days grouped by [SunnahType.key] for the current Gregorian year.
+  final Map<String, int> typeCountsThisYear;
+
   const SunnahStats({
     required this.seninKamisStreak,
     required this.totalThisYear,
     required this.totalAllTime,
+    required this.typeCountsThisYear,
   });
+}
+
+/// Display order for the yearly sunnah breakdown section.
+const sunnahBreakdownTypes = [
+  SunnahType.seninKamis,
+  SunnahType.ayyamulBidh,
+  SunnahType.syaban,
+  SunnahType.asyura,
+  SunnahType.tasua,
+  SunnahType.arafah,
+  SunnahType.syawal,
+];
+
+String? _resolveSunnahTypeKey(SunnahFast row) {
+  if (row.status != FastingStatus.fasted) return null;
+  if (row.type != null &&
+      row.type!.isNotEmpty &&
+      row.type != 'custom') {
+    return row.type;
+  }
+  final parts = row.dateYmd.split('-');
+  if (parts.length != 3) return null;
+  final date = DateTime(
+    int.parse(parts[0]),
+    int.parse(parts[1]),
+    int.parse(parts[2]),
+  );
+  final types = SunnahFastingRules.typesFor(date);
+  return types.isNotEmpty ? types.first.key : 'custom';
 }
 
 final sunnahStatsProvider = FutureProvider<SunnahStats>((ref) async {
   ref.watch(sunnahRefreshProvider);
   final db = ref.watch(databaseProvider);
   final rows = await db.sunnahFastsDao.getAll();
-
-  final fastedDates = <String>{};
-  for (final r in rows) {
-    if (r.status == FastingStatus.fasted) fastedDates.add(r.dateYmd);
-  }
-
   final now = DateTime.now();
   final year = now.year;
+
+  final fastedDates = <String>{};
+  final typeCountsThisYear = <String, int>{};
+  for (final r in rows) {
+    if (r.status == FastingStatus.fasted) {
+      fastedDates.add(r.dateYmd);
+      final typeKey = _resolveSunnahTypeKey(r);
+      if (typeKey != null && r.dateYmd.startsWith('$year-')) {
+        typeCountsThisYear[typeKey] = (typeCountsThisYear[typeKey] ?? 0) + 1;
+      }
+    }
+  }
+
   final totalThisYear = fastedDates
       .where((d) => d.startsWith('$year-'))
       .length;
@@ -86,5 +126,6 @@ final sunnahStatsProvider = FutureProvider<SunnahStats>((ref) async {
     seninKamisStreak: streak,
     totalThisYear: totalThisYear,
     totalAllTime: fastedDates.length,
+    typeCountsThisYear: typeCountsThisYear,
   );
 });

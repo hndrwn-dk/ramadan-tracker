@@ -176,6 +176,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(tabIndexProvider);
     final l10n = AppLocalizations.of(context)!;
+    final isId = Localizations.localeOf(context).languageCode == 'id';
 
     return Scaffold(
       body: IndexedStack(
@@ -221,7 +222,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
           NavigationDestination(
             icon: const Icon(Icons.tune_outlined),
             selectedIcon: const Icon(Icons.tune),
-            label: l10n.settings,
+            label: isId ? 'Atur' : l10n.settings,
           ),
         ],
       ),
