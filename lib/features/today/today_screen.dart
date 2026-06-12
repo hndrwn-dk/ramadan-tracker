@@ -38,6 +38,7 @@ import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/ramadan_dates.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/features/today/widgets/ramadan_fasting_status_sheet.dart';
 import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
@@ -2008,97 +2009,36 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Future<void> _showFastingOptionsSheet(int seasonId, int dayIndex, int habitId, {int? currentStatus, String? currentNote}) async {
     HapticFeedback.lightImpact();
-    final l10n = AppLocalizations.of(context)!;
-    final statuses = [
-      FastingStatus.fasted,
-      FastingStatus.excusedSick,
-      FastingStatus.excusedNifas,
-      FastingStatus.excusedHaid,
-      FastingStatus.excusedOther,
-    ];
-    final selected = currentStatus ?? FastingStatus.notDone;
-    final chosen = await showModalBottomSheet<int>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Text(
-                l10n.habitFasting,
-                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              ...statuses.map((s) {
-                final isSelected = s == selected;
-                return ListTile(
-                  title: Text(
-                    _fastingStatusLabel(s),
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? Theme.of(ctx).colorScheme.primary : null,
-                    ),
-                  ),
-                  trailing: isSelected
-                      ? Icon(Icons.check_circle, color: Theme.of(ctx).colorScheme.primary, size: 24)
-                      : null,
-                  onTap: () => Navigator.pop(ctx, s),
-                );
-              }),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (chosen != null) {
-      if (chosen == FastingStatus.excusedOther) {
-        final note = await _showFastingNoteDialog(initialNote: currentNote);
-        await _setFastingStatus(seasonId, dayIndex, habitId, chosen, note: note);
-      } else {
-        await _setFastingStatus(seasonId, dayIndex, habitId, chosen);
-      }
-    }
-  }
+    final season = await ref.read(currentSeasonProvider.future);
+    if (!mounted) return;
+    final date = season?.getDateForDay(dayIndex);
 
-  Future<String?> _showFastingNoteDialog({String? initialNote}) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: initialNote ?? '');
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.fastingStatusExcusedOther),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: l10n.fastingNoteHint,
-            border: const OutlineInputBorder(),
-          ),
-          maxLines: 2,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+    final result = await showRamadanFastingStatusSheet(
+      context,
+      dayIndex: dayIndex,
+      date: date,
+      currentStatus: currentStatus,
+      currentNote: currentNote,
     );
-    controller.dispose();
-    return result;
+
+    if (result == null || !mounted) return;
+
+    await _setFastingStatus(
+      seasonId,
+      dayIndex,
+      habitId,
+      result.status,
+      note: result.note,
+    );
+
+    if (!mounted) return;
+    final s = SunnahStrings.of(context);
+    final message = ramadanFastingSavedMessage(s, result.status);
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+      );
+    }
   }
 
   Future<void> _setFastingStatus(int seasonId, int dayIndex, int habitId, int status, {String? note}) async {

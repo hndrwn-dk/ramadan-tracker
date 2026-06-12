@@ -1,7 +1,7 @@
 name: ramadan_tracker
 description: Premium Ramadan tracker & planner with yearly seasons, Autopilot Qur'an plan, Sahur/Iftar reminders, and local backup/restore.
 publish_to: 'none'
-version: 1.0.1+6
+version: 1.0.1+7
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -51,6 +51,8 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^3.0.1
   drift_dev: ^2.14.1

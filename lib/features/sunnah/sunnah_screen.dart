@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ramadan_tracker/data/database/app_database.dart';
+import 'package:ramadan_tracker/data/providers/season_provider.dart';
+import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
+import 'package:ramadan_tracker/data/providers/tab_provider.dart';
+import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/features/qadha/qadha_screen.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dart';
+import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_month_calendar.dart';
+import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_ramadan_focus_card.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_share_card.dart';
+import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/hijri_calendar.dart';
 import 'package:ramadan_tracker/utils/islamic_events.dart';
@@ -17,74 +23,185 @@ class SunnahScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = SunnahStrings.of(context);
+    final seasonState = ref.watch(seasonStateProvider);
+    final isRamadanActive = seasonState == SeasonState.active;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isRamadanActive ? s.ramadanFocusTitle : s.sunnahTitle),
+        actions: [
+          if (!isRamadanActive)
+            IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () {
+                final stats = ref.read(sunnahStatsProvider).asData?.value;
+                if (stats != null) showSunnahShareDialog(context, stats, s);
+              },
+            ),
+        ],
+      ),
+      body: isRamadanActive
+          ? _RamadanModeBody(s: s)
+          : _YearRoundBody(s: s, seasonState: seasonState),
+    );
+  }
+}
+
+class _RamadanModeBody extends ConsumerWidget {
+  final SunnahStrings s;
+  const _RamadanModeBody({required this.s});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final today = DateTime.now();
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _HijriHeader(s: s, date: today),
+        const SizedBox(height: 16),
+        const SunnahRamadanFocusCard(),
+        const SizedBox(height: 16),
+        _QadhaEntryTile(s: s),
+        const SizedBox(height: 24),
+        _UpcomingEvents(s: s, date: today),
+        const SizedBox(height: 24),
+        Text(
+          s.approxNote,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _YearRoundBody extends ConsumerWidget {
+  final SunnahStrings s;
+  final SeasonState seasonState;
+  const _YearRoundBody({required this.s, required this.seasonState});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final today = DateTime.now();
     final monthAnchor = DateTime(today.year, today.month, 1);
     final monthAsync = ref.watch(sunnahMonthProvider(monthAnchor));
     final statsAsync = ref.watch(sunnahStatsProvider);
+    final seasonAsync = ref.watch(currentSeasonProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(s.sunnahTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              final stats = statsAsync.asData?.value;
-              if (stats != null) showSunnahShareDialog(context, stats, s);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (seasonState == SeasonState.preRamadan)
+          seasonAsync.when(
+            data: (season) {
+              if (season == null) return const SizedBox.shrink();
+              final daysUntil =
+                  season.startDate.difference(DateTime(today.year, today.month, today.day)).inDays;
+              if (daysUntil <= 0) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: PremiumCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.schedule,
+                          color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          s.preRamadanBanner(daysUntil),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             },
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _HijriHeader(s: s, date: today),
-          const SizedBox(height: 16),
-          _TodayCard(s: s, date: today),
-          const SizedBox(height: 16),
-          if (SunnahFastingRules.typesFor(today).contains(SunnahType.syawal) ||
-              HijriCalendar.fromGregorian(today).month == 10)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _SyawalCard(s: s),
-            ),
-          statsAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (stats) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _StatsRow(s: s, stats: stats),
-                const SizedBox(height: 16),
-                _YearBreakdownSection(s: s, stats: stats),
-              ],
+          ),
+        _HijriHeader(s: s, date: today),
+        const SizedBox(height: 16),
+        _TodayCard(s: s, date: today),
+        const SizedBox(height: 16),
+        if (SunnahFastingRules.typesFor(today).contains(SunnahType.syawal) ||
+            HijriCalendar.fromGregorian(today).month == 10)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _SyawalCard(s: s),
+          ),
+        statsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (stats) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _StatsRow(s: s, stats: stats),
+              const SizedBox(height: 16),
+              _WawasanBanner(s: s),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _QadhaEntryTile(s: s),
+        const SizedBox(height: 16),
+        Text(s.monthLog, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        monthAsync.when(
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
             ),
           ),
-          const SizedBox(height: 16),
-          _QadhaEntryTile(s: s),
-          const SizedBox(height: 16),
-          Text(s.monthLog, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          monthAsync.when(
-            loading: () =>
-                const Center(child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator())),
-            error: (e, _) => Text('Error: $e'),
-            data: (map) => _MonthCalendar(
-              s: s,
-              monthAnchor: monthAnchor,
-              data: map,
+          error: (e, _) => Text('Error: $e'),
+          data: (map) => SunnahMonthCalendar(
+            monthAnchor: monthAnchor,
+            data: map,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _UpcomingEvents(s: s, date: today),
+        const SizedBox(height: 24),
+        Text(
+          s.approxNote,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WawasanBanner extends ConsumerWidget {
+  final SunnahStrings s;
+  const _WawasanBanner({required this.s});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PremiumCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Icon(Icons.insights_outlined,
+              color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              s.wawasanSunnahBanner,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-          const SizedBox(height: 24),
-          _UpcomingEvents(s: s, date: today),
-          const SizedBox(height: 24),
-          Text(
-            s.approxNote,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+          TextButton(
+            onPressed: () {
+              ref.read(tabIndexProvider.notifier).state = 4;
+            },
+            child: Text(s.openWawasan),
           ),
         ],
       ),
@@ -111,23 +228,25 @@ class _HijriHeader extends StatelessWidget {
         children: [
           Icon(Icons.nightlight_round, color: scheme.onPrimaryContainer),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${hijri.day} ${HijriCalendar.monthNameId(hijri.month)} ${hijri.year} H',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: scheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              Text(
-                s.hubSubtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onPrimaryContainer.withOpacity(0.85),
-                    ),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${hijri.day} ${HijriCalendar.monthNameId(hijri.month)} ${hijri.year} H',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: scheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  s.hubSubtitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onPrimaryContainer.withValues(alpha: 0.85),
+                      ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -181,11 +300,12 @@ class _TodayCard extends ConsumerWidget {
                     children: [
                       CircleAvatar(
                         backgroundColor:
-                            fasted ? Colors.green : scheme.surfaceVariant,
+                            fasted ? Colors.green : scheme.surfaceContainerHighest,
                         child: Icon(
                           fasted ? Icons.check : Icons.wb_sunny_outlined,
-                          color:
-                              fasted ? Colors.white : scheme.onSurfaceVariant,
+                          color: fasted
+                              ? Colors.white
+                              : scheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -200,10 +320,11 @@ class _TodayCard extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     backgroundColor:
-                        fasted ? Colors.green : scheme.surfaceVariant,
+                        fasted ? Colors.green : scheme.surfaceContainerHighest,
                     child: Icon(
                       fasted ? Icons.check : Icons.wb_sunny_outlined,
-                      color: fasted ? Colors.white : scheme.onSurfaceVariant,
+                      color:
+                          fasted ? Colors.white : scheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -263,125 +384,6 @@ class _StatsRow extends StatelessWidget {
   }
 }
 
-class _YearBreakdownSection extends StatelessWidget {
-  final SunnahStrings s;
-  final SunnahStats stats;
-  const _YearBreakdownSection({required this.s, required this.stats});
-
-  int? _targetFor(SunnahType type) {
-    switch (type) {
-      case SunnahType.syawal:
-        return 6;
-      case SunnahType.asyura:
-      case SunnahType.arafah:
-      case SunnahType.tasua:
-        return 1;
-      default:
-        return null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final year = DateTime.now().year;
-    final hasAny = stats.typeCountsThisYear.values.any((c) => c > 0);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              s.yearBreakdownTitleFor(year),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              s.yearBreakdownHint,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface.withOpacity(0.65),
-                  ),
-            ),
-            const SizedBox(height: 12),
-            if (!hasAny)
-              Text(
-                s.t(
-                  'Belum ada catatan tahun ini. Tandai puasa sunnah untuk mulai melacak.',
-                  'No logs yet this year. Mark a sunnah fast to start tracking.',
-                ),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurface.withOpacity(0.7),
-                    ),
-              )
-            else
-              ...sunnahBreakdownTypes.map((type) {
-                final count = stats.typeCountsThisYear[type.key] ?? 0;
-                final target = _targetFor(type);
-                final label = s.id ? type.labelId() : type.labelEn();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              label,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: count == 0
-                                        ? scheme.onSurface.withOpacity(0.45)
-                                        : null,
-                                  ),
-                            ),
-                          ),
-                          Text(
-                            s.timesCount(count),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: count == 0
-                                      ? scheme.onSurface.withOpacity(0.35)
-                                      : scheme.primary,
-                                ),
-                          ),
-                        ],
-                      ),
-                      if (target != null) ...[
-                        const SizedBox(height: 4),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: (count / target).clamp(0.0, 1.0),
-                            minHeight: 6,
-                            backgroundColor: scheme.surfaceContainerHighest,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$count / $target',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: scheme.onSurface.withOpacity(0.55),
-                              ),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              }),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _QadhaEntryTile extends StatelessWidget {
   final SunnahStrings s;
   const _QadhaEntryTile({required this.s});
@@ -418,7 +420,6 @@ class _SyawalCard extends ConsumerWidget {
                 f.status == FastingStatus.fasted)
             .length ??
         0;
-    final progress = (count / 6).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -449,7 +450,7 @@ class _SyawalCard extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: done
                         ? scheme.primary
-                        : scheme.onTertiaryContainer.withOpacity(0.2),
+                        : scheme.onTertiaryContainer.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
@@ -457,91 +458,11 @@ class _SyawalCard extends ConsumerWidget {
             }),
           ),
           const SizedBox(height: 8),
-          Text('$count / 6  (${(progress * 100).round()}%)',
+          Text('$count / 6',
               style: TextStyle(color: scheme.onTertiaryContainer)),
         ],
       ),
     );
-  }
-}
-
-class _MonthCalendar extends ConsumerWidget {
-  final SunnahStrings s;
-  final DateTime monthAnchor;
-  final Map<String, SunnahFast> data;
-  const _MonthCalendar({
-    required this.s,
-    required this.monthAnchor,
-    required this.data,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final daysInMonth =
-        DateTime(monthAnchor.year, monthAnchor.month + 1, 0).day;
-    final firstWeekday = monthAnchor.weekday % 7; // 0 = Sunday lead
-    final cells = <Widget>[];
-
-    for (var i = 0; i < firstWeekday; i++) {
-      cells.add(const SizedBox.shrink());
-    }
-
-    for (var d = 1; d <= daysInMonth; d++) {
-      final date = DateTime(monthAnchor.year, monthAnchor.month, d);
-      final key = _dateKey(date);
-      final entry = data[key];
-      final isSunnah = SunnahFastingRules.typesFor(date).isNotEmpty;
-      final fasted = entry?.status == FastingStatus.fasted;
-      final excused = entry != null &&
-          FastingStatus.isExcused(entry.status);
-
-      Color bg;
-      Color fg = scheme.onSurface;
-      if (fasted) {
-        bg = scheme.primary;
-        fg = scheme.onPrimary;
-      } else if (excused) {
-        bg = scheme.tertiary.withOpacity(0.3);
-      } else if (isSunnah) {
-        bg = scheme.primary.withOpacity(0.12);
-      } else {
-        bg = Colors.transparent;
-      }
-
-      cells.add(
-        InkWell(
-          onTap: () => showSunnahStatusSheet(context, ref, date),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            margin: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(10),
-              border: isSunnah && !fasted
-                  ? Border.all(color: scheme.primary.withOpacity(0.4))
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: Text('$d', style: TextStyle(color: fg, fontSize: 13)),
-          ),
-        ),
-      );
-    }
-
-    return GridView.count(
-      crossAxisCount: 7,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: cells,
-    );
-  }
-
-  String _dateKey(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
   }
 }
 

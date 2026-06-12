@@ -34,6 +34,12 @@ import 'package:ramadan_tracker/features/insights/widgets/season_day_heatmap.dar
 import 'package:ramadan_tracker/features/insights/widgets/season_highlights_grid.dart';
 import 'package:ramadan_tracker/features/insights/widgets/season_task_analytics_row.dart';
 import 'package:ramadan_tracker/features/insights/widgets/sedekah_season_card.dart';
+import 'package:ramadan_tracker/features/insights/widgets/obligations_season_card.dart';
+import 'package:ramadan_tracker/features/insights/widgets/obligations_range_card.dart';
+import 'package:ramadan_tracker/features/insights/screens/obligations_review_screen.dart';
+import 'package:ramadan_tracker/features/insights/widgets/sunnah_insights_section.dart';
+import 'package:ramadan_tracker/features/insights/widgets/sunnah_only_insights_view.dart';
+import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/insights/widgets/mood_reflection_season_card.dart';
 import 'package:ramadan_tracker/features/insights/widgets/season_audit_bottom_sheet.dart';
 import 'package:ramadan_tracker/features/insights/widgets/day_summary_bottom_sheet.dart';
@@ -66,6 +72,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   DateTime? _selectedDate; // For Today tab date selection (null = today)
   int _refreshKey = 0; // Key to force FutureBuilder refresh
   bool _todayDataInvalidatedThisSession = false;
+  bool _postRamadanSeasonDefaultApplied = false;
+  bool _sunnahInsightsTab = false;
 
   @override
   bool get wantKeepAlive => false; // Don't keep alive to allow refresh
@@ -75,13 +83,27 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     super.initState();
   }
 
+  void _applyPostRamadanSeasonDefault(SeasonState seasonState) {
+    if (_postRamadanSeasonDefaultApplied ||
+        seasonState != SeasonState.postRamadan ||
+        _selectedRange != InsightsRange.today) {
+      return;
+    }
+    _postRamadanSeasonDefaultApplied = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() => _selectedRange = InsightsRange.season);
+      }
+    });
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final currentTabIndex = ref.read(tabIndexProvider);
-        if (currentTabIndex == 3) {
+        if (currentTabIndex == 4) {
           setState(() {
             _refreshKey++;
           });
@@ -93,8 +115,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final seasonState = ref.watch(seasonStateProvider);
+    _applyPostRamadanSeasonDefault(seasonState);
     ref.listen<int>(tabIndexProvider, (previous, next) {
-      if (previous != 3 && next == 3 && mounted) {
+      if (previous != 4 && next == 4 && mounted) {
         _todayDataInvalidatedThisSession = false;
         final now = DateTime.now();
         final todayDateOnly = DateTime(now.year, now.month, now.day);
@@ -102,6 +126,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         setState(() {
           _refreshKey++;
         });
+      }
+    });
+    ref.listen<bool>(wawasanSunnahTabProvider, (previous, next) {
+      if (next && mounted) {
+        setState(() => _sunnahInsightsTab = true);
+        ref.read(wawasanSunnahTabProvider.notifier).state = false;
       }
     });
     
@@ -178,8 +208,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       ),
       body: ref.watch(currentSeasonProvider).when(
         data: (season) {
-          if (season == null) {
-            return Center(child: Text(l10n.noSeasonFound));
+          if (season == null || seasonState == SeasonState.preRamadan) {
+            return const SunnahOnlyInsightsView();
           }
           return _buildInsights(context, ref);
         },
@@ -191,6 +221,22 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
 
   Widget _buildInsights(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final seasonState = ref.watch(seasonStateProvider);
+    if (_sunnahInsightsTab && seasonState == SeasonState.active) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: _buildTimeframeSelector(),
+          ),
+          const Expanded(
+            child: SunnahOnlyInsightsView(duringRamadan: true),
+          ),
+        ],
+      );
+    }
+
     final now = DateTime.now();
     final todayDateOnly = DateTime(now.year, now.month, now.day);
     final todayParam = (range: _selectedRange, date: _selectedDate ?? todayDateOnly);
@@ -212,11 +258,25 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         if (data.daysCount == 0) {
           return _buildEmptyState(context, ref);
         }
-        // If Today tab but data is for a different day (stale cache), force refresh and show loading
         if (_selectedRange == InsightsRange.today) {
           final today = DateTime(now.year, now.month, now.day);
-          final dataDay = DateTime(data.startDate.year, data.startDate.month, data.startDate.day);
-          if (dataDay != today) {
+          final selectedDate = _selectedDate ?? today;
+          final season = ref.read(currentSeasonProvider).valueOrNull;
+          if (season != null && !season.isDateInSeason(selectedDate)) {
+            return _buildEmptyState(context, ref);
+          }
+          // Stale cache guard only when the selected calendar day is inside the season.
+          final dataDay = DateTime(
+            data.startDate.year,
+            data.startDate.month,
+            data.startDate.day,
+          );
+          final expectedDay = DateTime(
+            selectedDate.year,
+            selectedDate.month,
+            selectedDate.day,
+          );
+          if (dataDay != expectedDay) {
             ref.refresh(insightsDataProviderWithDate(todayParam));
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
@@ -253,6 +313,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
               if (_selectedRange == InsightsRange.today) ...[
                 _buildSedekahTodaySummary(context, ref, data),
                 const SizedBox(height: 24),
+                _buildObligationsTodaySummary(context, ref),
+                const SizedBox(height: 24),
               ],
               // Sedekah Financial Review (for 7 Days and Season)
               if (_selectedRange == InsightsRange.sevenDays || _selectedRange == InsightsRange.season) ...[
@@ -280,6 +342,35 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
 
   Widget _buildTimeframeSelector() {
     final l10n = AppLocalizations.of(context)!;
+    final seasonState = ref.watch(seasonStateProvider);
+    if (seasonState == SeasonState.active) {
+      final s = SunnahStrings.of(context);
+      final labels = [
+        l10n.today,
+        l10n.sevenDays,
+        l10n.insightsSeasonTab,
+        s.sunnahInsightsTabLabel,
+      ];
+      final selectedIndex = _sunnahInsightsTab ? 3 : _selectedRange.index;
+      return _buildScrollablePillTabs(
+        labels: labels,
+        selectedIndex: selectedIndex,
+        onSelected: (index) {
+          setState(() {
+            if (index == 3) {
+              _sunnahInsightsTab = true;
+            } else {
+              _sunnahInsightsTab = false;
+              _selectedRange = InsightsRange.values[index];
+              if (_selectedRange != InsightsRange.today) {
+                _selectedDate = null;
+              }
+            }
+          });
+        },
+      );
+    }
+
     return SegmentedButton<InsightsRange>(
       segments: [
         ButtonSegment(value: InsightsRange.today, label: Text(l10n.today)),
@@ -289,6 +380,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       selected: {_selectedRange},
       onSelectionChanged: (Set<InsightsRange> newSelection) {
         setState(() {
+          _sunnahInsightsTab = false;
           _selectedRange = newSelection.first;
           // Reset date selection when switching away from Today tab
           if (newSelection.first != InsightsRange.today) {
@@ -296,6 +388,57 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           }
         });
       },
+    );
+  }
+
+  Widget _buildScrollablePillTabs({
+    required List<String> labels,
+    required int selectedIndex,
+    required ValueChanged<int> onSelected,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Material(
+              color: selectedIndex == i
+                  ? scheme.secondaryContainer
+                  : scheme.surfaceContainerHighest,
+              shape: StadiumBorder(
+                side: BorderSide(
+                  color: selectedIndex == i
+                      ? scheme.secondary
+                      : scheme.outline.withValues(alpha: 0.25),
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => onSelected(i),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Text(
+                    labels[i],
+                    maxLines: 1,
+                    softWrap: false,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: selectedIndex == i
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: selectedIndex == i
+                              ? scheme.onSecondaryContainer
+                              : scheme.onSurface,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1428,6 +1571,77 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     );
   }
 
+  void _openObligationsReview(
+    BuildContext context,
+    int seasonId,
+    InsightsRange range,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ObligationsReviewScreen(
+          range: range,
+          seasonId: seasonId,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildObligationsTodaySummary(BuildContext context, WidgetRef ref) {
+    final s = SunnahStrings.of(context);
+    final seasonAsync = ref.watch(currentSeasonProvider);
+
+    return seasonAsync.when(
+      data: (season) {
+        if (season == null) return const SizedBox.shrink();
+
+        final dayIndex = _selectedDate != null
+            ? season.getDayIndex(_selectedDate!)
+            : ref.read(currentDayIndexProvider);
+
+        return FutureBuilder<({ObligationsSeasonAnalytics data, String currency})?>(
+          future: _getTodayObligationsData(ref, season, dayIndex),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data == null) {
+              return const SizedBox.shrink();
+            }
+            final result = snapshot.data!;
+            return ObligationsRangeCard(
+              data: result.data,
+              currency: result.currency,
+              title: s.obligationsTodayCardTitle,
+              onViewDetails: () => _openObligationsReview(
+                context,
+                season.id,
+                InsightsRange.today,
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Future<({ObligationsSeasonAnalytics data, String currency})?> _getTodayObligationsData(
+    WidgetRef ref,
+    SeasonModel season,
+    int dayIndex,
+  ) async {
+    final database = ref.read(databaseProvider);
+    final currency =
+        await database.kvSettingsDao.getValue('sedekah_currency') ?? 'IDR';
+    final data = await SeasonInsightsService.getObligationsRangeAnalytics(
+      season: season,
+      database: database,
+      startDayIndex: dayIndex,
+      endDayIndex: dayIndex,
+      displayCurrency: currency,
+    );
+    return (data: data, currency: currency);
+  }
+
   Future<Map<String, dynamic>> _getTodaySedekahSummaryData(WidgetRef ref, int seasonId, int dayIndex) async {
     final database = ref.read(databaseProvider);
     final habits = await ref.read(habitsProvider.future);
@@ -2087,38 +2301,46 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   }
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.insights_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildTimeframeSelector(),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.insights_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'No Data Yet',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start tracking today to see insights.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    ref.read(tabIndexProvider.notifier).state = 0;
+                  },
+                  icon: const Icon(Icons.today),
+                  label: const Text('Go to Today'),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            Text(
-              'No Data Yet',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Start tracking today to see insights.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                ref.read(tabIndexProvider.notifier).state = 0;
-              },
-              icon: const Icon(Icons.today),
-              label: const Text('Go to Today'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2999,6 +3221,20 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                     ),
                     const SizedBox(height: 24),
                   ],
+                  if (weeklyData['obligationsData'] != null) ...[
+                    ObligationsRangeCard(
+                      data: weeklyData['obligationsData']
+                          as ObligationsSeasonAnalytics,
+                      currency: currency,
+                      title: SunnahStrings.of(context).obligationsWeeklyCardTitle,
+                      onViewDetails: () => _openObligationsReview(
+                        context,
+                        season.id,
+                        InsightsRange.sevenDays,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   // Task Insights List
                   Text(
                     'Task Insights',
@@ -3156,6 +3392,15 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     }
     
     final currency = await database.kvSettingsDao.getValue('sedekah_currency') ?? 'IDR';
+
+    final obligationsData =
+        await SeasonInsightsService.getObligationsRangeAnalytics(
+      season: season,
+      database: database,
+      startDayIndex: range.startDayIndex,
+      endDayIndex: range.endDayIndex,
+      displayCurrency: currency,
+    );
     
     return {
       'weeklyScore': weeklyScoreData.weeklyScore,
@@ -3168,6 +3413,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       'highlights': highlights,
       'taskStatuses': taskStatuses,
       'sedekahData': sedekahData,
+      'obligationsData': obligationsData,
       'currency': currency,
     };
   }
@@ -3220,6 +3466,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             final highlights = seasonData['highlights'] as SeasonHighlights? ?? SeasonHighlights();
             final taskAnalytics = (seasonData['taskAnalytics'] as Map<String, TaskSeasonAnalytics>?) ?? <String, TaskSeasonAnalytics>{};
             final sedekahAnalytics = seasonData['sedekahAnalytics'] as SedekahSeasonAnalytics?;
+            final obligationsAnalytics =
+                seasonData['obligationsAnalytics'] as ObligationsSeasonAnalytics?;
             final reflectionAnalytics = seasonData['reflectionAnalytics'] as ReflectionSeasonAnalytics? ?? ReflectionSeasonAnalytics(
               moodCounts: {},
               avgScoreByMood: {},
@@ -3406,6 +3654,20 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                     ),
                     const SizedBox(height: 24),
                   ],
+                  if (obligationsAnalytics != null) ...[
+                    ObligationsSeasonCard(
+                      data: obligationsAnalytics,
+                      currency: currency,
+                      onViewDetails: () => _openObligationsReview(
+                        context,
+                        season.id,
+                        InsightsRange.season,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  const SunnahInsightsSection(),
+                  const SizedBox(height: 24),
                   // Mood & Reflection
                   MoodReflectionSeasonCard(
                     analytics: reflectionAnalytics,
@@ -3561,7 +3823,14 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       );
       
       final currency = await database.kvSettingsDao.getValue('sedekah_currency') ?? 'IDR';
-      
+
+      final obligationsAnalytics =
+          await SeasonInsightsService.getObligationsSeasonAnalytics(
+        season: season,
+        database: database,
+        displayCurrency: currency,
+      );
+
       return {
         'aggregate': aggregate,
         'trendSeries': trendSeries,
@@ -3569,6 +3838,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         'highlights': highlights,
         'taskAnalytics': taskAnalytics,
         'sedekahAnalytics': sedekahAnalytics,
+        'obligationsAnalytics': obligationsAnalytics,
         'reflectionAnalytics': reflectionAnalytics,
         'currency': currency,
       };
@@ -3588,6 +3858,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         'highlights': SeasonHighlights(),
         'taskAnalytics': <String, TaskSeasonAnalytics>{},
         'sedekahAnalytics': null,
+        'obligationsAnalytics': null,
         'reflectionAnalytics': ReflectionSeasonAnalytics(
           moodCounts: {},
           avgScoreByMood: {},

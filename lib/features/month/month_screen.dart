@@ -5,6 +5,10 @@ import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/data/providers/habit_provider.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
+import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
+import 'package:ramadan_tracker/domain/models/season_model.dart';
+import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_month_view.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/domain/services/completion_service.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
@@ -20,6 +24,10 @@ class MonthScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final seasonAsync = ref.watch(currentSeasonProvider);
+    final seasonState = ref.watch(seasonStateProvider);
+    final sunnahStrings = SunnahStrings.of(context);
+    final useSunnahMode =
+        seasonState == SeasonState.preRamadan;
 
     return Scaffold(
       appBar: AppBar(
@@ -38,12 +46,17 @@ class MonthScreen extends ConsumerWidget {
           ),
           onPressed: () => ref.read(tabIndexProvider.notifier).state = 0,
         ),
-        title: Text(l10n.monthViewTitle),
+        title: Text(
+          useSunnahMode ? sunnahStrings.sunnahMonthViewTitle : l10n.monthViewTitle,
+        ),
       ),
       body: seasonAsync.when(
         data: (season) {
+          if (useSunnahMode) {
+            return const SunnahMonthView();
+          }
           if (season == null) {
-            return Center(child: Text(l10n.noSeasonFound));
+            return const SunnahMonthView();
           }
           return _buildMonthGrid(context, ref, season.id, season.days);
         },

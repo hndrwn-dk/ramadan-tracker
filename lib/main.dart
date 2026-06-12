@@ -5,6 +5,7 @@ import 'package:ramadan_tracker/app/app.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
+import 'package:ramadan_tracker/testing/regression_seeder.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
 
 void main() async {
@@ -14,19 +15,37 @@ void main() async {
   LogService.init();
   LogService.log('=== App Started ===');
   
+  const regressionSeed = bool.fromEnvironment('REGRESSION_SEED');
+  
   try {
-    final database = AppDatabase();
+    AppDatabase database = AppDatabase();
     await database.initialize();
+
+    if (regressionSeed) {
+      LogService.log('=== REGRESSION_SEED: wiping and seeding scenario ===');
+      await database.wipeDatabase();
+      database = AppDatabase();
+      await database.initialize();
+      final result = await RegressionSeeder.seed(database);
+      LogService.log(
+        'Regression seed: season ${result.seasonId}, '
+        '${result.fastedDays} fasted, ${result.haidDays} haid, '
+        '${result.sickDays} sick, ${result.syawalDays} syawal',
+      );
+    }
     
-    try {
-      debugPrint('=== STARTING NotificationService.initialize() ===');
-      await NotificationService.initialize();
-      debugPrint('=== NotificationService.initialize() COMPLETED ===');
-    } catch (e, stackTrace) {
-      // Notification initialization failed, but continue app
-      debugPrint('=== NotificationService initialization FAILED ===');
-      debugPrint('Error: $e');
-      debugPrint('Stack trace: $stackTrace');
+    if (!regressionSeed) {
+      try {
+        debugPrint('=== STARTING NotificationService.initialize() ===');
+        await NotificationService.initialize();
+        debugPrint('=== NotificationService.initialize() COMPLETED ===');
+      } catch (e, stackTrace) {
+        debugPrint('=== NotificationService initialization FAILED ===');
+        debugPrint('Error: $e');
+        debugPrint('Stack trace: $stackTrace');
+      }
+    } else {
+      debugPrint('=== REGRESSION_SEED: skipping NotificationService.initialize() ===');
     }
     
     runApp(

@@ -5,6 +5,7 @@ import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/features/insights/services/insights_scoring_service.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
+import 'package:ramadan_tracker/utils/obligations_utils.dart';
 
 /// Season insights data models
 class SeasonDayStatus {
@@ -91,6 +92,32 @@ class SedekahSeasonAnalytics {
     this.bestDay,
     required this.dailyAmounts,
   });
+}
+
+class ObligationsSeasonAnalytics {
+  final int zakatTotal;
+  final int zakatPeople;
+  final int fidyahTotal;
+  final int fidyahDays;
+  final int paymentCount;
+  final List<int> dailyPaymentTotals;
+  final List<int> dailyZakatTotals;
+  final List<int> dailyFidyahTotals;
+  final int startDayIndex;
+
+  ObligationsSeasonAnalytics({
+    required this.zakatTotal,
+    required this.zakatPeople,
+    required this.fidyahTotal,
+    required this.fidyahDays,
+    required this.paymentCount,
+    required this.dailyPaymentTotals,
+    this.dailyZakatTotals = const [],
+    this.dailyFidyahTotals = const [],
+    this.startDayIndex = 1,
+  });
+
+  bool get hasPayments => paymentCount > 0;
 }
 
 class ReflectionSeasonAnalytics {
@@ -914,6 +941,104 @@ class SeasonInsightsService {
       moodCounts: moodCounts,
       mostCommonMood: mostCommonMood,
       avgScoreByMood: avgScoreByMood,
+    );
+  }
+
+  /// Zakat & Fidyah payments logged during a Ramadan season.
+  static Future<ObligationsSeasonAnalytics> getObligationsSeasonAnalytics({
+    required SeasonModel season,
+    required AppDatabase database,
+    String displayCurrency = 'IDR',
+  }) {
+    return getObligationsRangeAnalytics(
+      season: season,
+      database: database,
+      startDayIndex: 1,
+      endDayIndex: season.days,
+      displayCurrency: displayCurrency,
+    );
+  }
+
+  /// Zakat & Fidyah payments for a day-index window inside the season.
+  static Future<ObligationsSeasonAnalytics> getObligationsRangeAnalytics({
+    required SeasonModel season,
+    required AppDatabase database,
+    required int startDayIndex,
+    required int endDayIndex,
+    String displayCurrency = 'IDR',
+  }) async {
+    final entries = await database.qadhaLedgerDao.getAll();
+    final start = startDayIndex.clamp(1, season.days);
+    final end = endDayIndex.clamp(start, season.days);
+    final rangeLen = end - start + 1;
+
+    int zakatTotal = 0;
+    int zakatPeople = 0;
+    int fidyahTotal = 0;
+    int fidyahDays = 0;
+    int paymentCount = 0;
+    final dailyPaymentTotals = List<int>.filled(rangeLen, 0);
+    final dailyZakatTotals = List<int>.filled(rangeLen, 0);
+    final dailyFidyahTotals = List<int>.filled(rangeLen, 0);
+
+    for (final e in entries) {
+      if (e.direction != 'paid') continue;
+      if (e.kind != 'zakat' && e.kind != 'fidyah') continue;
+      if (!ObligationsUtils.isInSeason(
+        createdAtMs: e.createdAt,
+        dateYmd: e.dateYmd,
+        sourceSeasonId: e.sourceSeasonId,
+        seasonId: season.id,
+        seasonStart: season.startDate,
+        seasonDays: season.days,
+      )) {
+        continue;
+      }
+
+      final currency = ObligationsUtils.parseCurrencyFromNote(
+        e.note,
+        fallback: displayCurrency,
+      );
+      if (currency != displayCurrency) continue;
+
+      final dayIndex = ObligationsUtils.dayIndexInSeason(
+        dateYmd: e.dateYmd,
+        createdAtMs: e.createdAt,
+        seasonStart: season.startDate,
+        seasonDays: season.days,
+      );
+      if (dayIndex == null || dayIndex < start || dayIndex > end) continue;
+
+      paymentCount++;
+      if (e.kind == 'zakat') {
+        zakatTotal += e.amount;
+        zakatPeople += e.days;
+      } else {
+        fidyahTotal += e.amount;
+        fidyahDays += e.days;
+      }
+
+      if (e.amount > 0) {
+        final idx = dayIndex - start;
+        dailyPaymentTotals[idx] += e.amount;
+        if (e.kind == 'zakat') {
+          dailyZakatTotals[idx] += e.amount;
+        } else {
+          dailyFidyahTotals[idx] += e.amount;
+        }
+      }
+    }
+
+    return ObligationsSeasonAnalytics(
+      zakatTotal: zakatTotal,
+      zakatPeople: zakatPeople,
+      fidyahTotal: fidyahTotal,
+      fidyahDays: fidyahDays,
+      paymentCount: paymentCount,
+      dailyPaymentTotals: dailyPaymentTotals,
+      dailyZakatTotals: dailyZakatTotals,
+      dailyFidyahTotals: dailyFidyahTotals,
+      startDayIndex: start,
     );
   }
 }

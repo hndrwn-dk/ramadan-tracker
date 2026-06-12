@@ -75,7 +75,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seasonManagementTitle => 'My Ramadan';
 
   @override
-  String get seasonManagementSubtitle => 'Create, view, and delete Ramadan seasons';
+  String get seasonManagementSubtitle =>
+      'Create, view, and delete Ramadan seasons';
 
   @override
   String get habitsTargetsTitle => 'Habits & Targets';
@@ -87,13 +88,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timesRemindersTitle => 'Times & Reminders';
 
   @override
-  String get timesRemindersSubtitle => 'Configure prayer times and notification reminders';
+  String get timesRemindersSubtitle =>
+      'Configure prayer times and notification reminders';
 
   @override
   String get prayerOffsetTipTitle => 'Prayer times off by 1 hour?';
 
   @override
-  String get prayerOffsetTipBody => 'If prayer times look off by about 1 hour, you can set an Offset in Settings.';
+  String get prayerOffsetTipBody =>
+      'If prayer times look off by about 1 hour, you can set an Offset in Settings.';
 
   @override
   String get prayerOffsetTipCta => 'Set Offset';
@@ -117,7 +120,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSubtitle => 'Choose your preferred language';
 
   @override
-  String get languageReason => 'Menus and content will appear in this language throughout the app.';
+  String get languageReason =>
+      'Menus and content will appear in this language throughout the app.';
 
   @override
   String get english => 'English';
@@ -324,7 +328,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetOnboarding => 'Reset Onboarding';
 
   @override
-  String get showSetupWizardAgain => 'Show setup wizard again on next app launch';
+  String get showSetupWizardAgain =>
+      'Show setup wizard again on next app launch';
 
   @override
   String get deleteSeason => 'Delete Season?';
@@ -339,31 +344,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalRemindersTitle => 'Goal Reminders';
 
   @override
-  String get goalRemindersSubtitle => 'Get notified when you haven\'t reached your daily goals';
+  String get goalRemindersSubtitle =>
+      'Get notified when you haven\'t reached your daily goals';
 
   @override
   String get goalReminderQuran => 'Quran Goal Reminder';
 
   @override
-  String get goalReminderQuranDesc => 'Remind me if Quran target not reached (2 PM, 6 PM, 8 PM)';
+  String get goalReminderQuranDesc =>
+      'Remind me if Quran target not reached (2 PM, 6 PM, 8 PM)';
 
   @override
   String get goalReminderDhikr => 'Dhikr Goal Reminder';
 
   @override
-  String get goalReminderDhikrDesc => 'Remind me if Dhikr target not reached (2 PM, 6 PM, 8 PM)';
+  String get goalReminderDhikrDesc =>
+      'Remind me if Dhikr target not reached (2 PM, 6 PM, 8 PM)';
 
   @override
   String get goalReminderSedekah => 'Sedekah Goal Reminder';
 
   @override
-  String get goalReminderSedekahDesc => 'Remind me if Sedekah target not reached (4 PM)';
+  String get goalReminderSedekahDesc =>
+      'Remind me if Sedekah target not reached (4 PM)';
 
   @override
   String get goalReminderTaraweeh => 'Taraweeh Reminder';
 
   @override
-  String get goalReminderTaraweehDesc => 'Remind me 15 minutes after Isha if Taraweeh not done';
+  String get goalReminderTaraweehDesc =>
+      'Remind me 15 minutes after Isha if Taraweeh not done';
 
   @override
   String get quranGoalReminderTitle => 'Quran Goal Reminder';
@@ -385,16 +395,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sedekahGoalReminderTitle => 'Sedekah Goal Reminder';
 
   @override
-  String get sedekahGoalReminderBody => 'Today\'s Sedekah target not reached. Don\'t forget to share goodness!';
+  String get sedekahGoalReminderBody =>
+      'Today\'s Sedekah target not reached. Don\'t forget to share goodness!';
 
   @override
   String get taraweehReminderTitle => 'Taraweeh Reminder';
 
   @override
-  String get taraweehReminderBody => 'Taraweeh time is approaching! Prepare yourself for night prayer.';
+  String get taraweehReminderBody =>
+      'Taraweeh time is approaching! Prepare yourself for night prayer.';
 
   @override
-  String get sendTestNotification => 'Send a test notification to verify settings';
+  String get sendTestNotification =>
+      'Send a test notification to verify settings';
 
   @override
   String get testNotificationSent => 'Test notification sent';
@@ -482,13 +495,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadingSeasons => 'Error loading seasons';
 
   @override
-  String get resetOnboardingConfirm => 'This will show the onboarding screen again when you restart the app. Continue?';
+  String get resetOnboardingConfirm =>
+      'This will show the onboarding screen again when you restart the app. Continue?';
 
   @override
   String get reset => 'Reset';
 
   @override
-  String get onboardingWillShowOnRestart => 'Onboarding will show on next app restart';
+  String get onboardingWillShowOnRestart =>
+      'Onboarding will show on next app restart';
 
   @override
   String get sahurReminder => 'Sahur reminder';
@@ -510,13 +525,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get getNotifiedWhenBreakFast => 'Get notified when it\'s time to break fast';
+  String get getNotifiedWhenBreakFast =>
+      'Get notified when it\'s time to break fast';
 
   @override
   String get nightPlanReminder => 'Time for night worship';
 
   @override
-  String get reminderToPlanNightActivities => 'Reminder to plan your night activities (Qiyam & Tahajud)';
+  String get reminderToPlanNightActivities =>
+      'Reminder to plan your night activities (Qiyam & Tahajud)';
 
   @override
   String get calculationMethod => 'Calculation Method';
@@ -624,13 +641,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preRamadan => 'Pre-Ramadan';
 
   @override
-  String get preRamadanSubtitle => 'Season not started yet. Browse and plan ahead.';
+  String get preRamadanSubtitle =>
+      'Season not started yet. Browse and plan ahead.';
 
   @override
   String get seasonEnded => 'Season Ended';
 
   @override
-  String get seasonEndedMessage => 'This Ramadan season has finished. Review your progress or create a new season.';
+  String get seasonEndedMessage =>
+      'This Ramadan season has finished. Review your progress or create a new season.';
 
   @override
   String dayOfSeason(int dayIndex, int totalDays) {
@@ -656,7 +675,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastDay => 'Last Day!';
 
   @override
-  String get lastDayMessage => 'This is the final day of Ramadan. Finish strong and make it count!';
+  String get lastDayMessage =>
+      'This is the final day of Ramadan. Finish strong and make it count!';
 
   @override
   String get almostThere => 'Almost There!';
@@ -670,13 +690,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get last10Days => 'Last 10 Days';
 
   @override
-  String get last10DaysMessage => 'These are the most blessed days. Maximize your ibadah and seek Laylatul Qadr!';
+  String get last10DaysMessage =>
+      'These are the most blessed days. Maximize your ibadah and seek Laylatul Qadr!';
 
   @override
   String get finalStretch => 'Final Stretch';
 
   @override
-  String get finalStretchMessage => 'You\'re in the last 10 days. Every moment counts - stay focused!';
+  String get finalStretchMessage =>
+      'You\'re in the last 10 days. Every moment counts - stay focused!';
 
   @override
   String daysRemaining(int days) {
@@ -684,7 +706,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get createNewSeasonMessage => 'Create a new Ramadan season to start tracking';
+  String get createNewSeasonMessage =>
+      'Create a new Ramadan season to start tracking';
 
   @override
   String get startSetup => 'Start Setup';
@@ -751,7 +774,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayIn10Seconds => 'Today in 10 seconds';
 
   @override
-  String get todayIn10SecondsMessage => 'Tap what you did. Add pages & dhikr. Done.';
+  String get todayIn10SecondsMessage =>
+      'Tap what you did. Add pages & dhikr. Done.';
 
   @override
   String get openOneTap => 'Open One Tap';
@@ -862,7 +886,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trackYourRamadanInSeconds => 'Track your Ramadan in seconds';
 
   @override
-  String get noAccountNoAdsStored => 'No account • No ads • Stored on your device';
+  String get noAccountNoAdsStored =>
+      'No account • No ads • Stored on your device';
 
   @override
   String get oneTapDailyChecklist => 'One tap daily checklist';
@@ -871,7 +896,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get autopilotQuranPlan => 'Autopilot Qur\'an plan';
 
   @override
-  String get sahurIftarRemindersAutomatic => 'Sahur & Iftar reminders (automatic)';
+  String get sahurIftarRemindersAutomatic =>
+      'Sahur & Iftar reminders (automatic)';
 
   @override
   String get takesAbout1Minute => 'Takes about 1 minute';
@@ -912,7 +938,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chooseWhatToTrack => 'Choose What to Track';
 
   @override
-  String get trackOnlyWhatHelps => 'Track only what helps. You can change anytime.';
+  String get trackOnlyWhatHelps =>
+      'Track only what helps. You can change anytime.';
 
   @override
   String get quran20PagesPerDay => 'Qur\'an (20 pages/day)';
@@ -935,7 +962,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setGoals => 'Set Goals';
 
   @override
-  String get gentleGoalsBeatPerfectStreaks => 'Gentle goals beat perfect streaks.';
+  String get gentleGoalsBeatPerfectStreaks =>
+      'Gentle goals beat perfect streaks.';
 
   @override
   String get quranGoal => 'Quran Goal';
@@ -993,7 +1021,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get smartReminders => 'Smart Reminders';
 
   @override
-  String get getNotifiedForSahurIftar => 'Get notified for Sahur, Iftar, and your daily plan.';
+  String get getNotifiedForSahurIftar =>
+      'Get notified for Sahur, Iftar, and your daily plan.';
 
   @override
   String get offset => 'Offset:';
@@ -1064,10 +1093,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get prayerTimesPreview => 'Prayer Times Preview';
 
   @override
-  String get prayerTimesVaryDaily => 'Times are calculated per day and change through Ramadan.';
+  String get prayerTimesVaryDaily =>
+      'Times are calculated per day and change through Ramadan.';
 
   @override
-  String get refreshTimesTooltip => 'Recalculate times (e.g. after changing location)';
+  String get refreshTimesTooltip =>
+      'Recalculate times (e.g. after changing location)';
 
   @override
   String timesForDate(String date) {
@@ -1093,7 +1124,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationPermissionsDenied => 'Location permissions denied';
 
   @override
-  String get locationPermissionsPermanentlyDenied => 'Location permissions permanently denied';
+  String get locationPermissionsPermanentlyDenied =>
+      'Location permissions permanently denied';
 
   @override
   String get pleaseEnterValidCoordinates => 'Please enter valid coordinates';
@@ -1149,7 +1181,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupRamadanAutopilot => 'Setup Ramadan Autopilot';
 
   @override
-  String get setupRamadanAutopilotSubtitle => 'Configure your goals and available time to generate a daily plan.';
+  String get setupRamadanAutopilotSubtitle =>
+      'Configure your goals and available time to generate a daily plan.';
 
   @override
   String get availableTimeMinutes => 'Available Time (minutes)';
@@ -1172,7 +1205,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seasonCompleted => 'Season Completed';
 
   @override
-  String get seasonCompletedMessage => 'Congratulations on completing Ramadan! Review your journey in the Insights tab.';
+  String get seasonCompletedMessage =>
+      'Congratulations on completing Ramadan! Review your journey in the Insights tab.';
 
   @override
   String get newSeasonCreationComingSoon => 'New season creation coming soon';
@@ -1289,7 +1323,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seasonCreatedSuccessfully => 'Season Created Successfully';
 
   @override
-  String get seasonCreatedMessage => 'Your new Ramadan season has been created and is ready to use!';
+  String get seasonCreatedMessage =>
+      'Your new Ramadan season has been created and is ready to use!';
 
   @override
   String seasonCreatedError(String error) {
@@ -1366,7 +1401,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewWhatsMissing => 'Review what\'s missing';
 
   @override
-  String get scrollDownToSeeHeatmaps => 'Scroll down to see Ramadan consistency heatmaps';
+  String get scrollDownToSeeHeatmaps =>
+      'Scroll down to see Ramadan consistency heatmaps';
 
   @override
   String get viewRamadanConsistency => 'View Ramadan consistency';

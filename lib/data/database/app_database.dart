@@ -42,6 +42,9 @@ part 'daos.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// In-memory database for unit tests.
+  AppDatabase.test() : super(LazyDatabase(() async => NativeDatabase.memory()));
+
   @override
   int get schemaVersion => 6;
 

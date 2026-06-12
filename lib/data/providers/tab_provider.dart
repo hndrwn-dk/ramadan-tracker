@@ -8,3 +8,6 @@ final scrollToHabitKeyProvider = StateProvider<String?>((ref) => null);
 // When set (e.g. 'times'), Settings will expand that section on next build (used by "Atur Offset" from Today)
 final openSettingsSectionProvider = StateProvider<String?>((ref) => null);
 
+/// When true, Wawasan opens on the Puasa Sunnah sub-tab (during active Ramadan).
+final wawasanSunnahTabProvider = StateProvider<bool>((ref) => false);
+

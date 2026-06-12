@@ -98,27 +98,40 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
                       _buildHabitCheckbox(context, 'itikaf', l10n.habitItikaf, Icons.mosque, iconWidget: const ItikafIcon(size: 20)),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: widget.onPrevious,
-                  child: Text(l10n.back),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: widget.onNext,
-                  child: Text(l10n.continueButton),
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final narrow = constraints.maxWidth < 400;
+              final backBtn = OutlinedButton(
+                onPressed: widget.onPrevious,
+                child: Text(l10n.back),
+              );
+              final continueBtn = ElevatedButton(
+                onPressed: widget.onNext,
+                child: Text(l10n.continueButton),
+              );
+              if (narrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    continueBtn,
+                    const SizedBox(height: 8),
+                    backBtn,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: backBtn),
+                  const SizedBox(width: 16),
+                  Expanded(child: continueBtn),
+                ],
+              );
+            },
           ),
         ],
       ),

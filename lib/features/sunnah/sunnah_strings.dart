@@ -34,6 +34,39 @@ class SunnahStrings {
   String get statusOther => t('Uzur: lainnya', 'Excused: other');
   String get markAsQadha =>
       t('Hitung sebagai qadha Ramadan', 'Count as Ramadan make-up (qadha)');
+  String get markSunnahFast =>
+      t('Berpuasa sunnah', 'Completed sunnah fast');
+  String get markQadhaFast =>
+      t('Puasa qadha (ganti Ramadan)', 'Ramadan make-up fast (qadha)');
+  String get notFastingExcusedSection =>
+      t('Tidak puasa karena uzur', 'Not fasting (excused)');
+  String get excusedSectionHint => t(
+        'Bukan puasa sunnah dan bukan qadha — hanya catat alasan tidak puasa.',
+        'Not a sunnah or qadha fast — only records why you did not fast.',
+      );
+  String get savedSunnahFast => t('Dicatat: berpuasa sunnah', 'Saved: sunnah fast');
+  String get savedQadhaFast =>
+      t('Dicatat: puasa qadha', 'Saved: qadha make-up fast');
+  String savedExcused(String reason) =>
+      t('Dicatat: tidak puasa ($reason)', 'Saved: did not fast ($reason)');
+  String get savedCleared => t('Catatan dihapus', 'Entry cleared');
+  String get statusSheetHint => t(
+        'Pilih salah satu dari 3 opsi berikut:',
+        'Choose one of the 3 options below:',
+      );
+  String get option1Subtitle => t(
+        'Puasa sunnah di hari ini',
+        'Sunnah fast on this day',
+      );
+  String get option2Subtitle => t(
+        'Berpuasa hari ini sebagai ganti puasa Ramadan',
+        'Fast today as Ramadan make-up (qadha)',
+      );
+  String get option3PickReason => t('Pilih alasan:', 'Pick a reason:');
+  String get excusedSickShort => t('Sakit', 'Sick');
+  String get excusedHaidShort => t('Haid', 'Menstruation');
+  String get excusedNifasShort => t('Nifas', 'Postnatal');
+  String get excusedOtherShort => t('Lainnya', 'Other');
   String get clear => t('Hapus', 'Clear');
   String get streak => t('Streak S/K', 'Mon–Thu');
   String get weeksUnit => t('kali', 'times');
@@ -83,7 +116,47 @@ class SunnahStrings {
   String get zakatTotal => t('Total zakat', 'Total zakat');
   String get markZakatPaid => t('Tandai sudah dibayar', 'Mark as paid');
   String get zakatPaidStat => t('Zakat dibayar', 'Zakat paid');
+  String get fidyahPaidStat => t('Fidyah dibayar', 'Fidyah paid');
   String get peopleUnit => t('jiwa', 'people');
+  String get currencyLabel => t('Mata uang', 'Currency');
+  String get rateHint =>
+      t('Sesuai ketetapan setempat', 'Per local authority');
+  String get enterRateFirst => t(
+        'Masukkan tarif sesuai ketetapan setempat',
+        'Enter the rate set by your local authority',
+      );
+  String get paymentSummary => t('Ringkasan pembayaran', 'Payment summary');
+  String get paymentHistory => t('Riwayat pembayaran', 'Payment history');
+  String get obligationsSeasonTitle =>
+      t('Zakat & Fidyah (Musim)', 'Zakat & Fidyah (Season)');
+  String get viewObligationsDetails =>
+      t('Lihat riwayat lengkap', 'View full history');
+  String get paymentTimeline =>
+      t('Pembayaran selama Ramadan', 'Payments during Ramadan');
+  String get obligationsTotalPaid =>
+      t('Total dibayar', 'Total paid');
+  String get obligationsPaymentCountLabel =>
+      t('transaksi', 'payments');
+  String get obligationsChartEmpty => t(
+        'Belum ada pembayaran zakat/fidyah untuk mata uang ini.',
+        'No zakat/fidyah payments for this currency yet.',
+      );
+  String get obligationsChartBreakdownTitle =>
+      t('Zakat vs Fidyah', 'Zakat vs Fidyah');
+  String get obligationsChartSeasonTimelineTitle =>
+      t('Timeline Ramadan', 'Ramadan timeline');
+  String get obligationsChartMonthlyTimelineTitle =>
+      t('Timeline per bulan', 'Monthly timeline');
+  String get obligationsChartPeriodTimelineTitle =>
+      t('Timeline periode', 'Period timeline');
+  String get obligationsReviewTitle =>
+      t('Tinjauan Zakat & Fidyah', 'Zakat & Fidyah review');
+  String get obligationsTodayCardTitle =>
+      t('Zakat & Fidyah Hari Ini', 'Zakat & Fidyah today');
+  String get obligationsWeeklyCardTitle =>
+      t('Zakat & Fidyah (7 hari)', 'Zakat & Fidyah (7 days)');
+  String get obligationsAddPayment =>
+      t('Catat pembayaran', 'Log payment');
 
   String yearBreakdownTitleFor(int year) => id
       ? 'Ringkasan puasa sunnah $year'
@@ -94,4 +167,100 @@ class SunnahStrings {
       );
   String timesCount(int n) => id ? '$n×' : '${n}x';
   String get syawalTarget => t('target 6 hari', 'goal: 6 days');
+
+  String insightsSunnahTitleFor(int year) => id
+      ? 'Puasa Sunnah $year'
+      : 'Sunnah Fasting $year';
+  String get viewSunnahInsights =>
+      t('Lihat detail lengkap', 'View full breakdown');
+  String get monthlyFastsChart =>
+      t('Puasa per bulan (tahun ini)', 'Fasts per month (this year)');
+  String qadhaFastsThisYear(int n) => id
+      ? '$n puasa qadha tercatat tahun ini'
+      : '$n qadha fasts logged this year';
+  String get ramadanFocusTitle =>
+      t('Ramadan sedang berlangsung', 'Ramadan is underway');
+  String ramadanDaysLeft(int n) =>
+      t('$n hari lagi', '$n days to go');
+  String get ramadanFocusBody => t(
+        'Fokuskan ibadah Ramadan di tab Hari Ini. Puasa sunnah (Senin/Kamis, dll.) dilacak kembali setelah Ramadan.',
+        'Focus on Ramadan in the Today tab. Sunnah fasts (Mon/Thu, etc.) are tracked again after Ramadan.',
+      );
+  String get openTodayTab => t('Buka Hari Ini', 'Open Today');
+  String get wawasanSunnahBanner => t(
+        'Ringkasan puasa sunnah ada di Wawasan',
+        'Full sunnah summary is in Insights',
+      );
+  String get openWawasan => t('Buka Wawasan', 'Open Insights');
+  String get sunnahInsightsTabLabel =>
+      t('Puasa Sunnah', 'Sunnah Fasts');
+  String get duringRamadanSunnahInsightsHint => t(
+        'Riwayat puasa sunnah sepanjang tahun — termasuk catatan sebelum Ramadan. Puasa wajib Ramadan ada di tab Hari Ini / 7 Hari / Ramadan.',
+        'Year-round sunnah fast history — including logs from before Ramadan. Obligatory Ramadan fasting is under Today / 7 Days / Ramadan.',
+      );
+  String get viewSunnahHistoryDuringRamadan =>
+      t('Riwayat puasa sunnah', 'Sunnah fast history');
+  String get sunnahInsightsEmpty => t(
+        'Belum ada catatan puasa sunnah tahun ini.',
+        'No sunnah fasts logged this year yet.',
+      );
+  String preRamadanBanner(int days) => id
+      ? 'Ramadan dimulai $days hari lagi — persiapkan diri!'
+      : 'Ramadan starts in $days days — get ready!';
+
+  String get sunnahMonthViewTitle =>
+      t('Kalender Puasa Sunnah', 'Sunnah Fast Calendar');
+  String get sunnahMonthViewHint => t(
+        'Ketuk tanggal untuk tandai puasa sunnah atau uzur.',
+        'Tap a date to log a sunnah fast or excused day.',
+      );
+  String get noSeasonSunnahMonthHint => t(
+        'Belum ada musim Ramadan. Gunakan kalender ini untuk lacak puasa sunnah sepanjang tahun.',
+        'No Ramadan season yet. Use this calendar to track sunnah fasts year-round.',
+      );
+  String get noSeasonSunnahInsightsHint => t(
+        'Belum ada musim Ramadan. Wawasan puasa sunnah tetap aktif — mulai catat dari tab Sunnah atau tombol di bawah.',
+        'No Ramadan season yet. Sunnah insights are still available — start logging from the Sunnah tab or the button below.',
+      );
+  String get sunnahInsightsFallbackTitle =>
+      t('Wawasan Puasa Sunnah', 'Sunnah Fasting Insights');
+  String get sunnahInsightsFallbackSubtitle => t(
+        'Sebelum Ramadan tiba, tab ini menampilkan ringkasan puasa sunnah. Setelah Ramadan, kembali ke wawasan musim plus puasa sunnah.',
+        'Before Ramadan starts, this tab shows your sunnah fasting summary. After Ramadan, season insights return alongside sunnah analytics.',
+      );
+  String get openSunnahTab => t('Buka tab Sunnah', 'Open Sunnah tab');
+  String get legendFasted => t('Berpuasa', 'Fasted');
+  String get legendExcused => t('Uzur', 'Excused');
+  String get legendSunnahDay => t('Hari sunnah', 'Sunnah day');
+  String get legendNone => t('Kosong', 'Empty');
+  String get qadhaShort => t('Qadha', 'Qadha');
+  String get sunnahHeroTitle =>
+      t('Bagaimana puasa sunnahmu?', 'How is your sunnah fasting?');
+  String sunnahHeroSub(int allTime, int streak) => id
+      ? 'Total $allTime · streak S/K $streak'
+      : '$allTime all-time · Mon–Thu streak $streak';
+  String get weeklyFastsChart =>
+      t('Puasa per minggu (8 minggu)', 'Fasts per week (8 weeks)');
+  String get recentFastsHeatmap => t('35 hari terakhir', 'Last 35 days');
+  String get typeBreakdownTitle =>
+      t('Per jenis puasa', 'By fast type');
+  String get sunnahChartEmptyHint => t(
+        'Belum ada data — tandai puasa sunnah untuk melihat grafik.',
+        'No data yet — log sunnah fasts to see charts.',
+      );
+  String get ramadanFastedTitle => t('Berpuasa', 'Fasting');
+  String get ramadanFastedSubtitle => t(
+        'Menyelesaikan puasa wajib hari ini',
+        'Completed obligatory fast today',
+      );
+  String get ramadanExcusedHint => t(
+        'Hanya mencatat uzur — qadha dilacak terpisah di tab Sunnah.',
+        'Records excused day only — qadha is tracked in the Sunnah tab.',
+      );
+  String get ramadanStatusSheetHint => t(
+        'Pilih salah satu dari 2 opsi berikut:',
+        'Choose one of the 2 options below:',
+      );
+  String get ramadanSavedFasted =>
+      t('Dicatat: berpuasa Ramadan', 'Saved: Ramadan fast');
 }

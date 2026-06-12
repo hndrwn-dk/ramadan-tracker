@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
+import 'package:ramadan_tracker/utils/obligations_utils.dart';
 
 final qadhaRefreshProvider = StateProvider<int>((ref) => 0);
 
@@ -24,6 +25,28 @@ class QadhaBalance {
   });
 
   int get qadhaRemaining => (qadhaOwed - qadhaPaid).clamp(0, 1 << 30);
+
+  Map<String, int> get zakatPaidByCurrency {
+    final map = <String, int>{};
+    for (final e in entries) {
+      if (e.kind == 'zakat' && e.direction == 'paid' && e.amount > 0) {
+        final cur = ObligationsUtils.parseCurrencyFromNote(e.note);
+        map[cur] = (map[cur] ?? 0) + e.amount;
+      }
+    }
+    return map;
+  }
+
+  Map<String, int> get fidyahPaidByCurrency {
+    final map = <String, int>{};
+    for (final e in entries) {
+      if (e.kind == 'fidyah' && e.direction == 'paid' && e.amount > 0) {
+        final cur = ObligationsUtils.parseCurrencyFromNote(e.note);
+        map[cur] = (map[cur] ?? 0) + e.amount;
+      }
+    }
+    return map;
+  }
 }
 
 final qadhaBalanceProvider = FutureProvider<QadhaBalance>((ref) async {

@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
-import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
 import 'package:ramadan_tracker/data/providers/qadha_provider.dart';
-import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
 import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
+import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/features/sunnah/widgets/fasting_option_cards.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
 
-/// Bottom sheet to set the sunnah fasting status for [date].
-/// Writes to SunnahFasts and (optionally) the qadha ledger.
+/// Bottom sheet with 3 clear choices for a sunnah day:
+/// 1) Sunnah fast  2) Qadha make-up fast  3) Did not fast (excused).
 Future<void> showSunnahStatusSheet(
   BuildContext context,
   WidgetRef ref,
@@ -21,7 +23,6 @@ Future<void> showSunnahStatusSheet(
   final existing = await db.sunnahFastsDao.getByDate(date);
   final types = SunnahFastingRules.typesFor(date);
   final defaultType = types.isNotEmpty ? types.first.key : 'custom';
-  bool isQadha = existing?.isQadha ?? false;
 
   if (!context.mounted) return;
 
@@ -30,86 +31,183 @@ Future<void> showSunnahStatusSheet(
     showDragHandle: true,
     isScrollControlled: true,
     builder: (ctx) {
-      return StatefulBuilder(
-        builder: (ctx, setState) {
-          Future<void> apply(int status) async {
-            if (status == FastingStatus.notDone && existing == null) {
-              Navigator.pop(ctx);
-              return;
-            }
-            await db.sunnahFastsDao.upsert(
-              date,
-              status: status,
-              type: existing?.type ?? defaultType,
-              isQadha: isQadha,
-            );
-            // When a fast is logged as qadha, add a make-up credit.
-            if (status == FastingStatus.fasted &&
-                isQadha &&
-                !(existing?.isQadha ?? false)) {
-              await db.qadhaLedgerDao.addEntry(
-                kind: 'qadha',
-                direction: 'paid',
-                days: 1,
-                dateYmd: SunnahFastsDao.dateKey(date),
-                note: 'Auto from sunnah log',
-              );
-              ref.read(qadhaRefreshProvider.notifier).state++;
-            }
-            ref.read(sunnahRefreshProvider.notifier).state++;
-            await HomeWidgetService.update(db);
-            if (ctx.mounted) Navigator.pop(ctx);
-          }
+      final scheme = Theme.of(ctx).colorScheme;
+      final dateLabel = DateFormat(
+        s.id ? 'EEEE, d MMM yyyy' : 'EEEE, MMM d, yyyy',
+        s.id ? 'id_ID' : 'en_US',
+      ).format(date);
 
-          Widget option(int status, IconData icon, String label, Color color) {
-            return ListTile(
-              leading: Icon(icon, color: color),
-              title: Text(label),
-              onTap: () => apply(status),
-            );
-          }
+      Future<void> apply(int status, {bool qadha = false}) async {
+        if (status == FastingStatus.notDone && existing == null) {
+          if (ctx.mounted) Navigator.pop(ctx);
+          return;
+        }
+        final isQadha = status == FastingStatus.fasted && qadha;
+        await db.sunnahFastsDao.upsert(
+          date,
+          status: status,
+          type: existing?.type ?? defaultType,
+          isQadha: isQadha,
+        );
+        if (status == FastingStatus.fasted &&
+            isQadha &&
+            !(existing?.isQadha ?? false)) {
+          await db.qadhaLedgerDao.addEntry(
+            kind: 'qadha',
+            direction: 'paid',
+            days: 1,
+            dateYmd: SunnahFastsDao.dateKey(date),
+            note: 'Auto from sunnah log',
+          );
+          ref.read(qadhaRefreshProvider.notifier).state++;
+        }
+        ref.read(sunnahRefreshProvider.notifier).state++;
+        await HomeWidgetService.update(db);
 
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: Text(
-                      s.setStatus,
-                      style: Theme.of(ctx).textTheme.titleMedium,
-                    ),
-                  ),
-                  option(FastingStatus.fasted, Icons.check_circle,
-                      s.statusFasted, Colors.green),
-                  SwitchListTile(
-                    secondary: const Icon(Icons.event_repeat),
-                    title: Text(s.markAsQadha),
-                    value: isQadha,
-                    onChanged: (v) => setState(() => isQadha = v),
-                  ),
-                  const Divider(height: 1),
-                  option(FastingStatus.excusedSick, Icons.healing,
-                      s.statusSick, Colors.orange),
-                  option(FastingStatus.excusedHaid, Icons.water_drop,
-                      s.statusHaid, Colors.pink),
-                  option(FastingStatus.excusedNifas, Icons.child_friendly,
-                      s.statusNifas, Colors.purple),
-                  option(FastingStatus.excusedOther, Icons.more_horiz,
-                      s.statusOther, Colors.blueGrey),
-                  const Divider(height: 1),
-                  option(FastingStatus.notDone, Icons.cancel_outlined,
-                      existing == null ? s.cancel : s.clear,
-                      Theme.of(ctx).colorScheme.outline),
-                ],
-              ),
+        final message = _savedMessage(s, status, qadha: qadha);
+        if (ctx.mounted) Navigator.pop(ctx);
+        if (message != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              duration: const Duration(seconds: 3),
             ),
           );
-        },
+        }
+      }
+
+      final isSunnahSelected = existing?.status == FastingStatus.fasted &&
+          !(existing?.isQadha ?? false);
+      final isQadhaSelected =
+          existing?.status == FastingStatus.fasted && (existing?.isQadha ?? false);
+      final isExcusedSelected =
+          existing != null && FastingStatus.isExcused(existing.status);
+
+      return SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(s.setStatus, style: Theme.of(ctx).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                dateLabel,
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.65),
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                s.statusSheetHint,
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.55),
+                    ),
+              ),
+              const SizedBox(height: 16),
+              FastingOptionCard(
+                number: 1,
+                title: s.markSunnahFast,
+                subtitle: s.option1Subtitle,
+                icon: Icons.check_circle_outline,
+                iconColor: Colors.green,
+                selected: isSunnahSelected,
+                onTap: () => apply(FastingStatus.fasted),
+              ),
+              const SizedBox(height: 10),
+              FastingOptionCard(
+                number: 2,
+                title: s.markQadhaFast,
+                subtitle: s.option2Subtitle,
+                icon: Icons.event_repeat,
+                iconColor: scheme.primary,
+                selected: isQadhaSelected,
+                onTap: () => apply(FastingStatus.fasted, qadha: true),
+              ),
+              const SizedBox(height: 10),
+              FastingOptionCard(
+                number: 3,
+                title: s.notFastingExcusedSection,
+                subtitle: s.excusedSectionHint,
+                icon: Icons.block,
+                iconColor: scheme.tertiary,
+                selected: isExcusedSelected,
+                onTap: null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    Text(
+                      s.option3PickReason,
+                      style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                            color: scheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FastingExcuseChip(
+                          label: s.excusedSickShort,
+                          icon: Icons.healing,
+                          selected: existing?.status == FastingStatus.excusedSick,
+                          onTap: () => apply(FastingStatus.excusedSick),
+                        ),
+                        FastingExcuseChip(
+                          label: s.excusedHaidShort,
+                          icon: Icons.water_drop,
+                          selected: existing?.status == FastingStatus.excusedHaid,
+                          onTap: () => apply(FastingStatus.excusedHaid),
+                        ),
+                        FastingExcuseChip(
+                          label: s.excusedNifasShort,
+                          icon: Icons.child_friendly,
+                          selected:
+                              existing?.status == FastingStatus.excusedNifas,
+                          onTap: () => apply(FastingStatus.excusedNifas),
+                        ),
+                        FastingExcuseChip(
+                          label: s.excusedOtherShort,
+                          icon: Icons.more_horiz,
+                          selected:
+                              existing?.status == FastingStatus.excusedOther,
+                          onTap: () => apply(FastingStatus.excusedOther),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => apply(FastingStatus.notDone),
+                icon: const Icon(Icons.close),
+                label: Text(existing == null ? s.cancel : s.clear),
+              ),
+            ],
+          ),
+        ),
       );
     },
   );
+}
+
+String? _savedMessage(SunnahStrings s, int status, {bool qadha = false}) {
+  if (status == FastingStatus.notDone) return s.savedCleared;
+  if (status == FastingStatus.fasted && qadha) return s.savedQadhaFast;
+  if (status == FastingStatus.fasted) return s.savedSunnahFast;
+  if (status == FastingStatus.excusedSick) {
+    return s.savedExcused(s.excusedSickShort);
+  }
+  if (status == FastingStatus.excusedHaid) {
+    return s.savedExcused(s.excusedHaidShort);
+  }
+  if (status == FastingStatus.excusedNifas) {
+    return s.savedExcused(s.excusedNifasShort);
+  }
+  if (status == FastingStatus.excusedOther) {
+    return s.savedExcused(s.excusedOtherShort);
+  }
+  return null;
 }

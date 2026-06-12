@@ -116,6 +116,12 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   }
 
   Future<void> _rescheduleNotifications() async {
+    const regressionSeed = bool.fromEnvironment('REGRESSION_SEED');
+    if (regressionSeed) {
+      debugPrint('=== _rescheduleNotifications skipped (REGRESSION_SEED) ===');
+      return;
+    }
+
     // Throttle rescheduling to prevent too frequent calls
     final now = DateTime.now();
     if (_lastRescheduleTime != null) {
