@@ -62,3 +62,6 @@ bundles_release/
 
 # Internal design notes and discussions (local only)
 docs/
+
+# Internal helper scripts (local only)
+scripts/
