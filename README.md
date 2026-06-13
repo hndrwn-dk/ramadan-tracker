@@ -1,195 +1,180 @@
 # Ramadan Tracker
 
-Track your Ramadan habits and get smart reminders.
+Track Ramadan habits, sunnah fasting year-round, and worship obligations — with smart reminders and private local storage.
 
 ![Feature overview](assets/feature_design.png)
 
-Premium Ramadan tracker and planner: yearly seasons, Autopilot Quran plan, Sahur/Iftar reminders, and local backup/restore.
+Premium companion for **Ramadan seasons** and **year-round ibadah**: one-tap logging, Autopilot Quran plan, Sahur/Iftar reminders, sunnah fast calendar, Zakat/Fidyah/Qadha, rich insights, and local backup/restore.
 
 ## Features
 
-- **One-tap habit tracking**: Fasting, Quran, Dhikr, Taraweeh, Sedekah, 5 Prayers
+### Ramadan season
+
+- **One-tap habit tracking**: Fasting (with excused reasons), Quran, Dhikr, Taraweeh (11 or 23 rakaat), Tahajud, Sedekah, 5 Prayers, I'tikaf
+- **Unified fasting popup**: Ramadan and sunnah fasts share the same card UX — numbered options plus excuse chips (sick, haid, nifas, other)
 - **Smart reminders**: Sahur, Iftar, and goal reminders (Quran, Dhikr, Sedekah, Taraweeh) based on your location
-- **Daily progress and streaks**: Completion score and streak counter
-- **Insights and heatmaps**: Charts, heatmaps, and trends for Quran, Dhikr, and habits
+- **Daily progress and streaks**: Completion score, streak counter, and fair scoring for excused days (sick, haid, nifas)
 - **Ramadan Autopilot**: Daily plan with Quran reading targets and catch-up suggestions
-- **Yearly reusable**: Multiple Ramadan seasons (2025, 2026, etc.)
-- **Backup and restore**: Export/import data as JSON
+- **Month view**: 30-day calendar with completion rings, tracked dots, and Last 10 markers
+- **Yearly reusable seasons**: Multiple Ramadan seasons (2025, 2026, …) with settings copied forward
+
+### Sunnah fasting (year-round)
+
+- **Sunnah tab**: Log sunnah fasts, qadha make-up fasts, and excused days outside Ramadan
+- **Sunnah types**: Monday/Thursday, Ayyamul Bidh, Ashura, Shawwal, Arafah, and more — with Hijri-aware rules
+- **Pre-Ramadan mode**: Before a season starts, **Month** and **Insights** show a sunnah fast calendar and charts instead of empty Ramadan views
+- **During Ramadan**: Sunnah logging pauses; **Insights → Sunnah Fasts** tab still shows your pre-Ramadan sunnah history
+
+### Zakat, Fidyah & Qadha
+
+- **Calculators**: Zakat al-Fitr and Fidyah with multi-currency support (IDR, SGD, USD, MYR)
+- **Qadha ledger**: Track owed vs paid make-up fast days
+- **Charts & review**: Payment timeline, Zakat vs Fidyah breakdown, and period summaries in **Today**, **7 Days**, and **Season** insights
+- **Payment history**: Full ledger with swipe-to-delete on the obligations screen
+
+### Insights (Wawasan)
+
+- **Today / 7 Days / Season**: Scores, trends, heatmaps, task analytics, and sedekah financial review
+- **Sunnah insights**: Hero stats, 35-day heatmap, monthly/weekly bar charts, and breakdown by fast type
+- **Season cards**: Sedekah, Zakat & Fidyah, mood/reflection, and task-level analytics
+- **Post-Ramadan**: Season insights plus year-round sunnah summary for returning users
+
+### Other
+
+- **Android home widget**: Sunnah fasting summary on the home screen
+- **Prayer times**: Location-based times (including Kemenag method for Indonesia)
+- **Backup and restore**: Export/import all data as JSON
 - **100% offline and private**: No account, no ads, no tracking; data stays on your device
 - **Multi-language**: English and Indonesian
 
+## App tabs
+
+| Tab | Purpose |
+|-----|---------|
+| **Today** | Log today's habits during an active Ramadan season |
+| **Month** | Ramadan calendar, or sunnah fast calendar before the season |
+| **Plan** | Autopilot daily plan (Quran, Dhikr, time blocks) |
+| **Sunnah** | Year-round sunnah/qadha logging; Ramadan focus card when season is active |
+| **Insights** | Analytics — Ramadan tabs plus **Sunnah Fasts** during active Ramadan |
+| **Settings** | Season, goals, reminders, appearance, backup |
+
 ## Architecture
 
-### Tech Stack
+### Tech stack
 
-- **Flutter**: Cross-platform mobile framework
-- **Riverpod**: State management
-- **Drift**: SQLite database with type-safe queries
-- **fl_chart**: Charts for insights
+- **Flutter** — cross-platform mobile
+- **Riverpod** — state management
+- **Drift** — SQLite with type-safe queries
+- **fl_chart** — charts for insights
+- **home_widget** — Android sunnah widget
 
-### Project Structure
+### Project structure
 
 ```
 lib/
-├── app/                 # App configuration and main screen
+├── app/                 # App shell and bottom navigation
 ├── data/
-│   ├── database/        # Drift database schema, tables, DAOs
-│   ├── providers/       # Riverpod providers
-│   └── repositories/    # Data repositories
+│   ├── database/        # Drift schema, tables, DAOs
+│   └── providers/       # Riverpod providers
 ├── domain/
-│   ├── models/          # Domain models
-│   └── services/        # Business logic (autopilot, completion)
+│   ├── models/
+│   └── services/        # Autopilot, completion, notifications, widgets
 ├── features/
-│   ├── today/           # Today tab screen
-│   ├── month/           # Month view screen
-│   ├── plan/            # Autopilot plan screen
-│   ├── insights/        # Insights/charts screen
-│   └── settings/        # Settings screen
-└── widgets/             # Shared UI components
+│   ├── today/           # Today tab + Ramadan fasting sheet
+│   ├── month/           # Month view (Ramadan or sunnah calendar)
+│   ├── plan/            # Autopilot plan
+│   ├── sunnah/          # Sunnah fasting, month view, Ramadan focus
+│   ├── qadha/           # Zakat, Fidyah, Qadha + payment charts
+│   ├── insights/        # Wawasan: scores, charts, obligations review
+│   ├── settings/
+│   └── onboarding/
+├── l10n/                # English & Indonesian strings
+└── widgets/             # Shared UI (habit toggles, icons, score ring)
 ```
 
-### Database Schema
+### Database (main tables)
 
-The app uses Drift (SQLite) with the following tables:
-
-1. **ramadan_seasons**: Stores multiple Ramadan seasons
-2. **habits**: Default habit definitions (fasting, prayers, quran, etc.)
-3. **season_habits**: Per-season habit configuration
-4. **daily_entries**: Daily tracking data
-5. **quran_plan**: Quran reading plan configuration
-6. **quran_daily**: Daily Quran pages read
-7. **dhikr_plan**: Dhikr target configuration
-8. **notes**: Reflection notes
-9. **kv_settings**: Key-value settings
+| Table | Purpose |
+|-------|---------|
+| `ramadan_seasons` | Multiple Ramadan seasons |
+| `habits` / `season_habits` / `daily_entries` | Per-season habit config and daily logs |
+| `quran_plan` / `quran_daily` | Quran Autopilot and daily pages |
+| `sunnah_fasts` | Year-round sunnah and qadha fast entries |
+| `qadha_ledger` | Zakat, Fidyah payments and qadha owed/paid |
+| `notes` | Daily mood and reflection |
+| `kv_settings` | Currency, goals, theme, locale |
 
 ## Setup
 
 ### Prerequisites
 
-- Flutter SDK >=3.0.0
-- Dart SDK >=3.0.0
+- Flutter SDK >= 3.0.0
+- Dart SDK >= 3.0.0
 
 ### Installation
 
-1. Clone the repository:
 ```bash
 git clone https://github.com/hndrwn-dk/ramadan-tracker.git
 cd ramadan-tracker
-```
-
-2. Install dependencies:
-```bash
 flutter pub get
-```
-
-3. Generate Drift database code:
-```bash
 flutter pub run build_runner build --delete-conflicting-outputs
-```
-
-4. Run the app:
-```bash
 flutter run
 ```
 
 ## Usage
 
-### First Launch
+### First launch
 
-On first launch, the app will guide you through onboarding:
-- Set up your Ramadan season (start date, number of days)
-- Choose which habits to track (fasting, Quran, Dhikr, Taraweeh, Sedekah, I'tikaf)
-- Configure goals (Quran pages/day, Dhikr target, Sedekah amount & currency)
-- Set up prayer time reminders (Sahur & Iftar)
+Onboarding walks you through:
 
-### Creating a New Season
+- Ramadan season (start date, number of days)
+- Habits to track and daily goals
+- Prayer time reminders (Sahur & Iftar)
 
-1. Go to Settings > Season Management
-2. Tap "Create New Season"
-3. Enter label (e.g., "Ramadan 2025")
-4. Select number of days (29 or 30)
-5. The app will copy habit settings from the previous season
+### Quick logging (Today)
 
-### Setting Up Autopilot
+- Toggle boolean habits; open **Fasting** for Ramadan status or excused reasons
+- Adjust Quran/Dhikr with +/- and quick-add chips
+- Log Sedekah in IDR, SGD, USD, or MYR
+- Add daily reflection notes
 
-The Autopilot plan is configured during onboarding, but you can adjust it later:
-1. Go to Settings > Goals
-2. Configure:
-   - Quran goal (1 Khatam / 2 Khatam / Custom pages per day)
-   - Dhikr target (33/100/300/1000 per day)
-   - Sedekah goal (optional, with currency selection)
-3. View your daily plan in the Plan tab
+### Sunnah fasting
 
-### Quick Logging
+- Open the **Sunnah** tab and tap a date on the calendar
+- Choose: sunnah fast, qadha make-up, or excused (with reason chips)
+- Before Ramadan, use **Month** and **Insights** for sunnah-only views
 
-The Today tab allows fast logging:
-- Toggle boolean habits (fasting, Taraweeh, I'tikaf)
-- Adjust count habits (Quran pages, Dhikr) with +/- buttons
-- Use quick-add chips (+5, +10, +20 for Quran; +33, +100, +300 for Dhikr)
-- Track Sedekah with currency support (IDR, SGD, USD, MYR)
-- Write daily reflections
+### Zakat & Fidyah
 
-### Backup & Restore
+- **Sunnah** tab → **Zakat, Fidyah & Qadha**, or **Insights** → obligations cards
+- Record payments; view charts and history on the obligations screen
+- Open **View full breakdown** from Insights for period-specific review
 
-1. Go to Settings > Backup & Restore
-2. **Export**: Tap "Export Backup" to share your data as JSON
-3. **Import**: Tap "Import Backup" to select and restore a JSON file
+### Backup & restore
 
-**Note**: Import will replace all existing data. Make sure to export before importing.
-
-## Autopilot Algorithm
-
-The Autopilot generates daily plans based on:
-
-1. **Quran Planning**:
-   - Default: 1 Juz/day = 20 pages/day
-   - Calculates remaining pages and days
-   - Suggests daily target with catch-up cap (max +5 pages/day)
-   - Distributes reading across morning/day/night time blocks
-
-2. **Time Allocation**:
-   - Quran: ~1.5 minutes per page
-   - Dhikr: ~0.02 minutes per count
-   - Taraweeh: 20 minutes (fixed)
-
-3. **Catch-Up Mode**:
-   - If you miss days, increases daily target
-   - Caps increase to prevent overwhelming targets (default +5 pages/day)
-   - Shows warnings if completion becomes unlikely
-
-## Completion Score
-
-The completion score (0-100) is calculated as:
-- Boolean habits: 1 if done, 0 if not
-- Count habits: progress = min(value / target, 1)
-- Score = average of all enabled habits × 100
+**Settings → Backup & Restore** — export JSON before importing; import replaces all local data.
 
 ## Development
 
-### Running Tests
-
 ```bash
-flutter test
+flutter test                    # Unit tests
+flutter build appbundle --release   # Play Store AAB
 ```
 
-### Building for Release
+Integration tests live under `integration_test/` (require a device/emulator).
 
-```bash
-flutter build apk --release  # Android
-flutter build ios --release  # iOS
-```
+Release AABs, Play Console copy, internal design notes, and helper scripts are **local only** (`bundles_release/`, `docs/`, `scripts/` are gitignored).
 
-### Database Migrations
+### Database migrations
 
-To add a migration:
-1. Update `schemaVersion` in `app_database.dart`
-2. Add migration logic in `onUpgrade` callback
-3. Regenerate code: `flutter pub run build_runner build`
+1. Bump `schemaVersion` in `app_database.dart`
+2. Add logic in `onUpgrade`
+3. Run `flutter pub run build_runner build --delete-conflicting-outputs`
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License — see [LICENSE](LICENSE).
 
 ## Contributing
 
-This is a standalone app. For issues or feature requests, please open an issue in the repository.
+Open an issue for bugs or feature requests. Pull requests welcome.
