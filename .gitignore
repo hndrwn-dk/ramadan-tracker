@@ -58,3 +58,4 @@ android/app/*.keystore
 
 # Release builds and Play Store materials (AAB, APK, release notes)
 bundle_release/
+bundles_release/
