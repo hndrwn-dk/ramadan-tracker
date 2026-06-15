@@ -102,12 +102,36 @@ class AppHarness {
     return find.text('Ramadan sedang berlangsung').evaluate().isNotEmpty;
   }
 
+  static bool isSeasonEndedToday(WidgetTester tester) {
+    return find.text('Musim Berakhir').evaluate().isNotEmpty ||
+        find.text('Season Ended').evaluate().isNotEmpty;
+  }
+
+  static bool hasRamadanInsightsTabs(WidgetTester tester) {
+    return find.text('7 Hari').evaluate().isNotEmpty &&
+        find.text('Ramadan').evaluate().isNotEmpty;
+  }
+
   static bool hasNoSeason(WidgetTester tester) {
     return find.text('Tidak ada musim ditemukan').evaluate().isNotEmpty ||
         find.text('No season found').evaluate().isNotEmpty;
   }
 
-  /// Wawasan tab (index 4); waits for season analytics cards.
+  /// Wawasan tab (index 4) in year-round mode (post-Ramadan / pre-Ramadan).
+  static Future<void> openWawasanYearRoundView(WidgetTester tester) async {
+    await tapNavIndex(tester, 4);
+
+    for (var i = 0; i < 60; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+      if (find.textContaining('Bagaimana puasa sunnahmu').evaluate().isNotEmpty ||
+          find.textContaining('How is your sunnah fasting').evaluate().isNotEmpty) {
+        break;
+      }
+    }
+    await settle(tester);
+  }
+
+  /// Opens season Ramadan analytics (active season only). Prefer [openWawasanYearRoundView] after Ramadan ends.
   static Future<void> openWawasanSeasonView(WidgetTester tester) async {
     await tapNavIndex(tester, 4);
 

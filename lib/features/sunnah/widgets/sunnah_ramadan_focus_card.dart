@@ -4,6 +4,7 @@ import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 /// Shown on the Sunnah tab while Ramadan is active — links to Hari Ini & Wawasan.
@@ -93,10 +94,8 @@ class SunnahRamadanFocusCard extends ConsumerWidget {
                       ),
                     );
                     final insightsBtn = OutlinedButton.icon(
-                      onPressed: () {
-                        ref.read(wawasanSunnahTabProvider.notifier).state = false;
-                        ref.read(tabIndexProvider.notifier).state = 4;
-                      },
+                      onPressed: () =>
+                          YearRoundNavigation.openRamadanInsights(ref),
                       icon: const Icon(Icons.insights, size: 18),
                       label: Text(l10n.viewInsights),
                       style: OutlinedButton.styleFrom(
@@ -107,10 +106,10 @@ class SunnahRamadanFocusCard extends ConsumerWidget {
                       ),
                     );
                     final sunnahHistoryBtn = OutlinedButton.icon(
-                      onPressed: () {
-                        ref.read(wawasanSunnahTabProvider.notifier).state = true;
-                        ref.read(tabIndexProvider.notifier).state = 4;
-                      },
+                      onPressed: () => YearRoundNavigation.openRamadanInsights(
+                        ref,
+                        sunnahHistory: true,
+                      ),
                       icon: const Icon(Icons.nightlight_round, size: 18),
                       label: Text(s.viewSunnahHistoryDuringRamadan),
                       style: OutlinedButton.styleFrom(

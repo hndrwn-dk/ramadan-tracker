@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
-import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/features/qadha/qadha_screen.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_month_calendar.dart';
+import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
+import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_ramadan_focus_card.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_share_card.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
@@ -87,42 +87,14 @@ class _YearRoundBody extends ConsumerWidget {
     final monthAnchor = DateTime(today.year, today.month, 1);
     final monthAsync = ref.watch(sunnahMonthProvider(monthAnchor));
     final statsAsync = ref.watch(sunnahStatsProvider);
-    final seasonAsync = ref.watch(currentSeasonProvider);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         if (seasonState == SeasonState.preRamadan)
-          seasonAsync.when(
-            data: (season) {
-              if (season == null) return const SizedBox.shrink();
-              final daysUntil =
-                  season.startDate.difference(DateTime(today.year, today.month, today.day)).inDays;
-              if (daysUntil <= 0) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: PremiumCard(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.schedule,
-                          color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          s.preRamadanBanner(daysUntil),
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16),
+            child: PreRamadanBanner(),
           ),
         _HijriHeader(s: s, date: today),
         const SizedBox(height: 16),
@@ -198,9 +170,7 @@ class _WawasanBanner extends ConsumerWidget {
             ),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(tabIndexProvider.notifier).state = 4;
-            },
+            onPressed: () => YearRoundNavigation.openYearRoundInsights(ref),
             child: Text(s.openWawasan),
           ),
         ],

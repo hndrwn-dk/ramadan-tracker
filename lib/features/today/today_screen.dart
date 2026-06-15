@@ -36,10 +36,11 @@ import 'package:flutter/services.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
-import 'package:ramadan_tracker/utils/ramadan_dates.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/today/widgets/ramadan_fasting_status_sheet.dart';
-import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
+import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
+import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
+import 'package:ramadan_tracker/features/year_round/widgets/year_round_actions.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
@@ -131,7 +132,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       body: seasonAsync.when(
         data: (season) {
           if (season == null) {
-            return _buildNoSeasonView();
+            return const YearRoundNoSeasonBody();
           }
           return _buildContent(season.id, dayIndex, season.days, seasonState);
         },
@@ -159,18 +160,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (state == SeasonState.preRamadan)
-              _buildStateBanner(
-                AppLocalizations.of(context)!.preRamadan,
-                AppLocalizations.of(context)!.preRamadanSubtitle,
-                Icons.calendar_today,
-              ),
+            if (state == SeasonState.preRamadan) ...[
+              const PreRamadanBanner(),
+              const SizedBox(height: 16),
+            ],
             if (state == SeasonState.postRamadan) ...[
               _buildSeasonEndedCard(seasonId),
               const SizedBox(height: 24),
-              ..._buildYearRoundActions(compact: true),
+              const YearRoundActions(compact: true),
             ],
-            if (state == SeasonState.preRamadan) const SizedBox(height: 16),
             // Only show tracking content if season is active
             if (state == SeasonState.active) ...[
               if (!_focusMode) ...[
@@ -322,180 +320,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildStateBanner(String title, String message, IconData icon) {
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceVariant,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoSeasonView() {
-    final s = SunnahStrings.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        const SizedBox(height: 8),
-        Icon(
-          Icons.nightlight_round,
-          size: 56,
-          color: scheme.primary.withOpacity(0.6),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          s.t('Mode sepanjang tahun', 'Year-round mode'),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          s.t(
-            'Belum ada musim Ramadan. Lanjutkan ibadah harian dengan puasa sunnah, qadha, dan pantau acara Islam.',
-            'No Ramadan season yet. Keep up daily worship with sunnah fasts, qadha, and Islamic events.',
-          ),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurface.withOpacity(0.7),
-              ),
-        ),
-        const SizedBox(height: 24),
-        ..._buildYearRoundActions(),
-      ],
-    );
-  }
-
-  /// Shared year-round CTAs for users without a season and after Ramadan ends.
-  List<Widget> _buildYearRoundActions({bool compact = false}) {
-    final s = SunnahStrings.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final daysUntil = RamadanDates.daysUntilNext(DateTime.now());
-    final ramadanNear = daysUntil != null && daysUntil <= 45;
-
-    return [
-      if (!compact)
-        Text(
-          s.t(
-            'Lanjutkan ibadah harian dengan puasa sunnah, qadha, dan pantau acara Islam.',
-            'Keep up daily worship with sunnah fasts, qadha, and Islamic events.',
-          ),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurface.withOpacity(0.7),
-              ),
-        ),
-      if (!compact) const SizedBox(height: 16),
-      if (ramadanNear) _buildRamadanNearCard(s, daysUntil!),
-      if (ramadanNear) const SizedBox(height: 16),
-      SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: () => ref.read(tabIndexProvider.notifier).state = 3,
-          icon: const Icon(Icons.nightlight_round),
-          label: Text(s.sunnahTitle),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
-          ),
-          icon: const Icon(Icons.add),
-          label: Text(s.t('Buat musim Ramadan', 'Create Ramadan season')),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-        ),
-      ),
-    ];
-  }
-
-  Widget _buildRamadanNearCard(SunnahStrings s, int daysUntil) {
-    final scheme = Theme.of(context).colorScheme;
-    final msg = daysUntil <= 0
-        ? s.t('Ramadan sudah tiba!', 'Ramadan is here!')
-        : s.t('Ramadan tinggal $daysUntil hari lagi',
-            'Ramadan is in $daysUntil days');
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [scheme.primary, scheme.primaryContainer],
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.celebration, color: scheme.onPrimary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  msg,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: scheme.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            s.t('Siapkan musimmu sekarang untuk Quran plan, Taraweeh, dan pengingat Sahur/Iftar.',
-                'Set up your season now for the Quran plan, Taraweeh, and Sahur/Iftar reminders.'),
-            style: TextStyle(color: scheme.onPrimary.withOpacity(0.9)),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonal(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
-              ),
-              child: Text(s.t('Siapkan musim Ramadan', 'Set up Ramadan season')),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSeasonEndedCard(int seasonId) {
     final l10n = AppLocalizations.of(context)!;
     return Card(
@@ -540,13 +364,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               builder: (context, constraints) {
                 final narrow = constraints.maxWidth < 340;
                 final newSeasonBtn = OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CreateSeasonFlow(),
-                      ),
-                    );
-                  },
+                  onPressed: () => YearRoundNavigation.openCreateSeason(context),
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(l10n.newSeason),
                   style: OutlinedButton.styleFrom(
@@ -561,9 +379,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   ),
                 );
                 final insightsBtn = ElevatedButton.icon(
-                  onPressed: () {
-                    ref.read(tabIndexProvider.notifier).state = 4;
-                  },
+                  onPressed: () => YearRoundNavigation.openYearRoundInsights(ref),
                   icon: const Icon(Icons.insights, size: 18),
                   label: Text(l10n.viewInsights),
                   style: ElevatedButton.styleFrom(

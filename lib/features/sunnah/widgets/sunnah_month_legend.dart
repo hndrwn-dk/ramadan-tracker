@@ -21,6 +21,9 @@ class SunnahMonthLegend extends StatelessWidget {
           _chip(context, scheme.primary.withValues(alpha: 0.12),
               scheme.onSurface, s.legendSunnahDay,
               border: scheme.primary.withValues(alpha: 0.4)),
+          _chip(context, scheme.primaryContainer.withValues(alpha: 0.45),
+              scheme.onSurface, s.legendToday,
+              border: scheme.primary, borderWidth: 2),
         ],
       ),
     );
@@ -32,6 +35,7 @@ class SunnahMonthLegend extends StatelessWidget {
     Color fg,
     String label, {
     Color? border,
+    double borderWidth = 1,
   }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -42,7 +46,9 @@ class SunnahMonthLegend extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(4),
-            border: border != null ? Border.all(color: border) : null,
+            border: border != null
+                ? Border.all(color: border, width: borderWidth)
+                : null,
           ),
         ),
         const SizedBox(width: 6),

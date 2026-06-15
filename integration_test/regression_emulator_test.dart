@@ -5,20 +5,21 @@ import 'package:ramadan_tracker/main.dart' as app;
 
 import 'support/app_harness.dart';
 
-/// Emulator regression: simulates completed Ramadan (uzur haid/sakit) + 6 Syawal
-/// fasts via REGRESSION_SEED, then verifies Wawasan season cards render data.
+/// Emulator regression: completed Ramadan (uzur haid/sakit) + 6 Syawal fasts via
+/// REGRESSION_SEED, then verifies year-round UI after the season ends.
 ///
-/// Run: scripts/run_regression_emulator.sh
+/// Run: flutter test integration_test/regression_emulator_test.dart -d <device> --dart-define=REGRESSION_SEED=true
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   const regressionSeed = bool.fromEnvironment('REGRESSION_SEED');
 
-  testWidgets('Ramadan simulation + Wawasan season regression', (tester) async {
+  testWidgets('Post-Ramadan year-round regression', (tester) async {
     expect(
       regressionSeed,
       isTrue,
-      reason: 'Set --dart-define=REGRESSION_SEED=true (use scripts/run_regression_emulator.sh)',
+      reason:
+          'Set --dart-define=REGRESSION_SEED=true when running this test',
     );
 
     app.main();
@@ -28,28 +29,29 @@ void main() {
     expect(AppHarness.hasNoSeason(tester), isFalse,
         reason: 'Seeded season must exist');
 
-    // Sunnah tab: post-Ramadan year-round mode (not active Ramadan focus)
+    final year = DateTime.now().year;
+
+    // Today: post-Ramadan season ended card + year-round CTAs (not daily tracking)
+    expect(AppHarness.isSeasonEndedToday(tester), isTrue);
+    expect(find.textContaining('Puasa Sunnah'), findsWidgets);
+
+    // Month: sunnah calendar, not 30-day Ramadan grid legend
+    await AppHarness.tapNavIndex(tester, 1);
+    expect(find.text('Kalender Puasa Sunnah'), findsOneWidget);
+    expect(find.textContaining('Cincin = penyelesaian'), findsNothing);
+
+    // Sunnah tab: year-round mode (not Ramadan focus card)
     await AppHarness.tapNavIndex(tester, 3);
     expect(AppHarness.isRamadanFocusMode(tester), isFalse);
     expect(find.text('Puasa Sunnah'), findsOneWidget);
 
-    // Wawasan > Ramadan tab: season analytics must show seeded data
-    await AppHarness.openWawasanSeasonView(tester);
+    // Wawasan: sunnah year-round view + link to past season report
+    await AppHarness.openWawasanYearRoundView(tester);
+    expect(AppHarness.hasRamadanInsightsTabs(tester), isFalse);
+    expect(find.textContaining('Puasa Sunnah $year'), findsWidgets);
+    expect(find.text('Lihat ringkasan Ramadan'), findsOneWidget);
 
-    expect(find.text('Tidak ada musim ditemukan'), findsNothing);
-
-    final year = DateTime.now().year;
-    final seasonCards = [
-      find.textContaining('Zakat & Fidyah'),
-      find.textContaining('Sedekah'),
-      find.textContaining('Puasa Sunnah $year'),
-    ];
-    for (final card in seasonCards) {
-      await AppHarness.scrollUntilVisible(tester, card);
-      expect(card, findsWidgets);
-    }
-
-    // 6 Syawal fasts seeded for this year
+    // 6 Syawal fasts seeded for this year appear in sunnah hero/stats
     expect(find.text('6'), findsWidgets);
 
     // Zakat/Fidyah hub still opens from Sunnah tab

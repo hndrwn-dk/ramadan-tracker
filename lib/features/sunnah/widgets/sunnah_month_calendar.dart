@@ -26,6 +26,9 @@ class SunnahMonthCalendar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final today = DateTime.now();
+    final todayDate =
+        DateTime(today.year, today.month, today.day);
     final daysInMonth =
         DateTime(monthAnchor.year, monthAnchor.month + 1, 0).day;
     final firstWeekday = monthAnchor.weekday % 7;
@@ -37,6 +40,7 @@ class SunnahMonthCalendar extends ConsumerWidget {
 
     for (var d = 1; d <= daysInMonth; d++) {
       final date = DateTime(monthAnchor.year, monthAnchor.month, d);
+      final isToday = date == todayDate;
       final key = dateKey(date);
       final entry = data[key];
       final isSunnah = SunnahFastingRules.typesFor(date).isNotEmpty;
@@ -51,10 +55,21 @@ class SunnahMonthCalendar extends ConsumerWidget {
         fg = scheme.onPrimary;
       } else if (excused) {
         bg = scheme.tertiary.withValues(alpha: 0.3);
+      } else if (isToday) {
+        bg = scheme.primaryContainer.withValues(alpha: 0.45);
       } else if (isSunnah) {
         bg = scheme.primary.withValues(alpha: 0.12);
       } else {
         bg = Colors.transparent;
+      }
+
+      final Border? cellBorder;
+      if (isToday) {
+        cellBorder = Border.all(color: scheme.primary, width: 2.5);
+      } else if (isSunnah && !fasted) {
+        cellBorder = Border.all(color: scheme.primary.withValues(alpha: 0.4));
+      } else {
+        cellBorder = null;
       }
 
       cells.add(
@@ -66,12 +81,26 @@ class SunnahMonthCalendar extends ConsumerWidget {
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(10),
-              border: isSunnah && !fasted
-                  ? Border.all(color: scheme.primary.withValues(alpha: 0.4))
+              border: cellBorder,
+              boxShadow: isToday
+                  ? [
+                      BoxShadow(
+                        color: scheme.primary.withValues(alpha: 0.18),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
                   : null,
             ),
             alignment: Alignment.center,
-            child: Text('$d', style: TextStyle(color: fg, fontSize: 13)),
+            child: Text(
+              '$d',
+              style: TextStyle(
+                color: fg,
+                fontSize: 13,
+                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
           ),
         ),
       );

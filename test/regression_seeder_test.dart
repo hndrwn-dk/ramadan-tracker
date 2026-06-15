@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
+import 'package:ramadan_tracker/domain/services/goal_reminder_service.dart';
+import 'package:ramadan_tracker/domain/services/notification_season_resolver.dart';
 import 'package:ramadan_tracker/features/insights/services/season_insights_service.dart';
 import 'package:ramadan_tracker/features/insights/services/sunnah_insights_service.dart';
 import 'package:ramadan_tracker/testing/regression_seeder.dart';
@@ -51,6 +53,10 @@ void main() {
     expect(sunnahInsights.hasAnyData, isTrue);
 
     final seasonModel = SeasonModel.fromDb(seasons.first);
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    expect(seasonModel.getState(today), SeasonState.postRamadan);
+    expect(GoalReminderService.isActiveSeasonDay(seasons.first, today), isFalse);
+
     final obligations = await SeasonInsightsService.getObligationsSeasonAnalytics(
       season: seasonModel,
       database: db,
@@ -74,6 +80,12 @@ void main() {
       seasonHabits: seasonHabitModels,
     );
     expect(sedekah.total, 200000);
+
+    expect(
+      NotificationSeasonResolver.pickForScheduling(seasons, today),
+      isNull,
+      reason: 'Ended-only season must not drive notification scheduling',
+    );
 
     await db.close();
   });

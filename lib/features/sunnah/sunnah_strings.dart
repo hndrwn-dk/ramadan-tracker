@@ -219,6 +219,34 @@ class SunnahStrings {
   String preRamadanBanner(int days) => id
       ? 'Ramadan dimulai $days hari lagi — persiapkan diri!'
       : 'Ramadan starts in $days days — get ready!';
+  String get preRamadanBannerHint => t(
+        'Atur rencana autopilot di tab Rencana. Lacak puasa sunnah dan qadha di tab Sunnah.',
+        'Set up your autopilot plan in the Plan tab. Track sunnah fasts and qadha in the Sunnah tab.',
+      );
+  String get openAutopilotPlan =>
+      t('Buka Rencana Autopilot', 'Open Autopilot Plan');
+  String get yearRoundModeTitle =>
+      t('Mode sepanjang tahun', 'Year-round mode');
+  String get yearRoundIntro => t(
+        'Belum ada musim Ramadan. Lanjutkan ibadah harian dengan puasa sunnah, qadha, dan pantau acara Islam.',
+        'No Ramadan season yet. Keep up daily worship with sunnah fasts, qadha, and Islamic events.',
+      );
+  String get createRamadanSeason =>
+      t('Buat musim Ramadan', 'Create Ramadan season');
+  String get ramadanIsHere => t('Ramadan sudah tiba!', 'Ramadan is here!');
+  String ramadanCountdown(int days) => id
+      ? 'Ramadan tinggal $days hari lagi'
+      : 'Ramadan is in $days days';
+  String get ramadanNearSetupHint => t(
+        'Siapkan musimmu sekarang untuk Quran plan, Taraweeh, dan pengingat Sahur/Iftar.',
+        'Set up your season now for the Quran plan, Taraweeh, and Sahur/Iftar reminders.',
+      );
+  String get setupRamadanSeason =>
+      t('Siapkan musim Ramadan', 'Set up Ramadan season');
+  String get planPreRamadanPreviewHint => t(
+        'Pratinjau rencana hari pertama — autopilot aktif otomatis saat Ramadan dimulai.',
+        'Preview of day-one plan — autopilot activates automatically when Ramadan starts.',
+      );
 
   String get sunnahMonthViewTitle =>
       t('Kalender Puasa Sunnah', 'Sunnah Fast Calendar');
@@ -244,6 +272,7 @@ class SunnahStrings {
   String get legendFasted => t('Berpuasa', 'Fasted');
   String get legendExcused => t('Uzur', 'Excused');
   String get legendSunnahDay => t('Hari sunnah', 'Sunnah day');
+  String get legendToday => t('Hari ini', 'Today');
   String get legendNone => t('Kosong', 'Empty');
   String get qadhaShort => t('Qadha', 'Qadha');
   String get sunnahHeroTitle =>

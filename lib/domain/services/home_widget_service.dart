@@ -16,6 +16,26 @@ class HomeWidgetService {
   static const String _qualifiedAndroidName =
       'com.tursinalabs.ramadan.tracker.SunnahWidgetProvider';
 
+  /// Builds the sunnah line shown on the widget (season-independent).
+  static String formatSunnahTodayLine({
+    required bool isId,
+    required bool fasted,
+    required DateTime today,
+  }) {
+    if (fasted) {
+      return isId ? 'Puasa sunnah tercatat' : 'Sunnah fast logged';
+    }
+    if (SunnahFastingRules.isRamadan(today)) {
+      return isId ? 'Bulan Ramadan' : 'Ramadan';
+    }
+    final types = SunnahFastingRules.typesFor(today);
+    if (types.isEmpty) {
+      return isId ? 'Tidak ada puasa sunnah hari ini' : 'No sunnah fast today';
+    }
+    final label = isId ? types.first.labelId() : types.first.labelEn();
+    return isId ? 'Hari ini: $label' : 'Today: $label';
+  }
+
   static Future<void> update(AppDatabase database) async {
     if (!Platform.isAndroid) return;
     try {
@@ -29,19 +49,11 @@ class HomeWidgetService {
 
       final existing = await database.sunnahFastsDao.getByDate(today);
       final fasted = existing?.status == FastingStatus.fasted;
-      final types = SunnahFastingRules.typesFor(today);
-      String sunnahText;
-      if (fasted) {
-        sunnahText = isId ? 'Puasa sunnah tercatat' : 'Sunnah fast logged';
-      } else if (SunnahFastingRules.isRamadan(today)) {
-        sunnahText = isId ? 'Bulan Ramadan' : 'Ramadan';
-      } else if (types.isEmpty) {
-        sunnahText =
-            isId ? 'Tidak ada puasa sunnah hari ini' : 'No sunnah fast today';
-      } else {
-        final label = isId ? types.first.labelId() : types.first.labelEn();
-        sunnahText = isId ? 'Hari ini: $label' : 'Today: $label';
-      }
+      final sunnahText = formatSunnahTodayLine(
+        isId: isId,
+        fasted: fasted,
+        today: today,
+      );
 
       final events = IslamicEvents.upcoming(today, limit: 1);
       String eventText = '';

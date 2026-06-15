@@ -13,6 +13,10 @@ import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:ramadan_tracker/features/plan/widgets/today_remaining_card.dart';
 import 'package:ramadan_tracker/features/plan/widgets/plan_block_card.dart';
+import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
+import 'package:ramadan_tracker/features/year_round/widgets/season_completed_card.dart';
+import 'package:ramadan_tracker/features/year_round/widgets/year_round_actions.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
@@ -61,7 +65,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       body: seasonAsync.when(
         data: (season) {
           if (season == null) {
-            return Center(child: Text(AppLocalizations.of(context)!.noSeasonFound));
+            return const YearRoundNoSeasonBody();
           }
           return _buildContent(season.id, season.days);
         },
@@ -96,11 +100,16 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   }
 
   Widget _buildSetupWizard(int seasonId, int totalDays) {
+    final seasonState = ref.watch(seasonStateProvider);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (seasonState == SeasonState.preRamadan) ...[
+            const PreRamadanBanner(showPlanButton: false),
+            const SizedBox(height: 16),
+          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -269,60 +278,9 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final dhikrPlanAsync = ref.watch(dhikrPlanProvider(seasonId));
 
     if (seasonState == SeasonState.postRamadan) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check_circle,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  AppLocalizations.of(context)!.seasonCompleted,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  AppLocalizations.of(context)!.seasonCompletedMessage,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Navigate to new season creation
-                    // For now, just show a message
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(AppLocalizations.of(context)!.newSeasonCreationComingSoon)),
-                    );
-                  },
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: Text(AppLocalizations.of(context)!.startNewSeason),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: SeasonCompletedCard(),
       );
     }
 
@@ -364,11 +322,26 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                   builder: (context, timeWindowsSnapshot) {
                     final timeWindows = timeWindowsSnapshot.data ?? {};
 
+                    final s = SunnahStrings.of(context);
                     return SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (seasonState == SeasonState.preRamadan) ...[
+                            const PreRamadanBanner(showPlanButton: false),
+                            const SizedBox(height: 12),
+                            Text(
+                              s.planPreRamadanPreviewHint,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                           TodayRemainingCard(
                             seasonId: seasonId,
                             dayIndex: effectiveDayIndex,
