@@ -11,6 +11,10 @@ abstract final class YearRoundNavigation {
     ref.read(tabIndexProvider.notifier).state = 3;
   }
 
+  static void openMonthTab(WidgetRef ref) {
+    ref.read(tabIndexProvider.notifier).state = 1;
+  }
+
   static void openPlanTab(WidgetRef ref) {
     ref.read(tabIndexProvider.notifier).state = 2;
   }

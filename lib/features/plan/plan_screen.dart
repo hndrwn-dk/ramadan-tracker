@@ -65,7 +65,28 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       body: seasonAsync.when(
         data: (season) {
           if (season == null) {
-            return const YearRoundNoSeasonBody();
+            return const PlanNoSeasonBody();
+          }
+          final seasonState = ref.watch(seasonStateProvider);
+          if (seasonState == SeasonState.postRamadan) {
+            return const SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: SeasonCompletedCard(),
+            );
+          }
+          if (seasonState == SeasonState.preRamadan) {
+            return Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: PreRamadanBanner(
+                    target: PreRamadanBannerTarget.autopilot,
+                    showButton: false,
+                  ),
+                ),
+                Expanded(child: _buildContent(season.id, season.days)),
+              ],
+            );
           }
           return _buildContent(season.id, season.days);
         },
@@ -100,16 +121,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   }
 
   Widget _buildSetupWizard(int seasonId, int totalDays) {
-    final seasonState = ref.watch(seasonStateProvider);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (seasonState == SeasonState.preRamadan) ...[
-            const PreRamadanBanner(showPlanButton: false),
-            const SizedBox(height: 16),
-          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -277,13 +293,6 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final seasonState = ref.watch(seasonStateProvider);
     final dhikrPlanAsync = ref.watch(dhikrPlanProvider(seasonId));
 
-    if (seasonState == SeasonState.postRamadan) {
-      return const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: SeasonCompletedCard(),
-      );
-    }
-
     return dhikrPlanAsync.when(
       data: (dhikrPlan) {
         // Use the actual current day index, same as Today screen
@@ -329,8 +338,6 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (seasonState == SeasonState.preRamadan) ...[
-                            const PreRamadanBanner(showPlanButton: false),
-                            const SizedBox(height: 12),
                             Text(
                               s.planPreRamadanPreviewHint,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(

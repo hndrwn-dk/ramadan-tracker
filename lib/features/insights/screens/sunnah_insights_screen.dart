@@ -6,6 +6,7 @@ import 'package:ramadan_tracker/features/insights/services/sunnah_insights_servi
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class SunnahInsightsScreen extends ConsumerWidget {
   const SunnahInsightsScreen({super.key});
@@ -16,7 +17,10 @@ class SunnahInsightsScreen extends ConsumerWidget {
     final year = DateTime.now().year;
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.insightsSunnahTitleFor(year))),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: Text(s.insightsSunnahTitleFor(year)),
+      ),
       body: FutureBuilder<SunnahInsightsData>(
         future: SunnahInsightsService.load(ref.read(databaseProvider)),
         builder: (context, snapshot) {

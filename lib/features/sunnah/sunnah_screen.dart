@@ -6,9 +6,8 @@ import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/features/qadha/qadha_screen.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dart';
-import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_month_calendar.dart';
+import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_recent_days_strip.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
-import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_ramadan_focus_card.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_share_card.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
@@ -42,7 +41,7 @@ class SunnahScreen extends ConsumerWidget {
       ),
       body: isRamadanActive
           ? _RamadanModeBody(s: s)
-          : _YearRoundBody(s: s, seasonState: seasonState),
+          : _YearRoundBody(s: s),
     );
   }
 }
@@ -78,8 +77,7 @@ class _RamadanModeBody extends ConsumerWidget {
 
 class _YearRoundBody extends ConsumerWidget {
   final SunnahStrings s;
-  final SeasonState seasonState;
-  const _YearRoundBody({required this.s, required this.seasonState});
+  const _YearRoundBody({required this.s});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -87,15 +85,14 @@ class _YearRoundBody extends ConsumerWidget {
     final monthAnchor = DateTime(today.year, today.month, 1);
     final monthAsync = ref.watch(sunnahMonthProvider(monthAnchor));
     final statsAsync = ref.watch(sunnahStatsProvider);
+    final monthFasted = monthAsync.asData?.value.values
+            .where((e) => e.status == FastingStatus.fasted)
+            .length ??
+        0;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (seasonState == SeasonState.preRamadan)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 16),
-            child: PreRamadanBanner(),
-          ),
         _HijriHeader(s: s, date: today),
         const SizedBox(height: 16),
         _TodayCard(s: s, date: today),
@@ -121,19 +118,41 @@ class _YearRoundBody extends ConsumerWidget {
         const SizedBox(height: 16),
         _QadhaEntryTile(s: s, yearRound: true),
         const SizedBox(height: 16),
-        Text(s.monthLog, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        monthAsync.when(
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          error: (e, _) => Text('Error: $e'),
-          data: (map) => SunnahMonthCalendar(
-            monthAnchor: monthAnchor,
-            data: map,
+        PremiumCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      s.monthLog,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  if (monthFasted > 0)
+                    Text(
+                      '$monthFasted',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const SunnahRecentDaysStrip(),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => YearRoundNavigation.openMonthTab(ref),
+                  icon: const Icon(Icons.calendar_month, size: 18),
+                  label: Text(s.openFullMonthCalendar),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
+import 'package:ramadan_tracker/features/insights/widgets/qadha_progress_card.dart';
+import 'package:ramadan_tracker/features/insights/widgets/season_compare_teaser_card.dart';
+import 'package:ramadan_tracker/features/insights/widgets/year_round_obligations_card.dart';
 import 'package:ramadan_tracker/features/insights/screens/season_report_screen.dart';
 import 'package:ramadan_tracker/features/insights/screens/sunnah_insights_screen.dart';
 import 'package:ramadan_tracker/features/insights/services/sunnah_insights_service.dart';
@@ -126,21 +129,33 @@ class SunnahOnlyInsightsView extends ConsumerWidget {
               if (!duringRamadan && !showPostRamadanReview)
                 seasonAsync.when(
                   data: (season) {
-                    if (season == null) {
-                      return PremiumCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          s.noSeasonSunnahInsightsHint,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      );
-                    }
-                    return const PreRamadanBanner();
+                    if (season == null) return const SizedBox.shrink();
+                    return const PreRamadanBanner(showButton: false);
                   },
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
               if (!duringRamadan && !showPostRamadanReview) const SizedBox(height: 16),
+              if (!duringRamadan) ...[
+                const QadhaProgressCard(),
+                const SizedBox(height: 16),
+                const YearRoundObligationsCard(),
+                const SizedBox(height: 16),
+              ],
+              if (showPostRamadanReview)
+                seasonAsync.when(
+                  data: (season) {
+                    if (season == null) return const SizedBox.shrink();
+                    return Column(
+                      children: [
+                        SeasonCompareTeaserCard(seasonId: season.id),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
               SunnahInsightsHeroCard(data: data, strings: s),
               const SizedBox(height: 16),
               SunnahRecentHeatmapCard(data: data, strings: s),

@@ -77,6 +77,22 @@ class SunnahStrings {
   String get inDays => t('hari lagi', 'days');
   String get tomorrow => t('Besok', 'Tomorrow');
   String get monthLog => t('Catatan bulan ini', 'This month');
+  String recentDaysStripTitle(int days) => id
+      ? '$days hari terakhir'
+      : 'Last $days days';
+  String get openFullMonthCalendar =>
+      t('Buka kalender bulan', 'Open month calendar');
+  String get monthTabHint => t(
+        'Geser bulan untuk meninjau dan mencatat puasa sunnah kapan saja.',
+        'Swipe months to review and log sunnah fasts any time.',
+      );
+  String get monthPostRamadanHint => t(
+        'Musim Ramadan terakhir selesai. Gunakan kalender ini untuk puasa sunnah sepanjang tahun.',
+        'Your last Ramadan season is complete. Use this calendar for year-round sunnah fasting.',
+      );
+  String get monthSummaryFasted => t('Berpuasa', 'Fasted');
+  String get monthSummaryExcused => t('Uzur', 'Excused');
+  String get monthSummarySunnahDays => t('Hari sunnah', 'Sunnah days');
   String get qadhaTitle => t('Qadha & Fidyah', 'Qadha & Fidyah');
   String get qadhaRemaining => t('Sisa qadha', 'Qadha remaining');
   String get qadhaOwed => t('Total utang', 'Total owed');
@@ -208,6 +224,13 @@ class SunnahStrings {
       );
   String get viewPastRamadanInsights =>
       t('Lihat ringkasan Ramadan', 'View Ramadan summary');
+  String get compareSeasonsTitle =>
+      t('Bandingkan musim Ramadan', 'Compare Ramadan seasons');
+  String compareSeasonsSubtitle(int current, int previous, String delta) => id
+      ? 'Skor rata-rata: $current vs $previous ($delta poin)'
+      : 'Average score: $current vs $previous ($delta pts)';
+  String get viewSeasonComparison =>
+      t('Lihat perbandingan lengkap', 'View full comparison');
   String get postRamadanReviewBanner => t(
         'Musim Ramadan terakhir sudah selesai. Lihat ringkasan musim kapan saja.',
         'Your last Ramadan season is complete. Review the season summary anytime.',
@@ -219,17 +242,23 @@ class SunnahStrings {
   String preRamadanBanner(int days) => id
       ? 'Ramadan dimulai $days hari lagi — persiapkan diri!'
       : 'Ramadan starts in $days days — get ready!';
-  String get preRamadanBannerHint => t(
-        'Atur rencana autopilot di tab Rencana. Lacak puasa sunnah dan qadha di tab Sunnah.',
-        'Set up your autopilot plan in the Plan tab. Track sunnah fasts and qadha in the Sunnah tab.',
+  String get preRamadanTodayHint => t(
+        'Buat atau lengkapi musim Ramadan dari tab Hari Ini — kebiasaan, pengingat Sahur/Iftar, dan pelacakan harian.',
+        'Create or finish your Ramadan season from the Today tab — habits, Sahur/Iftar reminders, and daily tracking.',
       );
-  String get openAutopilotPlan =>
-      t('Buka Rencana Autopilot', 'Open Autopilot Plan');
+  String get preRamadanAutopilotHint => t(
+        'Atur target Quran, dzikir, dan blok waktu harian. Autopilot aktif otomatis saat Ramadan dimulai.',
+        'Set your Quran, dhikr, and daily time-block targets. Autopilot activates when Ramadan starts.',
+      );
   String get yearRoundModeTitle =>
       t('Mode sepanjang tahun', 'Year-round mode');
   String get yearRoundIntro => t(
         'Belum ada musim Ramadan. Lanjutkan ibadah harian dengan puasa sunnah, qadha, dan pantau acara Islam.',
         'No Ramadan season yet. Keep up daily worship with sunnah fasts, qadha, and Islamic events.',
+      );
+  String get planNoSeasonIntro => t(
+        'Buat musim Ramadan untuk mengatur rencana Quran, dzikir, dan blok waktu harian.',
+        'Create a Ramadan season to set up your Quran, dhikr, and daily time-block plan.',
       );
   String get createRamadanSeason =>
       t('Buat musim Ramadan', 'Create Ramadan season');
@@ -274,6 +303,31 @@ class SunnahStrings {
   String get legendSunnahDay => t('Hari sunnah', 'Sunnah day');
   String get legendToday => t('Hari ini', 'Today');
   String get legendNone => t('Kosong', 'Empty');
+  String get legendTypeCodesTitle =>
+      t('Kode di kalender', 'Codes on calendar');
+  String typeCodeEntry(String code, String label) => '$code = $label';
+  List<(String, String)> get calendarTypeCodeLegend {
+    if (id) {
+      return [
+        ('S/K', 'Senin & Kamis'),
+        ('AB', 'Ayyamul Bidh'),
+        ('SY', 'Puasa Syawal'),
+        ('AR', 'Arafah'),
+        ('AS', 'Asyura'),
+        ('TS', "Tasu'a"),
+        ('SB', "Sya'ban"),
+      ];
+    }
+    return [
+      ('M/T', 'Mon & Thu fast'),
+      ('AB', 'Ayyamul Bidh'),
+      ('SY', 'Shawwal fast'),
+      ('AR', 'Arafah'),
+      ('AS', 'Ashura'),
+      ('TS', "Tasu'a"),
+      ('SB', "Sha'ban"),
+    ];
+  }
   String get qadhaShort => t('Qadha', 'Qadha');
   String get sunnahHeroTitle =>
       t('Bagaimana puasa sunnahmu?', 'How is your sunnah fasting?');

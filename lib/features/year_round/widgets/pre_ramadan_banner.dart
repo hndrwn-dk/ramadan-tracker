@@ -6,13 +6,24 @@ import 'package:ramadan_tracker/features/year_round/year_round_dates.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 
-/// Countdown banner shown before Ramadan starts (Today, Sunnah, Wawasan).
+/// Where the pre-Ramadan countdown banner is shown — copy and CTA differ.
+enum PreRamadanBannerTarget {
+  /// Hari Ini: season setup only (not Autopilot).
+  today,
+
+  /// Rencana Autopilot: Quran/dhikr/time-block setup.
+  autopilot,
+}
+
+/// Countdown banner shown before Ramadan starts.
 class PreRamadanBanner extends ConsumerWidget {
-  final bool showPlanButton;
+  final PreRamadanBannerTarget target;
+  final bool showButton;
 
   const PreRamadanBanner({
     super.key,
-    this.showPlanButton = true,
+    this.target = PreRamadanBannerTarget.today,
+    this.showButton = true,
   });
 
   @override
@@ -26,6 +37,10 @@ class PreRamadanBanner extends ConsumerWidget {
         if (daysUntil == null || daysUntil <= 0) {
           return const SizedBox.shrink();
         }
+
+        final hint = target == PreRamadanBannerTarget.today
+            ? s.preRamadanTodayHint
+            : s.preRamadanAutopilotHint;
 
         return PremiumCard(
           padding: const EdgeInsets.all(16),
@@ -51,7 +66,7 @@ class PreRamadanBanner extends ConsumerWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          s.preRamadanBannerHint,
+                          hint,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context)
                                     .colorScheme
@@ -64,17 +79,73 @@ class PreRamadanBanner extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (showPlanButton) ...[
+              if (showButton &&
+                  target == PreRamadanBannerTarget.today) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => YearRoundNavigation.openPlanTab(ref),
-                    icon: const Icon(Icons.auto_awesome, size: 18),
-                    label: Text(s.openAutopilotPlan),
+                  child: FilledButton.icon(
+                    onPressed: () =>
+                        YearRoundNavigation.openCreateSeason(context),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(s.setupRamadanSeason),
                   ),
                 ),
               ],
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Countdown for Autopilot when no season exists yet.
+class RamadanCountdownCard extends ConsumerWidget {
+  const RamadanCountdownCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = SunnahStrings.of(context);
+    final seasonAsync = ref.watch(currentSeasonProvider);
+    final scheme = Theme.of(context).colorScheme;
+
+    return seasonAsync.when(
+      data: (season) {
+        final daysUntil = YearRoundDates.daysUntilRamadan(season: season);
+        if (daysUntil == null || daysUntil <= 0) {
+          return const SizedBox.shrink();
+        }
+
+        return PremiumCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.celebration, color: scheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.preRamadanBanner(daysUntil),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      s.preRamadanAutopilotHint,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         );

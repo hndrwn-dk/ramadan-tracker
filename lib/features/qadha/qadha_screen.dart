@@ -8,6 +8,7 @@ import 'package:ramadan_tracker/features/qadha/widgets/obligations_history_secti
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 import 'package:ramadan_tracker/utils/obligations_utils.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 
@@ -92,7 +93,10 @@ class _QadhaScreenState extends ConsumerState<QadhaScreen> {
     final seasonAsync = ref.watch(currentSeasonProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.obligationsTitle)),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: Text(s.obligationsTitle),
+      ),
       body: balanceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),

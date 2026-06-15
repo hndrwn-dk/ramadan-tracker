@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
+import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
 import 'package:ramadan_tracker/utils/ramadan_dates.dart';
 
 /// Shared CTAs for no-season and post-Ramadan flows.
@@ -158,7 +159,33 @@ class YearRoundNoSeasonBody extends ConsumerWidget {
               ),
         ),
         const SizedBox(height: 24),
-        const YearRoundActions(),
+        const YearRoundActions(compact: true),
+      ],
+    );
+  }
+}
+
+/// Plan tab empty state when no Ramadan season exists (not the Home year-round view).
+class PlanNoSeasonBody extends ConsumerWidget {
+  const PlanNoSeasonBody({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const SizedBox(height: 8),
+        Center(
+          child: Icon(
+            Icons.auto_awesome,
+            size: 56,
+            color: scheme.primary.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const RamadanCountdownCard(),
       ],
     );
   }
