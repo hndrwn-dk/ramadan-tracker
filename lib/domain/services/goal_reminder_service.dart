@@ -50,6 +50,8 @@ class GoalReminderService {
       debugPrint('  Sedekah: $sedekahReminderEnabled');
       debugPrint('  Taraweeh: $taraweehReminderEnabled');
 
+      final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
+
       // Get today's date and day index
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
@@ -172,7 +174,7 @@ class GoalReminderService {
         if (kDebugMode) {
           debugPrint('  All conditions met, scheduling Quran reminders');
         }
-        await _scheduleQuranReminders(now, quranProgress, quranTarget, location);
+        await _scheduleQuranReminders(now, quranProgress, quranTarget, location, locale);
       } else {
         if (kDebugMode) {
           debugPrint('  ✗ Conditions not met, skipping Quran reminders');
@@ -203,7 +205,7 @@ class GoalReminderService {
         if (kDebugMode) {
           debugPrint('  All conditions met, scheduling Dhikr reminders');
         }
-        await _scheduleDhikrReminders(now, dhikrProgress, dhikrTarget, location);
+        await _scheduleDhikrReminders(now, dhikrProgress, dhikrTarget, location, locale);
       } else {
         if (kDebugMode) {
           debugPrint('  ✗ Conditions not met, skipping Dhikr reminders');
@@ -222,7 +224,7 @@ class GoalReminderService {
             target: sedekahTarget,
             progress: sedekahProgress,
           )) {
-        await _scheduleSedekahReminder(now, sedekahProgress, sedekahTarget, location);
+        await _scheduleSedekahReminder(now, sedekahProgress, sedekahTarget, location, locale);
       }
 
       // Schedule Taraweeh reminder if enabled, habit enabled, and not done
@@ -231,14 +233,20 @@ class GoalReminderService {
           taraweehHabitEnabled && 
           !isTaraweehDone &&
           times['isha'] != null) {
-        await _scheduleTaraweehReminder(times['isha']!, location);
+        await _scheduleTaraweehReminder(times['isha']!, location, locale);
       }
     } catch (e) {
       debugPrint('Error scheduling goal reminders: $e');
     }
   }
 
-  static Future<void> _scheduleQuranReminders(DateTime now, int current, int target, tz.Location location) async {
+  static Future<void> _scheduleQuranReminders(
+    DateTime now,
+    int current,
+    int target,
+    tz.Location location,
+    String locale,
+  ) async {
     // Schedule reminders at 2 PM, 6 PM, and 8 PM if not completed
     final reminderTimes = [
       DateTime(now.year, now.month, now.day, 14, 0), // 2 PM
@@ -266,6 +274,7 @@ class GoalReminderService {
             current: current,
             target: target,
             location: location,
+            locale: locale,
           );
           debugPrint('  Quran reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
         } catch (e, stackTrace) {
@@ -278,7 +287,13 @@ class GoalReminderService {
     }
   }
 
-  static Future<void> _scheduleDhikrReminders(DateTime now, int current, int target, tz.Location location) async {
+  static Future<void> _scheduleDhikrReminders(
+    DateTime now,
+    int current,
+    int target,
+    tz.Location location,
+    String locale,
+  ) async {
     // Schedule reminders at 2 PM, 6 PM, and 8 PM if not completed
     final reminderTimes = [
       DateTime(now.year, now.month, now.day, 14, 0), // 2 PM
@@ -306,6 +321,7 @@ class GoalReminderService {
             current: current,
             target: target,
             location: location,
+            locale: locale,
           );
           debugPrint('  Dhikr reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
         } catch (e, stackTrace) {
@@ -318,7 +334,13 @@ class GoalReminderService {
     }
   }
 
-  static Future<void> _scheduleSedekahReminder(DateTime now, double current, double target, tz.Location location) async {
+  static Future<void> _scheduleSedekahReminder(
+    DateTime now,
+    double current,
+    double target,
+    tz.Location location,
+    String locale,
+  ) async {
     // Schedule reminder at 4 PM if not completed
     final reminderTime = DateTime(now.year, now.month, now.day, 16, 0); // 4 PM
 
@@ -330,13 +352,18 @@ class GoalReminderService {
         current: current.toInt(),
         target: target.toInt(),
         location: location,
+        locale: locale,
       );
     } else {
       debugPrint('  Skipping Sedekah reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')} (time passed)');
     }
   }
 
-  static Future<void> _scheduleTaraweehReminder(DateTime ishaTime, tz.Location location) async {
+  static Future<void> _scheduleTaraweehReminder(
+    DateTime ishaTime,
+    tz.Location location,
+    String locale,
+  ) async {
     // Schedule reminder 15 minutes after Isha
     final reminderTime = ishaTime.add(const Duration(minutes: 15));
     final now = DateTime.now();
@@ -352,6 +379,7 @@ class GoalReminderService {
         current: 0,
         target: 0,
         location: location,
+        locale: locale,
       );
     } else {
       if (kDebugMode) {
@@ -380,6 +408,8 @@ class GoalReminderService {
       final dhikrReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_dhikr_enabled') ?? 'true';
       final sedekahReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_sedekah_enabled') ?? 'true';
       final taraweehReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_taraweeh_enabled') ?? 'true';
+      
+      final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
       
       // Get season info
       final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
@@ -487,7 +517,7 @@ class GoalReminderService {
             target: quranTarget,
             progress: quranProgress,
           )) {
-        await _scheduleQuranRemindersForDate(date, quranProgress, quranTarget, location);
+        await _scheduleQuranRemindersForDate(date, quranProgress, quranTarget, location, locale);
       }
       
       final dhikrReminderEnabledParsed = _parseBoolSetting(dhikrReminderEnabled);
@@ -497,7 +527,7 @@ class GoalReminderService {
             target: dhikrTarget,
             progress: dhikrProgress,
           )) {
-        await _scheduleDhikrRemindersForDate(date, dhikrProgress, dhikrTarget, location);
+        await _scheduleDhikrRemindersForDate(date, dhikrProgress, dhikrTarget, location, locale);
       }
       
       final sedekahReminderEnabledParsed = _parseBoolSetting(sedekahReminderEnabled);
@@ -507,19 +537,25 @@ class GoalReminderService {
             target: sedekahTarget,
             progress: sedekahProgress,
           )) {
-        await _scheduleSedekahReminderForDate(date, sedekahProgress, sedekahTarget, location);
+        await _scheduleSedekahReminderForDate(date, sedekahProgress, sedekahTarget, location, locale);
       }
       
       final taraweehReminderEnabledParsed = _parseBoolSetting(taraweehReminderEnabled);
       if (taraweehReminderEnabledParsed && taraweehHabitEnabled && !isTaraweehDone && times['isha'] != null) {
-        await _scheduleTaraweehReminderForDate(date, times['isha']!, location);
+        await _scheduleTaraweehReminderForDate(date, times['isha']!, location, locale);
       }
     } catch (e) {
       debugPrint('Error scheduling goal reminders for date $date: $e');
     }
   }
   
-  static Future<void> _scheduleQuranRemindersForDate(DateTime date, int current, int target, tz.Location location) async {
+  static Future<void> _scheduleQuranRemindersForDate(
+    DateTime date,
+    int current,
+    int target,
+    tz.Location location,
+    String locale,
+  ) async {
     final reminderTimes = [
       DateTime(date.year, date.month, date.day, 14, 0),
       DateTime(date.year, date.month, date.day, 18, 0),
@@ -544,12 +580,19 @@ class GoalReminderService {
           current: current,
           target: target,
           location: location,
+          locale: locale,
         );
       }
     }
   }
   
-  static Future<void> _scheduleDhikrRemindersForDate(DateTime date, int current, int target, tz.Location location) async {
+  static Future<void> _scheduleDhikrRemindersForDate(
+    DateTime date,
+    int current,
+    int target,
+    tz.Location location,
+    String locale,
+  ) async {
     final reminderTimes = [
       DateTime(date.year, date.month, date.day, 14, 0),
       DateTime(date.year, date.month, date.day, 18, 0),
@@ -574,12 +617,19 @@ class GoalReminderService {
           current: current,
           target: target,
           location: location,
+          locale: locale,
         );
       }
     }
   }
   
-  static Future<void> _scheduleSedekahReminderForDate(DateTime date, double current, double target, tz.Location location) async {
+  static Future<void> _scheduleSedekahReminderForDate(
+    DateTime date,
+    double current,
+    double target,
+    tz.Location location,
+    String locale,
+  ) async {
     final reminderTime = DateTime(date.year, date.month, date.day, 16, 0);
     final tzNow = tz.TZDateTime.now(location);
     final scheduledTime = tz.TZDateTime(
@@ -598,11 +648,17 @@ class GoalReminderService {
         current: current.toInt(),
         target: target.toInt(),
         location: location,
+        locale: locale,
       );
     }
   }
   
-  static Future<void> _scheduleTaraweehReminderForDate(DateTime date, DateTime ishaTime, tz.Location location) async {
+  static Future<void> _scheduleTaraweehReminderForDate(
+    DateTime date,
+    DateTime ishaTime,
+    tz.Location location,
+    String locale,
+  ) async {
     final reminderTime = ishaTime.add(const Duration(minutes: 15));
     final tzNow = tz.TZDateTime.now(location);
     final scheduledTime = tz.TZDateTime(
@@ -621,6 +677,7 @@ class GoalReminderService {
         current: 0,
         target: 0,
         location: location,
+        locale: locale,
       );
     }
   }

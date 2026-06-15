@@ -749,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalRemindersSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Get notified when you haven\'t reached your daily goals'**
+  /// **'Only during an active Ramadan season when the habit is enabled and a daily target is set'**
   String get goalRemindersSubtitle;
 
   /// No description provided for @goalReminderQuran.

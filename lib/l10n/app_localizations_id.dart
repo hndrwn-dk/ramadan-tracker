@@ -345,7 +345,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get goalRemindersSubtitle =>
-      'Dapatkan notifikasi saat target harian belum tercapai';
+      'Hanya saat musim Ramadan aktif, kebiasaan diaktifkan, dan target harian diset';
 
   @override
   String get goalReminderQuran => 'Pengingat Target Quran';

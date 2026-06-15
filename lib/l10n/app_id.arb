@@ -117,7 +117,7 @@
   "sendTestNotification": "Kirim notifikasi uji untuk memverifikasi pengaturan",
   "testNotificationSent": "Notifikasi uji terkirim",
   "goalRemindersTitle": "Pengingat Target",
-  "goalRemindersSubtitle": "Dapatkan notifikasi saat target harian belum tercapai",
+  "goalRemindersSubtitle": "Hanya saat musim Ramadan aktif, kebiasaan diaktifkan, dan target harian diset",
   "goalReminderQuran": "Pengingat Target Quran",
   "goalReminderQuranDesc": "Ingatkan saya jika target Quran belum tercapai (14:00, 18:00, 20:00)",
   "goalReminderDhikr": "Pengingat Target Dzikir",

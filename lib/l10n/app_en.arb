@@ -527,7 +527,7 @@
   
   "testNotification": "Test Notification",
   "goalRemindersTitle": "Goal Reminders",
-  "goalRemindersSubtitle": "Get notified when you haven't reached your daily goals",
+  "goalRemindersSubtitle": "Only during an active Ramadan season when the habit is enabled and a daily target is set",
   "goalReminderQuran": "Quran Goal Reminder",
   "goalReminderQuranDesc": "Remind me if Quran target not reached (2 PM, 6 PM, 8 PM)",
   "goalReminderDhikr": "Dhikr Goal Reminder",

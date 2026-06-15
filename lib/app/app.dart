@@ -152,9 +152,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
         debugPrint('Could not get pending count before reschedule: $e');
       }
       
-      await NotificationService.rescheduleAllReminders(database: database);
-      await NotificationService.scheduleNextRamadanReminders(database: database);
-      await NotificationService.scheduleSunnahReminders(database: database);
+      await NotificationService.rescheduleAllNotificationTypes(database: database);
       await HomeWidgetService.update(database);
       debugPrint('=== _rescheduleNotifications completed ===');
       

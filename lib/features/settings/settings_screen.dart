@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
+import 'package:ramadan_tracker/domain/services/notification_ids.dart';
 import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/features/settings/webview_screen.dart';
@@ -1023,7 +1024,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final database = ref.read(databaseProvider);
       final l10n = AppLocalizations.of(context)!;
-      await NotificationService.rescheduleAllReminders(
+      await NotificationService.rescheduleAllNotificationTypes(
         database: database,
         sahurTitle: l10n.sahurReminder,
         sahurBody: l10n.getNotifiedBeforeSuhoor,
@@ -1974,17 +1975,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-class _PendingNotificationCount extends StatefulWidget {
+class _PendingNotificationCount extends ConsumerStatefulWidget {
   const _PendingNotificationCount({super.key});
 
   @override
-  State<_PendingNotificationCount> createState() => _PendingNotificationCountState();
+  ConsumerState<_PendingNotificationCount> createState() =>
+      _PendingNotificationCountState();
 }
 
-class _PendingNotificationCountState extends State<_PendingNotificationCount> {
+class _PendingNotificationCountState
+    extends ConsumerState<_PendingNotificationCount> {
   int _pendingCount = -1;
   bool _isLoading = false;
   String? _error;
+  String? _schedulerSeason;
+  Map<NotificationCategory, int> _breakdown = {};
 
   @override
   void initState() {
@@ -2001,12 +2006,16 @@ class _PendingNotificationCountState extends State<_PendingNotificationCount> {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       final pending = await NotificationService.getPendingNotifications();
+      final database = ref.read(databaseProvider);
+      final season = await NotificationService.describeSchedulerSeason(database);
       if (mounted) {
         setState(() {
           _pendingCount = pending.length;
+          _schedulerSeason = season;
+          _breakdown = NotificationIds.countByCategory(pending);
           _isLoading = false;
         });
       }
@@ -2020,43 +2029,78 @@ class _PendingNotificationCountState extends State<_PendingNotificationCount> {
     }
   }
 
+  String _breakdownSummary() {
+    final parts = <String>[];
+    for (final category in NotificationCategory.values) {
+      final count = _breakdown[category] ?? 0;
+      if (count > 0) {
+        parts.add('${NotificationIds.label(category)}: $count');
+      }
+    }
+    return parts.isEmpty ? 'No categorized notifications' : parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(
         Icons.schedule,
-        color: _pendingCount > 0 
-          ? Theme.of(context).colorScheme.primary 
-          : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        color: _pendingCount > 0
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
       ),
       title: const Text('Pending Notifications'),
       subtitle: _isLoading
-        ? const Text('Loading...', style: TextStyle(fontSize: 12))
-        : _error != null
-          ? Text('Error: $_error', style: TextStyle(fontSize: 12, color: Colors.red))
-          : Text(
-              _pendingCount == -1 
-                ? 'Unknown' 
-                : _pendingCount == 0
-                  ? 'No pending notifications'
-                  : '$_pendingCount notification${_pendingCount == 1 ? '' : 's'} scheduled',
-              style: TextStyle(
-                fontSize: 12,
-                color: _pendingCount > 0 
-                  ? Theme.of(context).colorScheme.primary 
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                fontWeight: _pendingCount > 0 ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
+          ? const Text('Loading...', style: TextStyle(fontSize: 12))
+          : _error != null
+              ? Text('Error: $_error',
+                  style: TextStyle(fontSize: 12, color: Colors.red))
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _pendingCount == -1
+                          ? 'Unknown'
+                          : _pendingCount == 0
+                              ? 'No pending notifications'
+                              : '$_pendingCount notification${_pendingCount == 1 ? '' : 's'} scheduled',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _pendingCount > 0
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
+                        fontWeight:
+                            _pendingCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                    if (_schedulerSeason != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Scheduler season: $_schedulerSeason',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                    if (_pendingCount > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _breakdownSummary(),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
       trailing: IconButton(
         icon: _isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.refresh, size: 20),
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.refresh, size: 20),
         onPressed: _isLoading ? null : _loadPendingCount,
         tooltip: 'Refresh count',
       ),

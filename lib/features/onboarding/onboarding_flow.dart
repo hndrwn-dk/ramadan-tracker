@@ -412,8 +412,7 @@ class OnboardingData {
         final database = ref.read(databaseProvider);
         debugPrint('=== ONBOARDING: Scheduling notifications in background ===');
         
-        // Use rescheduleAllReminders which properly cancels existing notifications first
-        await NotificationService.rescheduleAllReminders(database: database);
+        await NotificationService.rescheduleAllNotificationTypes(database: database);
         
         debugPrint('=== ONBOARDING: Background scheduling completed ===');
       } catch (e, stackTrace) {
