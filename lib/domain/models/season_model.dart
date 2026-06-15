@@ -68,3 +68,8 @@ enum SeasonState {
   postRamadan,
 }
 
+extension SeasonStateX on SeasonState {
+  /// True when the app should show year-round sunnah UI (not active Ramadan).
+  bool get isYearRoundMode => this != SeasonState.active;
+}
+

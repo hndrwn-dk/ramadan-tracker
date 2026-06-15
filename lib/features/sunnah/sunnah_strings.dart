@@ -109,6 +109,10 @@ class SunnahStrings {
   String get obligationsTitle => t('Zakat, Fidyah & Qadha', 'Zakat, Fidyah & Qadha');
   String get obligationsSubtitle =>
       t('Kewajiban Ramadan', 'Ramadan obligations');
+  String get obligationsSubtitleYearRound => t(
+        'Zakat, fidyah, dan qadha sepanjang tahun',
+        'Zakat, fidyah, and qadha year-round',
+      );
   String get qadhaSection => t('Qadha puasa', 'Qadha fasting');
   String get zakatTitle => t('Zakat Fitrah', 'Zakat al-Fitr');
   String get zakatPeopleLabel => t('Jumlah jiwa', 'Number of people');
@@ -198,8 +202,16 @@ class SunnahStrings {
         'Riwayat puasa sunnah sepanjang tahun — termasuk catatan sebelum Ramadan. Puasa wajib Ramadan ada di tab Hari Ini / 7 Hari / Ramadan.',
         'Year-round sunnah fast history — including logs from before Ramadan. Obligatory Ramadan fasting is under Today / 7 Days / Ramadan.',
       );
-  String get viewSunnahHistoryDuringRamadan =>
-      t('Riwayat puasa sunnah', 'Sunnah fast history');
+  String get viewSunnahHistoryDuringRamadan => t(
+        'Riwayat puasa sunnah',
+        'Sunnah fast history',
+      );
+  String get viewPastRamadanInsights =>
+      t('Lihat ringkasan Ramadan', 'View Ramadan summary');
+  String get postRamadanReviewBanner => t(
+        'Musim Ramadan terakhir sudah selesai. Lihat ringkasan musim kapan saja.',
+        'Your last Ramadan season is complete. Review the season summary anytime.',
+      );
   String get sunnahInsightsEmpty => t(
         'Belum ada catatan puasa sunnah tahun ini.',
         'No sunnah fasts logged this year yet.',

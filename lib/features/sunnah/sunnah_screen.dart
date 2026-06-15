@@ -61,7 +61,7 @@ class _RamadanModeBody extends ConsumerWidget {
         const SizedBox(height: 16),
         const SunnahRamadanFocusCard(),
         const SizedBox(height: 16),
-        _QadhaEntryTile(s: s),
+        _QadhaEntryTile(s: s, yearRound: false),
         const SizedBox(height: 24),
         _UpcomingEvents(s: s, date: today),
         const SizedBox(height: 24),
@@ -147,7 +147,7 @@ class _YearRoundBody extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _QadhaEntryTile(s: s),
+        _QadhaEntryTile(s: s, yearRound: true),
         const SizedBox(height: 16),
         Text(s.monthLog, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -386,7 +386,8 @@ class _StatsRow extends StatelessWidget {
 
 class _QadhaEntryTile extends StatelessWidget {
   final SunnahStrings s;
-  const _QadhaEntryTile({required this.s});
+  final bool yearRound;
+  const _QadhaEntryTile({required this.s, this.yearRound = false});
 
   @override
   Widget build(BuildContext context) {
@@ -394,7 +395,9 @@ class _QadhaEntryTile extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.volunteer_activism),
         title: Text(s.obligationsTitle),
-        subtitle: Text(s.obligationsSubtitle),
+        subtitle: Text(
+          yearRound ? s.obligationsSubtitleYearRound : s.obligationsSubtitle,
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const QadhaScreen()),

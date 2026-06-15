@@ -26,8 +26,7 @@ class MonthScreen extends ConsumerWidget {
     final seasonAsync = ref.watch(currentSeasonProvider);
     final seasonState = ref.watch(seasonStateProvider);
     final sunnahStrings = SunnahStrings.of(context);
-    final useSunnahMode =
-        seasonState == SeasonState.preRamadan;
+    final useSunnahMode = seasonState.isYearRoundMode;
 
     return Scaffold(
       appBar: AppBar(

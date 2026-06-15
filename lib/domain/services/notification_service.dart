@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:ramadan_tracker/data/database/app_database.dart';
+import 'package:ramadan_tracker/domain/services/notification_season_resolver.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/domain/services/goal_reminder_service.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
@@ -97,7 +98,7 @@ class NotificationService {
   }
   
   // Helper: Get date-only DateTime
-  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+  static DateTime _dateOnly(DateTime d) => NotificationSeasonResolver.dateOnly(d);
 
   // Detect corrupt database dengan mencoba get pending notifications
   // Returns true if database is OK, false if corrupt
@@ -752,12 +753,12 @@ class NotificationService {
         reminderTime.minute,
       );
       
-      // Jika waktu sudah lewat, schedule untuk besok
+      // Jika waktu sudah lewat, jangan dijadwalkan (hindari roll ke hari berikutnya di luar musim)
       if (scheduledTime.isBefore(tzNow)) {
-        scheduledTime = scheduledTime.add(const Duration(days: 1));
         if (kDebugMode) {
-          debugPrint('Goal reminder time passed, scheduling for tomorrow');
+          debugPrint('Goal reminder time passed, skipping');
         }
+        return;
       }
       
       // Generate ID based on scheduled date, type index, and hour
@@ -834,7 +835,7 @@ class NotificationService {
         reminderTime.minute,
       );
       if (scheduledTime2.isBefore(tzNow2)) {
-        scheduledTime2 = scheduledTime2.add(const Duration(days: 1));
+        return;
       }
       
       final notificationId2 = _getNotificationIdForGoalReminder(typeIndex, hour, scheduledTime2);
@@ -1002,13 +1003,66 @@ class NotificationService {
     debugPrint('=== rescheduleAllReminders called ===');
     try {
       final seasons = await database.ramadanSeasonsDao.getAllSeasons();
-      if (seasons.isEmpty) {
-        debugPrint('No seasons found');
+
+      // CRITICAL: Cancel all existing notifications FIRST to prevent duplicates
+      // and clear stale goal reminders from ended seasons or deleted setups.
+      LogService.log('[NOTIF] ========================================');
+      LogService.log('[NOTIF] RESCHEDULE: Cancelling all existing notifications...');
+
+      int cancelAttempts = 0;
+      const maxCancelAttempts = 3;
+      bool cancelSuccess = false;
+
+      while (cancelAttempts < maxCancelAttempts && !cancelSuccess) {
+        try {
+          cancelAttempts++;
+          LogService.log('[NOTIF] RESCHEDULE: Cancel attempt $cancelAttempts/$maxCancelAttempts...');
+
+          final beforeCancel = await getPendingNotifications();
+          LogService.log('[NOTIF] RESCHEDULE: Notifications before cancel: ${beforeCancel.length}');
+
+          await cancelAll();
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          final afterCancel = await getPendingNotifications();
+          LogService.log('[NOTIF] RESCHEDULE: Notifications after cancel: ${afterCancel.length}');
+
+          if (afterCancel.isEmpty) {
+            cancelSuccess = true;
+            LogService.log('[NOTIF] RESCHEDULE: All notifications cancelled successfully');
+          } else if (afterCancel.length < beforeCancel.length) {
+            LogService.log('[NOTIF] RESCHEDULE: WARN Partial cancellation (${beforeCancel.length} -> ${afterCancel.length}), retrying...');
+            await Future.delayed(const Duration(milliseconds: 500));
+          } else {
+            LogService.log('[NOTIF] RESCHEDULE: WARN Cancellation may have failed (count unchanged), retrying...');
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        } catch (e) {
+          LogService.log('[NOTIF] RESCHEDULE: Cancel attempt $cancelAttempts failed: $e');
+          if (cancelAttempts < maxCancelAttempts) {
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        }
+      }
+
+      if (!cancelSuccess) {
+        LogService.log('[NOTIF] RESCHEDULE: WARNING: Failed to cancel all notifications after $maxCancelAttempts attempts');
+        LogService.log('[NOTIF] RESCHEDULE: Proceeding anyway - scheduleAllReminders will also try to cancel');
+      }
+
+      LogService.log('[NOTIF] ========================================');
+
+      final seasonForScheduling = NotificationSeasonResolver.pickForScheduling(
+        seasons,
+        DateTime.now(),
+      );
+      if (seasonForScheduling == null) {
+        debugPrint('No active or upcoming season for reminders');
         return;
       }
 
-      final currentSeason = seasons.first;
-      final seasonId = currentSeason.id;
+      final seasonId = seasonForScheduling.id;
 
       final latitudeStr = await database.kvSettingsDao.getValue('prayer_latitude');
       final longitudeStr = await database.kvSettingsDao.getValue('prayer_longitude');
@@ -1036,59 +1090,6 @@ class NotificationService {
       final iftarEnabled = await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true';
       final iftarOffset = int.tryParse(await database.kvSettingsDao.getValue('iftar_offset') ?? '0') ?? 0;
       final nightPlanEnabled = await database.kvSettingsDao.getValue('night_plan_enabled') ?? 'true';
-
-      // CRITICAL: Cancel all existing notifications FIRST to prevent duplicates
-      // Without this, each reschedule adds more notifications instead of replacing them
-      LogService.log('[NOTIF] ========================================');
-      LogService.log('[NOTIF] RESCHEDULE: Cancelling all existing notifications...');
-      
-      int cancelAttempts = 0;
-      const maxCancelAttempts = 3;
-      bool cancelSuccess = false;
-      
-      while (cancelAttempts < maxCancelAttempts && !cancelSuccess) {
-        try {
-          cancelAttempts++;
-          LogService.log('[NOTIF] RESCHEDULE: Cancel attempt $cancelAttempts/$maxCancelAttempts...');
-          
-          // Get count before cancel
-          final beforeCancel = await getPendingNotifications();
-          LogService.log('[NOTIF] RESCHEDULE: Notifications before cancel: ${beforeCancel.length}');
-          
-          await cancelAll();
-          
-          // Wait for cancellation to propagate
-          await Future.delayed(const Duration(milliseconds: 500));
-          
-          // Verify cancellation worked
-          final afterCancel = await getPendingNotifications();
-          LogService.log('[NOTIF] RESCHEDULE: Notifications after cancel: ${afterCancel.length}');
-          
-          if (afterCancel.length == 0) {
-            cancelSuccess = true;
-            LogService.log('[NOTIF] RESCHEDULE: All notifications cancelled successfully');
-          } else if (afterCancel.length < beforeCancel.length) {
-            // Some cancelled, but not all - try again
-            LogService.log('[NOTIF] RESCHEDULE: WARN Partial cancellation (${beforeCancel.length} -> ${afterCancel.length}), retrying...');
-            await Future.delayed(const Duration(milliseconds: 500));
-          } else {
-            LogService.log('[NOTIF] RESCHEDULE: WARN Cancellation may have failed (count unchanged), retrying...');
-            await Future.delayed(const Duration(milliseconds: 500));
-          }
-        } catch (e) {
-          LogService.log('[NOTIF] RESCHEDULE: Cancel attempt $cancelAttempts failed: $e');
-          if (cancelAttempts < maxCancelAttempts) {
-            await Future.delayed(const Duration(milliseconds: 500));
-          }
-        }
-      }
-      
-      if (!cancelSuccess) {
-        LogService.log('[NOTIF] RESCHEDULE: WARNING: Failed to cancel all notifications after $maxCancelAttempts attempts');
-        LogService.log('[NOTIF] RESCHEDULE: Proceeding anyway - scheduleAllReminders will also try to cancel');
-      }
-      
-      LogService.log('[NOTIF] ========================================');
 
       await scheduleAllReminders(
         database: database,
@@ -2676,6 +2677,14 @@ class NotificationService {
     const maxDaysAhead = 31;
     final maxScheduleEnd = scheduleStart.add(Duration(days: maxDaysAhead - 1));
     final scheduleEnd = maxScheduleEnd.isBefore(seasonEnd) ? maxScheduleEnd : seasonEnd;
+
+    if (!NotificationSeasonResolver.hasSchedulableDateRange(scheduleStart, scheduleEnd)) {
+      LogService.log('[NOTIF] No schedulable dates (season ended or not yet started)');
+      if (kDebugMode) {
+        debugPrint('[NOTIF] No schedulable dates (season ended or not yet started)');
+      }
+      return;
+    }
     
     if (maxScheduleEnd.isBefore(seasonEnd)) {
       LogService.log('[NOTIF] Schedule capped at $maxDaysAhead days; remaining days on next app open');

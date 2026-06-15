@@ -72,7 +72,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   DateTime? _selectedDate; // For Today tab date selection (null = today)
   int _refreshKey = 0; // Key to force FutureBuilder refresh
   bool _todayDataInvalidatedThisSession = false;
-  bool _postRamadanSeasonDefaultApplied = false;
   bool _sunnahInsightsTab = false;
 
   @override
@@ -81,20 +80,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   @override
   void initState() {
     super.initState();
-  }
-
-  void _applyPostRamadanSeasonDefault(SeasonState seasonState) {
-    if (_postRamadanSeasonDefaultApplied ||
-        seasonState != SeasonState.postRamadan ||
-        _selectedRange != InsightsRange.today) {
-      return;
-    }
-    _postRamadanSeasonDefaultApplied = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() => _selectedRange = InsightsRange.season);
-      }
-    });
   }
 
   @override
@@ -116,7 +101,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final seasonState = ref.watch(seasonStateProvider);
-    _applyPostRamadanSeasonDefault(seasonState);
     ref.listen<int>(tabIndexProvider, (previous, next) {
       if (previous != 4 && next == 4 && mounted) {
         _todayDataInvalidatedThisSession = false;
@@ -152,7 +136,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           ),
           onPressed: () => ref.read(tabIndexProvider.notifier).state = 0,
         ),
-        title: _selectedRange == InsightsRange.sevenDays
+        title: seasonState.isYearRoundMode
+            ? Text(l10n.insights)
+            : _selectedRange == InsightsRange.sevenDays
             ? ref.watch(currentSeasonProvider).when(
                 data: (season) {
                   if (season == null) return Text(l10n.insights);
@@ -208,8 +194,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       ),
       body: ref.watch(currentSeasonProvider).when(
         data: (season) {
-          if (season == null || seasonState == SeasonState.preRamadan) {
-            return const SunnahOnlyInsightsView();
+          if (season == null || seasonState.isYearRoundMode) {
+            return SunnahOnlyInsightsView(
+              showPostRamadanReview: seasonState == SeasonState.postRamadan,
+            );
           }
           return _buildInsights(context, ref);
         },

@@ -168,7 +168,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             if (state == SeasonState.postRamadan) ...[
               _buildSeasonEndedCard(seasonId),
               const SizedBox(height: 24),
-              ..._buildYearRoundActions(),
+              ..._buildYearRoundActions(compact: true),
             ],
             if (state == SeasonState.preRamadan) const SizedBox(height: 16),
             // Only show tracking content if season is active
@@ -394,43 +394,50 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   /// Shared year-round CTAs for users without a season and after Ramadan ends.
-  List<Widget> _buildYearRoundActions() {
+  List<Widget> _buildYearRoundActions({bool compact = false}) {
     final s = SunnahStrings.of(context);
     final scheme = Theme.of(context).colorScheme;
     final daysUntil = RamadanDates.daysUntilNext(DateTime.now());
     final ramadanNear = daysUntil != null && daysUntil <= 45;
 
     return [
-      Text(
-        s.t(
-          'Lanjutkan ibadah harian dengan puasa sunnah, qadha, dan pantau acara Islam.',
-          'Keep up daily worship with sunnah fasts, qadha, and Islamic events.',
+      if (!compact)
+        Text(
+          s.t(
+            'Lanjutkan ibadah harian dengan puasa sunnah, qadha, dan pantau acara Islam.',
+            'Keep up daily worship with sunnah fasts, qadha, and Islamic events.',
+          ),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface.withOpacity(0.7),
+              ),
         ),
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurface.withOpacity(0.7),
-            ),
-      ),
-      const SizedBox(height: 16),
+      if (!compact) const SizedBox(height: 16),
       if (ramadanNear) _buildRamadanNearCard(s, daysUntil!),
       if (ramadanNear) const SizedBox(height: 16),
-      FilledButton.icon(
-        onPressed: () => ref.read(tabIndexProvider.notifier).state = 3,
-        icon: const Icon(Icons.nightlight_round),
-        label: Text(s.sunnahTitle),
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () => ref.read(tabIndexProvider.notifier).state = 3,
+          icon: const Icon(Icons.nightlight_round),
+          label: Text(s.sunnahTitle),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
         ),
       ),
       const SizedBox(height: 12),
-      OutlinedButton.icon(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
-        ),
-        icon: const Icon(Icons.add),
-        label: Text(s.t('Buat musim Ramadan', 'Create Ramadan season')),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
+          ),
+          icon: const Icon(Icons.add),
+          label: Text(s.t('Buat musim Ramadan', 'Create Ramadan season')),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
         ),
       ),
     ];
@@ -475,11 +482,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             style: TextStyle(color: scheme.onPrimary.withOpacity(0.9)),
           ),
           const SizedBox(height: 14),
-          FilledButton.tonal(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonal(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CreateSeasonFlow()),
+              ),
+              child: Text(s.t('Siapkan musim Ramadan', 'Set up Ramadan season')),
             ),
-            child: Text(s.t('Siapkan musim Ramadan', 'Set up Ramadan season')),
           ),
         ],
       ),

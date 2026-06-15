@@ -3,17 +3,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
+import 'package:ramadan_tracker/features/insights/screens/season_report_screen.dart';
 import 'package:ramadan_tracker/features/insights/screens/sunnah_insights_screen.dart';
 import 'package:ramadan_tracker/features/insights/services/sunnah_insights_service.dart';
 import 'package:ramadan_tracker/features/insights/widgets/sunnah_insights_charts.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 
-/// Wawasan content before Ramadan starts (or when no season exists yet).
+/// Wawasan year-round content (pre-Ramadan, post-Ramadan, or no season).
 class SunnahOnlyInsightsView extends ConsumerWidget {
   final bool duringRamadan;
+  final bool showPostRamadanReview;
 
-  const SunnahOnlyInsightsView({super.key, this.duringRamadan = false});
+  const SunnahOnlyInsightsView({
+    super.key,
+    this.duringRamadan = false,
+    this.showPostRamadanReview = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,7 +63,66 @@ class SunnahOnlyInsightsView extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-              if (!duringRamadan)
+              if (showPostRamadanReview)
+                seasonAsync.when(
+                  data: (season) {
+                    if (season == null) return const SizedBox.shrink();
+                    return Column(
+                      children: [
+                        PremiumCard(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.mosque,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      s.postRamadanReviewBanner,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => SeasonReportScreen(
+                                          seasonId: season.id,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.insights, size: 16),
+                                  label: Text(s.viewPastRamadanInsights),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+              if (!duringRamadan && !showPostRamadanReview)
                 seasonAsync.when(
                   data: (season) {
                     if (season == null) {
@@ -98,7 +163,7 @@ class SunnahOnlyInsightsView extends ConsumerWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
-              if (!duringRamadan) const SizedBox(height: 16),
+              if (!duringRamadan && !showPostRamadanReview) const SizedBox(height: 16),
               SunnahInsightsHeroCard(data: data, strings: s),
               const SizedBox(height: 16),
               SunnahRecentHeatmapCard(data: data, strings: s),

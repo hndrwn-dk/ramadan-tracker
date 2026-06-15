@@ -1,4 +1,5 @@
 import 'package:ramadan_tracker/data/database/app_database.dart';
+import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
@@ -6,6 +7,22 @@ import 'package:flutter/foundation.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class GoalReminderService {
+  /// Goal reminders only apply on days inside an active Ramadan season window.
+  static bool isActiveSeasonDay(RamadanSeason season, DateTime date) {
+    final model = SeasonModel.fromDb(season);
+    final rawIndex = model.getRawDayIndex(date);
+    return rawIndex >= 1 && rawIndex <= season.days;
+  }
+
+  /// Shared gate for Quran / dhikr / sedekah goal reminders (habit + baseline + incomplete).
+  static bool shouldScheduleNumericGoal({
+    required bool habitEnabled,
+    required num target,
+    required num progress,
+  }) {
+    return habitEnabled && target > 0 && progress < target;
+  }
+
   /// Schedule goal tracking reminders for today
   static Future<void> scheduleGoalReminders({
     required AppDatabase database,
@@ -41,14 +58,13 @@ class GoalReminderService {
       final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
       if (season == null) return;
 
+      if (!isActiveSeasonDay(season, today)) {
+        return;
+      }
+
       // Parse startDate from ISO string format (YYYY-MM-DD)
       final seasonStart = DateTime.parse(season.startDate);
       final dayIndex = today.difference(seasonStart).inDays + 1;
-      
-      if (dayIndex < 1 || dayIndex > season.days) {
-        // Outside season, don't schedule
-        return;
-      }
 
       // Get prayer times for today
       final times = await PrayerTimeService.getCachedOrCalculate(
@@ -97,11 +113,9 @@ class GoalReminderService {
         final dhikrSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == dhikrHabitDb.id);
         if (dhikrPlan != null) {
           final dhikrEntry = dailyEntries.where((e) => e.habitId == dhikrHabitDb.id).toList().firstOrNull;
-          if (dhikrEntry != null) {
-            dhikrProgress = dhikrEntry.valueInt ?? 0;
-            dhikrTarget = dhikrPlan.dailyTarget;
-            dhikrHabitEnabled = dhikrSeasonHabit.isEnabled;
-          }
+          dhikrProgress = dhikrEntry?.valueInt ?? 0;
+          dhikrTarget = dhikrPlan.dailyTarget;
+          dhikrHabitEnabled = dhikrSeasonHabit.isEnabled;
         }
       } catch (e) {
         // Dhikr habit not found or not enabled
@@ -114,15 +128,13 @@ class GoalReminderService {
         final sedekahHabitDb = allHabits.firstWhere((h) => h.key == 'sedekah');
         final sedekahSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == sedekahHabitDb.id);
         final sedekahEntry = dailyEntries.where((e) => e.habitId == sedekahHabitDb.id).toList().firstOrNull;
-        if (sedekahEntry != null) {
-          sedekahProgress = (sedekahEntry.valueInt ?? 0).toDouble();
-          final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
-          final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled') ?? 'false';
-          sedekahTarget = sedekahGoalEnabled == 'true' && sedekahGoalAmount != null
-              ? double.tryParse(sedekahGoalAmount) ?? 0
-              : 0;
-          sedekahHabitEnabled = sedekahSeasonHabit.isEnabled;
-        }
+        sedekahProgress = (sedekahEntry?.valueInt ?? 0).toDouble();
+        final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
+        final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled') ?? 'false';
+        sedekahTarget = sedekahGoalEnabled == 'true' && sedekahGoalAmount != null
+            ? double.tryParse(sedekahGoalAmount) ?? 0
+            : 0;
+        sedekahHabitEnabled = sedekahSeasonHabit.isEnabled;
       } catch (e) {
         // Sedekah habit not found or not enabled
       }
@@ -133,10 +145,8 @@ class GoalReminderService {
         final taraweehHabitDb = allHabits.firstWhere((h) => h.key == 'taraweeh');
         final taraweehSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == taraweehHabitDb.id);
         final taraweehEntry = dailyEntries.where((e) => e.habitId == taraweehHabitDb.id).toList().firstOrNull;
-        if (taraweehEntry != null) {
-          isTaraweehDone = taraweehEntry.valueBool ?? false;
-          taraweehHabitEnabled = taraweehSeasonHabit.isEnabled;
-        }
+        isTaraweehDone = taraweehEntry?.valueBool ?? false;
+        taraweehHabitEnabled = taraweehSeasonHabit.isEnabled;
       } catch (e) {
         // Taraweeh habit not found or not enabled
       }
@@ -153,10 +163,12 @@ class GoalReminderService {
         debugPrint('  quranProgress: $quranProgress');
       }
       
-      if (quranReminderEnabledParsed && 
-          quranHabitEnabled && 
-          quranTarget > 0 && 
-          quranProgress < quranTarget) {
+      if (quranReminderEnabledParsed &&
+          shouldScheduleNumericGoal(
+            habitEnabled: quranHabitEnabled,
+            target: quranTarget,
+            progress: quranProgress,
+          )) {
         if (kDebugMode) {
           debugPrint('  All conditions met, scheduling Quran reminders');
         }
@@ -182,10 +194,12 @@ class GoalReminderService {
         debugPrint('  dhikrProgress: $dhikrProgress');
       }
       
-      if (dhikrReminderEnabledParsed && 
-          dhikrHabitEnabled && 
-          dhikrTarget > 0 && 
-          dhikrProgress < dhikrTarget) {
+      if (dhikrReminderEnabledParsed &&
+          shouldScheduleNumericGoal(
+            habitEnabled: dhikrHabitEnabled,
+            target: dhikrTarget,
+            progress: dhikrProgress,
+          )) {
         if (kDebugMode) {
           debugPrint('  All conditions met, scheduling Dhikr reminders');
         }
@@ -202,10 +216,12 @@ class GoalReminderService {
 
       // Schedule Sedekah reminder if enabled, habit enabled, has target, and not completed
       final sedekahReminderEnabledParsed = _parseBoolSetting(sedekahReminderEnabled);
-      if (sedekahReminderEnabledParsed && 
-          sedekahHabitEnabled && 
-          sedekahTarget > 0 && 
-          sedekahProgress < sedekahTarget) {
+      if (sedekahReminderEnabledParsed &&
+          shouldScheduleNumericGoal(
+            habitEnabled: sedekahHabitEnabled,
+            target: sedekahTarget,
+            progress: sedekahProgress,
+          )) {
         await _scheduleSedekahReminder(now, sedekahProgress, sedekahTarget, location);
       }
 
@@ -368,14 +384,14 @@ class GoalReminderService {
       // Get season info
       final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
       if (season == null) return;
-      
-      final seasonStart = DateTime.parse(season.startDate);
-      final dayIndex = date.difference(seasonStart).inDays + 1;
-      
-      if (dayIndex < 1 || dayIndex > season.days) {
-        // Outside season, don't schedule
+
+      final dateOnly = DateTime(date.year, date.month, date.day);
+      if (!isActiveSeasonDay(season, dateOnly)) {
         return;
       }
+      
+      final seasonStart = DateTime.parse(season.startDate);
+      final dayIndex = dateOnly.difference(seasonStart).inDays + 1;
       
       // Get prayer times for this date
       final times = await PrayerTimeService.getCachedOrCalculate(
@@ -440,10 +456,12 @@ class GoalReminderService {
         final sedekahHabitDb = allHabits.firstWhere((h) => h.key == 'sedekah');
         final sedekahSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == sedekahHabitDb.id);
         final sedekahEntry = dailyEntries.where((e) => e.habitId == sedekahHabitDb.id).toList().firstOrNull;
-        if (sedekahEntry != null) {
-          sedekahProgress = sedekahEntry.valueInt?.toDouble() ?? 0;
-        }
-        sedekahTarget = sedekahSeasonHabit.targetValue?.toDouble() ?? 0;
+        sedekahProgress = sedekahEntry?.valueInt?.toDouble() ?? 0;
+        final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
+        final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled') ?? 'false';
+        sedekahTarget = sedekahGoalEnabled == 'true' && sedekahGoalAmount != null
+            ? double.tryParse(sedekahGoalAmount) ?? 0
+            : 0;
         sedekahHabitEnabled = sedekahSeasonHabit.isEnabled;
       } catch (e) {
         // Sedekah habit not found
@@ -463,17 +481,32 @@ class GoalReminderService {
       
       // Schedule reminders based on conditions
       final quranReminderEnabledParsed = _parseBoolSetting(quranReminderEnabled);
-      if (quranReminderEnabledParsed && quranHabitEnabled && quranTarget > 0 && quranProgress < quranTarget) {
+      if (quranReminderEnabledParsed &&
+          shouldScheduleNumericGoal(
+            habitEnabled: quranHabitEnabled,
+            target: quranTarget,
+            progress: quranProgress,
+          )) {
         await _scheduleQuranRemindersForDate(date, quranProgress, quranTarget, location);
       }
       
       final dhikrReminderEnabledParsed = _parseBoolSetting(dhikrReminderEnabled);
-      if (dhikrReminderEnabledParsed && dhikrHabitEnabled && dhikrTarget > 0 && dhikrProgress < dhikrTarget) {
+      if (dhikrReminderEnabledParsed &&
+          shouldScheduleNumericGoal(
+            habitEnabled: dhikrHabitEnabled,
+            target: dhikrTarget,
+            progress: dhikrProgress,
+          )) {
         await _scheduleDhikrRemindersForDate(date, dhikrProgress, dhikrTarget, location);
       }
       
       final sedekahReminderEnabledParsed = _parseBoolSetting(sedekahReminderEnabled);
-      if (sedekahReminderEnabledParsed && sedekahHabitEnabled && sedekahTarget > 0 && sedekahProgress < sedekahTarget) {
+      if (sedekahReminderEnabledParsed &&
+          shouldScheduleNumericGoal(
+            habitEnabled: sedekahHabitEnabled,
+            target: sedekahTarget,
+            progress: sedekahProgress,
+          )) {
         await _scheduleSedekahReminderForDate(date, sedekahProgress, sedekahTarget, location);
       }
       
