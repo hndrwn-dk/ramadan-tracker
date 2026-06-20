@@ -1,8 +1,6 @@
-# Cursor IDE — track rules and settings; ignore local session noise
-.cursor/*
-!.cursor/rules/
-!.cursor/rules/**
-!.cursor/settings.json
+# Cursor IDE and agent guide (local only)
+.cursor/
+AGENTS.md
 
 # Miscellaneous
 *.class
@@ -62,11 +60,10 @@ android/app/*.keystore
 # Release builds and Play Store materials (AAB, APK, release notes)
 bundle_release/
 bundles_release/
+releases/
 
-# Internal design notes (local only); Superpowers specs/plans are tracked
-docs/*
-!docs/superpowers/
-!docs/superpowers/**
+# Internal design notes and Superpowers artifacts (local only)
+docs/
 
 # Internal helper scripts (local only)
 scripts/

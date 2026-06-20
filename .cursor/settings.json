@@ -1,9 +1,0 @@
-{
-  "plugins": {
-    "superpowers": {
-      "enabled": true
-    }
-  },
-  "includeCoAuthoredBy": false,
-  "gitAttribution": false
-}
