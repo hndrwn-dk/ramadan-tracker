@@ -1,0 +1,10 @@
+---
+description: Git commits and pushes to origin/main require user approval
+alwaysApply: true
+---
+
+# Git: Require Approval for origin/main
+
+- **Do not** run `git commit` or `git push origin main` (or any push to `main`) unless the user has **explicitly asked** to commit/push or has **approved** a specific commit/push.
+- If the user asks to "save progress", "checkpoint", or "commit" without clearly approving a push, suggest a commit and **ask for confirmation** before pushing to `origin/main`.
+- You may run `git add`, `git status`, `git diff`, and prepare commit messages; only perform the actual **commit** and **push to origin/main** after the user approves.

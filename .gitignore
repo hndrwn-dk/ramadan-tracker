@@ -1,5 +1,8 @@
-# Cursor IDE
-.cursor/
+# Cursor IDE — track rules and settings; ignore local session noise
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/settings.json
 
 # Miscellaneous
 *.class
@@ -60,8 +63,13 @@ android/app/*.keystore
 bundle_release/
 bundles_release/
 
-# Internal design notes and discussions (local only)
-docs/
+# Internal design notes (local only); Superpowers specs/plans are tracked
+docs/*
+!docs/superpowers/
+!docs/superpowers/**
 
 # Internal helper scripts (local only)
 scripts/
+
+# Superpowers git worktrees (using-git-worktrees skill)
+.worktrees/
