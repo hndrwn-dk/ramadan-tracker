@@ -3229,6 +3229,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You reached companion level 5.'**
   String get achievementLevel5Desc;
+
+  /// No description provided for @dailyQuestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s quests'**
+  String get dailyQuestsTitle;
+
+  /// No description provided for @dailyQuestsProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total} complete'**
+  String dailyQuestsProgress(int completed, int total);
+
+  /// No description provided for @questLogFasting.
+  ///
+  /// In en, this message translates to:
+  /// **'Log today\'s fast'**
+  String get questLogFasting;
+
+  /// No description provided for @questLogQuran.
+  ///
+  /// In en, this message translates to:
+  /// **'Read Quran today'**
+  String get questLogQuran;
+
+  /// No description provided for @questLogPrayers.
+  ///
+  /// In en, this message translates to:
+  /// **'Log your prayers'**
+  String get questLogPrayers;
+
+  /// No description provided for @questLogDhikr.
+  ///
+  /// In en, this message translates to:
+  /// **'Do dhikr today'**
+  String get questLogDhikr;
+
+  /// No description provided for @questLogTaraweeh.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Taraweeh'**
+  String get questLogTaraweeh;
+
+  /// No description provided for @questScore60.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach 60% daily score'**
+  String get questScore60;
 }
 
 class _AppLocalizationsDelegate

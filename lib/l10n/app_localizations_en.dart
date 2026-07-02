@@ -1792,4 +1792,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementLevel5Desc => 'You reached companion level 5.';
+
+  @override
+  String get dailyQuestsTitle => 'Today\'s quests';
+
+  @override
+  String dailyQuestsProgress(int completed, int total) {
+    return '$completed of $total complete';
+  }
+
+  @override
+  String get questLogFasting => 'Log today\'s fast';
+
+  @override
+  String get questLogQuran => 'Read Quran today';
+
+  @override
+  String get questLogPrayers => 'Log your prayers';
+
+  @override
+  String get questLogDhikr => 'Do dhikr today';
+
+  @override
+  String get questLogTaraweeh => 'Log Taraweeh';
+
+  @override
+  String get questScore60 => 'Reach 60% daily score';
 }

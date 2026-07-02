@@ -3401,6 +3401,21 @@
   "achievementWeeklyPerfectTitle": "Perfect week",
   "achievementWeeklyPerfectDesc": "Seven strong days in a row.",
   "achievementLevel5Title": "Rising companion",
-  "achievementLevel5Desc": "You reached companion level 5."
+  "achievementLevel5Desc": "You reached companion level 5.",
+
+  "dailyQuestsTitle": "Today's quests",
+  "dailyQuestsProgress": "{completed} of {total} complete",
+  "@dailyQuestsProgress": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "questLogFasting": "Log today's fast",
+  "questLogQuran": "Read Quran today",
+  "questLogPrayers": "Log your prayers",
+  "questLogDhikr": "Do dhikr today",
+  "questLogTaraweeh": "Log Taraweeh",
+  "questScore60": "Reach 60% daily score"
 }
 

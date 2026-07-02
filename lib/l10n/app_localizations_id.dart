@@ -1801,4 +1801,30 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get achievementLevel5Desc => 'Anda mencapai level pendamping 5.';
+
+  @override
+  String get dailyQuestsTitle => 'Misi hari ini';
+
+  @override
+  String dailyQuestsProgress(int completed, int total) {
+    return '$completed dari $total selesai';
+  }
+
+  @override
+  String get questLogFasting => 'Catat puasa hari ini';
+
+  @override
+  String get questLogQuran => 'Baca Al-Quran hari ini';
+
+  @override
+  String get questLogPrayers => 'Catat sholat Anda';
+
+  @override
+  String get questLogDhikr => 'Berzikir hari ini';
+
+  @override
+  String get questLogTaraweeh => 'Catat Tarawih';
+
+  @override
+  String get questScore60 => 'Capai skor harian 60%';
 }

@@ -587,6 +587,15 @@
   "achievementWeeklyPerfectTitle": "Minggu sempurna",
   "achievementWeeklyPerfectDesc": "Tujuh hari kuat berturut-turut.",
   "achievementLevel5Title": "Pendamping berkembang",
-  "achievementLevel5Desc": "Anda mencapai level pendamping 5."
+  "achievementLevel5Desc": "Anda mencapai level pendamping 5.",
+
+  "dailyQuestsTitle": "Misi hari ini",
+  "dailyQuestsProgress": "{completed} dari {total} selesai",
+  "questLogFasting": "Catat puasa hari ini",
+  "questLogQuran": "Baca Al-Quran hari ini",
+  "questLogPrayers": "Catat sholat Anda",
+  "questLogDhikr": "Berzikir hari ini",
+  "questLogTaraweeh": "Catat Tarawih",
+  "questScore60": "Capai skor harian 60%"
 }
 
