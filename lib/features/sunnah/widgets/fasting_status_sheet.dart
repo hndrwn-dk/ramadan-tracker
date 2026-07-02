@@ -5,6 +5,7 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/qadha_provider.dart';
 import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
+import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_option_cards.dart';
@@ -63,6 +64,7 @@ Future<void> showSunnahStatusSheet(
         }
         ref.read(sunnahRefreshProvider.notifier).state++;
         await HomeWidgetService.update(db);
+        await evaluateAchievements(ref);
 
         final message = _savedMessage(s, status, qadha: qadha);
         if (ctx.mounted) Navigator.pop(ctx);

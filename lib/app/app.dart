@@ -8,6 +8,7 @@ import 'package:ramadan_tracker/features/insights/insights_screen.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_screen.dart';
 import 'package:ramadan_tracker/features/settings/settings_screen.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_wrapper.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
 import 'package:ramadan_tracker/widgets/theme.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/theme_provider.dart';
@@ -63,7 +64,9 @@ class RamadanCompanionApp extends ConsumerWidget {
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const OnboardingWrapper(child: MainScreen()),
+          home: const OnboardingWrapper(
+            child: CelebrationListener(child: MainScreen()),
+          ),
           debugShowCheckedModeBanner: false,
         );
       },
@@ -213,10 +216,10 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
             selectedIcon: const Icon(Icons.auto_awesome),
             label: l10n.plan,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.nightlight_outlined),
-            selectedIcon: Icon(Icons.nightlight),
-            label: 'Sunnah',
+          NavigationDestination(
+            icon: const Icon(Icons.nightlight_outlined),
+            selectedIcon: const Icon(Icons.nightlight),
+            label: l10n.sunnah,
           ),
           NavigationDestination(
             icon: const Icon(Icons.insights_outlined),

@@ -3312,6 +3312,95 @@
   "noPagesRead": "No pages read",
   "@noPagesRead": {
     "description": "No pages read reason"
-  }
+  },
+
+  "sunnah": "Sunnah",
+  "@sunnah": {
+    "description": "Navigation menu label for Sunnah tab"
+  },
+
+  "scoreLabel": "Score",
+  "@scoreLabel": {
+    "description": "Label under daily completion score ring"
+  },
+
+  "achievementsTitle": "Achievements",
+  "@achievementsTitle": {
+    "description": "Achievements screen title"
+  },
+
+  "achievementUnlocked": "Achievement unlocked!",
+  "@achievementUnlocked": {
+    "description": "Celebration dialog title"
+  },
+
+  "achievementXpGained": "+{xp} XP",
+  "@achievementXpGained": {
+    "description": "XP gained on achievement unlock",
+    "placeholders": {
+      "xp": { "type": "int" }
+    }
+  },
+
+  "companionLevelLabel": "Companion level {level}",
+  "@companionLevelLabel": {
+    "placeholders": { "level": { "type": "int" } }
+  },
+
+  "totalXpLabel": "{xp} XP total",
+  "@totalXpLabel": {
+    "placeholders": { "xp": { "type": "int" } }
+  },
+
+  "achievementsUnlockedCount": "{count} unlocked",
+  "@achievementsUnlockedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "viewAchievements": "View achievements",
+  "@viewAchievements": {
+    "description": "Link to achievements screen"
+  },
+
+  "weeklyReviewTitle": "Review Missed Days",
+  "@weeklyReviewTitle": {
+    "description": "Weekly review bottom sheet title"
+  },
+
+  "weeklyReviewNoMissed": "No missed days in the last 7 days!",
+  "@weeklyReviewNoMissed": {
+    "description": "Weekly review empty state"
+  },
+
+  "achievementFirstLogTitle": "First step",
+  "achievementFirstLogDesc": "You logged your first habit.",
+  "achievementFirstFullDayTitle": "Strong day",
+  "achievementFirstFullDayDesc": "You reached 80% completion on a day.",
+  "achievementStreak3Title": "3-day rhythm",
+  "achievementStreak3Desc": "Three consistent days in a row.",
+  "achievementStreak7Title": "Week warrior",
+  "achievementStreak7Desc": "Seven consistent days in a row.",
+  "achievementStreak14Title": "Fortnight focus",
+  "achievementStreak14Desc": "Fourteen consistent days in a row.",
+  "achievementQuranHalfTitle": "Halfway through Quran",
+  "achievementQuranHalfDesc": "You passed 50% of your Quran plan.",
+  "achievementQuranCompleteTitle": "Quran complete",
+  "achievementQuranCompleteDesc": "You finished your season Quran plan.",
+  "achievementSeasonCompleteTitle": "Season complete",
+  "achievementSeasonCompleteDesc": "You finished tracking a Ramadan season.",
+  "achievementFirstSunnahTitle": "Sunnah starter",
+  "achievementFirstSunnahDesc": "You logged your first sunnah fast.",
+  "achievementSeninKamis4Title": "Senin-Kamis regular",
+  "achievementSeninKamis4Desc": "Four Monday or Thursday fasts this month.",
+  "achievementShawwalCompleteTitle": "Shawwal six",
+  "achievementShawwalCompleteDesc": "You completed six Shawwal fasts.",
+  "achievementReflectionFirstTitle": "Heart check-in",
+  "achievementReflectionFirstDesc": "You saved your first reflection.",
+  "achievementLast10Title": "Last ten nights",
+  "achievementLast10Desc": "You showed up during the last ten nights.",
+  "achievementWeeklyPerfectTitle": "Perfect week",
+  "achievementWeeklyPerfectDesc": "Seven strong days in a row.",
+  "achievementLevel5Title": "Rising companion",
+  "achievementLevel5Desc": "You reached companion level 5."
 }
 

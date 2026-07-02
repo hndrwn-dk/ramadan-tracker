@@ -41,6 +41,7 @@ import 'package:ramadan_tracker/features/today/widgets/ramadan_fasting_status_sh
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
 import 'package:ramadan_tracker/features/year_round/widgets/year_round_actions.dart';
+import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
@@ -871,6 +872,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     AsyncValue<List<dynamic>> seasonHabitsAsync,
     AsyncValue<List<dynamic>> entriesAsync,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -881,9 +883,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               children: [
                 // Use completion score provider which auto-refreshes when entries or quran daily changes
                 ref.watch(completionScoreProvider((seasonId: seasonId, dayIndex: dayIndex))).when(
-                  data: (score) => ScoreRing(score: score),
-                  loading: () => const ScoreRing(score: 0),
-                  error: (_, __) => const ScoreRing(score: 0),
+                  data: (score) => ScoreRing(score: score, label: l10n.scoreLabel),
+                  loading: () => ScoreRing(score: 0, label: l10n.scoreLabel),
+                  error: (_, __) => ScoreRing(score: 0, label: l10n.scoreLabel),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1660,6 +1662,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final database = ref.read(databaseProvider);
     await database.dailyEntriesDao.setBoolValue(seasonId, dayIndex, habitId, value);
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+    await evaluateAchievements(ref, seasonId: seasonId, dayIndex: dayIndex);
   }
 
   Future<void> _setTaraweehRakaat(int seasonId, int dayIndex, int habitId, int? rakaat) async {
@@ -1673,6 +1676,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       rakaat,
     );
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+    await evaluateAchievements(ref, seasonId: seasonId, dayIndex: dayIndex);
   }
 
   Widget _buildHaidNifasExcusedCard(BuildContext context, String habitLabel) {
@@ -1871,6 +1875,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final database = ref.read(databaseProvider);
     await database.dailyEntriesDao.setFastingStatus(seasonId, dayIndex, habitId, status, note: note);
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+    await evaluateAchievements(ref, seasonId: seasonId, dayIndex: dayIndex);
   }
 
   Widget _wrapHabitInCard({required Widget child}) {
@@ -1977,6 +1982,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final database = ref.read(databaseProvider);
     await database.dailyEntriesDao.setIntValue(seasonId, dayIndex, habitId, value);
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+    await evaluateAchievements(ref, seasonId: seasonId, dayIndex: dayIndex);
   }
 
   Future<void> _setNote(int seasonId, int dayIndex, int habitId, String? note) async {

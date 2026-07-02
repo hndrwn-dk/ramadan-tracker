@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/features/insights/services/weekly_insights_service.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 /// Weekly Review Bottom Sheet for missed days
 class WeeklyReviewBottomSheet extends StatelessWidget {
@@ -36,6 +37,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final missedDays = dayStatuses.where((d) => d.status != 'Done' || d.missedTasks.isNotEmpty).toList();
 
     return Container(
@@ -62,7 +64,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Review Missed Days',
+                  l10n.weeklyReviewTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -73,7 +75,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     child: Center(
                       child: Text(
-                        'No missed days in the last 7 days!',
+                        l10n.weeklyReviewNoMissed,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),

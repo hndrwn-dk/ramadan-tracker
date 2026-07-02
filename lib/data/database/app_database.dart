@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:ramadan_tracker/data/database/tables.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
+import 'package:ramadan_tracker/domain/models/companion_level.dart';
 import 'package:flutter/foundation.dart';
 
 part 'app_database.g.dart';
@@ -24,6 +25,8 @@ part 'daos.dart';
     PrayerTimesCache,
     SunnahFasts,
     QadhaLedger,
+    UserAchievements,
+    UserEngagement,
   ], daos: [
     RamadanSeasonsDao,
     HabitsDao,
@@ -38,6 +41,8 @@ part 'daos.dart';
     PrayerTimesCacheDao,
     SunnahFastsDao,
     QadhaLedgerDao,
+    UserAchievementsDao,
+    UserEngagementDao,
   ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -46,7 +51,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(LazyDatabase(() async => NativeDatabase.memory()));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -78,6 +83,18 @@ class AppDatabase extends _$AppDatabase {
           // Year-round sunnah fasting + qadha/fidyah ledger
           await migrator.createTable(sunnahFasts);
           await migrator.createTable(qadhaLedger);
+        }
+        if (from < 7) {
+          await migrator.createTable(userAchievements);
+          await migrator.createTable(userEngagement);
+          await into(userEngagement).insert(
+            UserEngagementCompanion.insert(
+              id: const Value(1),
+              totalXp: const Value(0),
+              companionLevel: const Value(1),
+              updatedAt: DateTime.now().millisecondsSinceEpoch,
+            ),
+          );
         }
       },
     );

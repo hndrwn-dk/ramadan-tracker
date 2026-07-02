@@ -136,6 +136,27 @@ class QadhaLedger extends Table {
   IntColumn get createdAt => integer()();
 }
 
+/// Unlocked achievement keys with optional season scope.
+class UserAchievements extends Table {
+  TextColumn get achievementKey => text()();
+  IntColumn get unlockedAt => integer()();
+  IntColumn get seasonId => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {achievementKey};
+}
+
+/// Single-row engagement stats (id = 1).
+class UserEngagement extends Table {
+  IntColumn get id => integer()();
+  IntColumn get totalXp => integer().withDefault(const Constant(0))();
+  IntColumn get companionLevel => integer().withDefault(const Constant(1))();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 class PrayerTimesCache extends Table {
   IntColumn get seasonId => integer()();
   TextColumn get dateYyyyMmDd => text()();

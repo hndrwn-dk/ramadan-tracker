@@ -19,6 +19,7 @@ import 'package:ramadan_tracker/features/settings/webview_screen.dart';
 import 'package:ramadan_tracker/data/providers/locale_provider.dart';
 import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/features/engagement/achievements_screen.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -108,6 +109,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildHabitsSettings(),
             const SizedBox(height: 16),
             _buildTimesAndReminders(),
+            const SizedBox(height: 16),
+            _buildAchievements(),
             const SizedBox(height: 16),
             if (_debugEnabled) ...[
               _buildDebugSection(),
@@ -1674,6 +1677,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             duration: const Duration(milliseconds: 200),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAchievements() {
+    final l10n = AppLocalizations.of(context)!;
+
+    return PremiumCard(
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.military_tech_outlined, color: Theme.of(context).colorScheme.primary),
+        title: Text(l10n.achievementsTitle),
+        subtitle: Text(l10n.viewAchievements),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const AchievementsScreen()),
+          );
+        },
       ),
     );
   }

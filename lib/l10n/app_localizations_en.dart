@@ -1654,4 +1654,142 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noPagesRead => 'No pages read';
+
+  @override
+  String get sunnah => 'Sunnah';
+
+  @override
+  String get scoreLabel => 'Score';
+
+  @override
+  String get achievementsTitle => 'Achievements';
+
+  @override
+  String get achievementUnlocked => 'Achievement unlocked!';
+
+  @override
+  String achievementXpGained(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String companionLevelLabel(int level) {
+    return 'Companion level $level';
+  }
+
+  @override
+  String totalXpLabel(int xp) {
+    return '$xp XP total';
+  }
+
+  @override
+  String achievementsUnlockedCount(int count) {
+    return '$count unlocked';
+  }
+
+  @override
+  String get viewAchievements => 'View achievements';
+
+  @override
+  String get weeklyReviewTitle => 'Review Missed Days';
+
+  @override
+  String get weeklyReviewNoMissed => 'No missed days in the last 7 days!';
+
+  @override
+  String get achievementFirstLogTitle => 'First step';
+
+  @override
+  String get achievementFirstLogDesc => 'You logged your first habit.';
+
+  @override
+  String get achievementFirstFullDayTitle => 'Strong day';
+
+  @override
+  String get achievementFirstFullDayDesc =>
+      'You reached 80% completion on a day.';
+
+  @override
+  String get achievementStreak3Title => '3-day rhythm';
+
+  @override
+  String get achievementStreak3Desc => 'Three consistent days in a row.';
+
+  @override
+  String get achievementStreak7Title => 'Week warrior';
+
+  @override
+  String get achievementStreak7Desc => 'Seven consistent days in a row.';
+
+  @override
+  String get achievementStreak14Title => 'Fortnight focus';
+
+  @override
+  String get achievementStreak14Desc => 'Fourteen consistent days in a row.';
+
+  @override
+  String get achievementQuranHalfTitle => 'Halfway through Quran';
+
+  @override
+  String get achievementQuranHalfDesc => 'You passed 50% of your Quran plan.';
+
+  @override
+  String get achievementQuranCompleteTitle => 'Quran complete';
+
+  @override
+  String get achievementQuranCompleteDesc =>
+      'You finished your season Quran plan.';
+
+  @override
+  String get achievementSeasonCompleteTitle => 'Season complete';
+
+  @override
+  String get achievementSeasonCompleteDesc =>
+      'You finished tracking a Ramadan season.';
+
+  @override
+  String get achievementFirstSunnahTitle => 'Sunnah starter';
+
+  @override
+  String get achievementFirstSunnahDesc => 'You logged your first sunnah fast.';
+
+  @override
+  String get achievementSeninKamis4Title => 'Senin-Kamis regular';
+
+  @override
+  String get achievementSeninKamis4Desc =>
+      'Four Monday or Thursday fasts this month.';
+
+  @override
+  String get achievementShawwalCompleteTitle => 'Shawwal six';
+
+  @override
+  String get achievementShawwalCompleteDesc =>
+      'You completed six Shawwal fasts.';
+
+  @override
+  String get achievementReflectionFirstTitle => 'Heart check-in';
+
+  @override
+  String get achievementReflectionFirstDesc =>
+      'You saved your first reflection.';
+
+  @override
+  String get achievementLast10Title => 'Last ten nights';
+
+  @override
+  String get achievementLast10Desc =>
+      'You showed up during the last ten nights.';
+
+  @override
+  String get achievementWeeklyPerfectTitle => 'Perfect week';
+
+  @override
+  String get achievementWeeklyPerfectDesc => 'Seven strong days in a row.';
+
+  @override
+  String get achievementLevel5Title => 'Rising companion';
+
+  @override
+  String get achievementLevel5Desc => 'You reached companion level 5.';
 }

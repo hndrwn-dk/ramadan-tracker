@@ -1661,4 +1661,144 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get noPagesRead => 'Tidak ada halaman yang dibaca';
+
+  @override
+  String get sunnah => 'Sunnah';
+
+  @override
+  String get scoreLabel => 'Skor';
+
+  @override
+  String get achievementsTitle => 'Pencapaian';
+
+  @override
+  String get achievementUnlocked => 'Pencapaian terbuka!';
+
+  @override
+  String achievementXpGained(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String companionLevelLabel(int level) {
+    return 'Level pendamping $level';
+  }
+
+  @override
+  String totalXpLabel(int xp) {
+    return '$xp XP total';
+  }
+
+  @override
+  String achievementsUnlockedCount(int count) {
+    return '$count terbuka';
+  }
+
+  @override
+  String get viewAchievements => 'Lihat pencapaian';
+
+  @override
+  String get weeklyReviewTitle => 'Tinjau Hari Terlewat';
+
+  @override
+  String get weeklyReviewNoMissed =>
+      'Tidak ada hari terlewat dalam 7 hari terakhir!';
+
+  @override
+  String get achievementFirstLogTitle => 'Langkah pertama';
+
+  @override
+  String get achievementFirstLogDesc => 'Anda mencatat kebiasaan pertama.';
+
+  @override
+  String get achievementFirstFullDayTitle => 'Hari kuat';
+
+  @override
+  String get achievementFirstFullDayDesc =>
+      'Anda mencapai 80% penyelesaian pada satu hari.';
+
+  @override
+  String get achievementStreak3Title => 'Irama 3 hari';
+
+  @override
+  String get achievementStreak3Desc => 'Tiga hari konsisten berturut-turut.';
+
+  @override
+  String get achievementStreak7Title => 'Pejuang minggu';
+
+  @override
+  String get achievementStreak7Desc => 'Tujuh hari konsisten berturut-turut.';
+
+  @override
+  String get achievementStreak14Title => 'Fokus dua minggu';
+
+  @override
+  String get achievementStreak14Desc =>
+      'Empat belas hari konsisten berturut-turut.';
+
+  @override
+  String get achievementQuranHalfTitle => 'Setengah Al-Quran';
+
+  @override
+  String get achievementQuranHalfDesc => 'Anda melewati 50% rencana Al-Quran.';
+
+  @override
+  String get achievementQuranCompleteTitle => 'Al-Quran selesai';
+
+  @override
+  String get achievementQuranCompleteDesc =>
+      'Anda menyelesaikan rencana Al-Quran musim ini.';
+
+  @override
+  String get achievementSeasonCompleteTitle => 'Musim selesai';
+
+  @override
+  String get achievementSeasonCompleteDesc =>
+      'Anda menyelesaikan pelacakan musim Ramadan.';
+
+  @override
+  String get achievementFirstSunnahTitle => 'Pemula sunnah';
+
+  @override
+  String get achievementFirstSunnahDesc =>
+      'Anda mencatat puasa sunnah pertama.';
+
+  @override
+  String get achievementSeninKamis4Title => 'Rutin Senin-Kamis';
+
+  @override
+  String get achievementSeninKamis4Desc =>
+      'Empat puasa Senin atau Kamis bulan ini.';
+
+  @override
+  String get achievementShawwalCompleteTitle => 'Enam Syawal';
+
+  @override
+  String get achievementShawwalCompleteDesc =>
+      'Anda menyelesaikan enam puasa Syawal.';
+
+  @override
+  String get achievementReflectionFirstTitle => 'Introspeksi hati';
+
+  @override
+  String get achievementReflectionFirstDesc =>
+      'Anda menyimpan refleksi pertama.';
+
+  @override
+  String get achievementLast10Title => 'Sepuluh malam terakhir';
+
+  @override
+  String get achievementLast10Desc => 'Anda hadir di sepuluh malam terakhir.';
+
+  @override
+  String get achievementWeeklyPerfectTitle => 'Minggu sempurna';
+
+  @override
+  String get achievementWeeklyPerfectDesc => 'Tujuh hari kuat berturut-turut.';
+
+  @override
+  String get achievementLevel5Title => 'Pendamping berkembang';
+
+  @override
+  String get achievementLevel5Desc => 'Anda mencapai level pendamping 5.';
 }

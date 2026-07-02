@@ -2983,6 +2983,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No pages read'**
   String get noPagesRead;
+
+  /// Navigation menu label for Sunnah tab
+  ///
+  /// In en, this message translates to:
+  /// **'Sunnah'**
+  String get sunnah;
+
+  /// Label under daily completion score ring
+  ///
+  /// In en, this message translates to:
+  /// **'Score'**
+  String get scoreLabel;
+
+  /// Achievements screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Achievements'**
+  String get achievementsTitle;
+
+  /// Celebration dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Achievement unlocked!'**
+  String get achievementUnlocked;
+
+  /// XP gained on achievement unlock
+  ///
+  /// In en, this message translates to:
+  /// **'+{xp} XP'**
+  String achievementXpGained(int xp);
+
+  /// No description provided for @companionLevelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion level {level}'**
+  String companionLevelLabel(int level);
+
+  /// No description provided for @totalXpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{xp} XP total'**
+  String totalXpLabel(int xp);
+
+  /// No description provided for @achievementsUnlockedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unlocked'**
+  String achievementsUnlockedCount(int count);
+
+  /// Link to achievements screen
+  ///
+  /// In en, this message translates to:
+  /// **'View achievements'**
+  String get viewAchievements;
+
+  /// Weekly review bottom sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Review Missed Days'**
+  String get weeklyReviewTitle;
+
+  /// Weekly review empty state
+  ///
+  /// In en, this message translates to:
+  /// **'No missed days in the last 7 days!'**
+  String get weeklyReviewNoMissed;
+
+  /// No description provided for @achievementFirstLogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First step'**
+  String get achievementFirstLogTitle;
+
+  /// No description provided for @achievementFirstLogDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You logged your first habit.'**
+  String get achievementFirstLogDesc;
+
+  /// No description provided for @achievementFirstFullDayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong day'**
+  String get achievementFirstFullDayTitle;
+
+  /// No description provided for @achievementFirstFullDayDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You reached 80% completion on a day.'**
+  String get achievementFirstFullDayDesc;
+
+  /// No description provided for @achievementStreak3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'3-day rhythm'**
+  String get achievementStreak3Title;
+
+  /// No description provided for @achievementStreak3Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Three consistent days in a row.'**
+  String get achievementStreak3Desc;
+
+  /// No description provided for @achievementStreak7Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Week warrior'**
+  String get achievementStreak7Title;
+
+  /// No description provided for @achievementStreak7Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Seven consistent days in a row.'**
+  String get achievementStreak7Desc;
+
+  /// No description provided for @achievementStreak14Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Fortnight focus'**
+  String get achievementStreak14Title;
+
+  /// No description provided for @achievementStreak14Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Fourteen consistent days in a row.'**
+  String get achievementStreak14Desc;
+
+  /// No description provided for @achievementQuranHalfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Halfway through Quran'**
+  String get achievementQuranHalfTitle;
+
+  /// No description provided for @achievementQuranHalfDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You passed 50% of your Quran plan.'**
+  String get achievementQuranHalfDesc;
+
+  /// No description provided for @achievementQuranCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quran complete'**
+  String get achievementQuranCompleteTitle;
+
+  /// No description provided for @achievementQuranCompleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You finished your season Quran plan.'**
+  String get achievementQuranCompleteDesc;
+
+  /// No description provided for @achievementSeasonCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Season complete'**
+  String get achievementSeasonCompleteTitle;
+
+  /// No description provided for @achievementSeasonCompleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You finished tracking a Ramadan season.'**
+  String get achievementSeasonCompleteDesc;
+
+  /// No description provided for @achievementFirstSunnahTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunnah starter'**
+  String get achievementFirstSunnahTitle;
+
+  /// No description provided for @achievementFirstSunnahDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You logged your first sunnah fast.'**
+  String get achievementFirstSunnahDesc;
+
+  /// No description provided for @achievementSeninKamis4Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Senin-Kamis regular'**
+  String get achievementSeninKamis4Title;
+
+  /// No description provided for @achievementSeninKamis4Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Four Monday or Thursday fasts this month.'**
+  String get achievementSeninKamis4Desc;
+
+  /// No description provided for @achievementShawwalCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shawwal six'**
+  String get achievementShawwalCompleteTitle;
+
+  /// No description provided for @achievementShawwalCompleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You completed six Shawwal fasts.'**
+  String get achievementShawwalCompleteDesc;
+
+  /// No description provided for @achievementReflectionFirstTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart check-in'**
+  String get achievementReflectionFirstTitle;
+
+  /// No description provided for @achievementReflectionFirstDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You saved your first reflection.'**
+  String get achievementReflectionFirstDesc;
+
+  /// No description provided for @achievementLast10Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Last ten nights'**
+  String get achievementLast10Title;
+
+  /// No description provided for @achievementLast10Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'You showed up during the last ten nights.'**
+  String get achievementLast10Desc;
+
+  /// No description provided for @achievementWeeklyPerfectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect week'**
+  String get achievementWeeklyPerfectTitle;
+
+  /// No description provided for @achievementWeeklyPerfectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Seven strong days in a row.'**
+  String get achievementWeeklyPerfectDesc;
+
+  /// No description provided for @achievementLevel5Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Rising companion'**
+  String get achievementLevel5Title;
+
+  /// No description provided for @achievementLevel5Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'You reached companion level 5.'**
+  String get achievementLevel5Desc;
 }
 
 class _AppLocalizationsDelegate

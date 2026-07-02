@@ -5,12 +5,14 @@ class ScoreRing extends StatelessWidget {
   final double score;
   final double size;
   final double strokeWidth;
+  final String? label;
 
   const ScoreRing({
     super.key,
     required this.score,
     this.size = 120,
     this.strokeWidth = 12,
+    this.label,
   });
 
   @override
@@ -39,7 +41,7 @@ class ScoreRing extends StatelessWidget {
                     ),
               ),
               Text(
-                'Score',
+                label ?? 'Score',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

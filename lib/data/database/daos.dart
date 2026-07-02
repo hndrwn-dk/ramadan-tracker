@@ -295,6 +295,10 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
     return (query..orderBy([(n) => OrderingTerm.desc(n.createdAt)])).get();
   }
 
+  Future<List<Note>> getAllNotes() {
+    return select(notes).get();
+  }
+
   Future<int> createNote({
     required int seasonId,
     int? dayIndex,
@@ -539,6 +543,74 @@ class QadhaLedgerDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> deleteEntry(int id) {
     return (delete(qadhaLedger)..where((q) => q.id.equals(id))).go();
+  }
+}
+
+@DriftAccessor(tables: [UserAchievements])
+class UserAchievementsDao extends DatabaseAccessor<AppDatabase>
+    with _$UserAchievementsDaoMixin {
+  UserAchievementsDao(AppDatabase db) : super(db);
+
+  Future<List<UserAchievement>> getAll() {
+    return (select(userAchievements)
+          ..orderBy([(a) => OrderingTerm.desc(a.unlockedAt)]))
+        .get();
+  }
+
+  Future<bool> isUnlocked(String key) async {
+    final row = await (select(userAchievements)
+          ..where((a) => a.achievementKey.equals(key)))
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<void> unlock({
+    required String achievementKey,
+    int? seasonId,
+  }) async {
+    final existing = await isUnlocked(achievementKey);
+    if (existing) return;
+    await into(userAchievements).insert(
+      UserAchievementsCompanion.insert(
+        achievementKey: achievementKey,
+        unlockedAt: DateTime.now().millisecondsSinceEpoch,
+        seasonId: Value(seasonId),
+      ),
+    );
+  }
+}
+
+@DriftAccessor(tables: [UserEngagement])
+class UserEngagementDao extends DatabaseAccessor<AppDatabase>
+    with _$UserEngagementDaoMixin {
+  UserEngagementDao(AppDatabase db) : super(db);
+
+  Future<UserEngagementData> getOrCreate() async {
+    final row = await (select(userEngagement)..where((e) => e.id.equals(1)))
+        .getSingleOrNull();
+    if (row != null) return row;
+    await into(userEngagement).insert(
+      UserEngagementCompanion.insert(
+        id: const Value(1),
+        totalXp: const Value(0),
+        companionLevel: const Value(1),
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+    return (select(userEngagement)..where((e) => e.id.equals(1))).getSingle();
+  }
+
+  Future<void> addXp(int amount) async {
+    final row = await getOrCreate();
+    final newXp = row.totalXp + amount;
+    final newLevel = CompanionLevel.levelFromXp(newXp);
+    await (update(userEngagement)..where((e) => e.id.equals(1))).write(
+      UserEngagementCompanion(
+        totalXp: Value(newXp),
+        companionLevel: Value(newLevel),
+        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
   }
 }
 
