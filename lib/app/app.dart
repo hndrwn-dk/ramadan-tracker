@@ -6,7 +6,6 @@ import 'package:ramadan_tracker/features/month/month_screen.dart';
 import 'package:ramadan_tracker/features/plan/plan_screen.dart';
 import 'package:ramadan_tracker/features/insights/insights_screen.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_screen.dart';
-import 'package:ramadan_tracker/features/settings/settings_screen.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_wrapper.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
 import 'package:ramadan_tracker/widgets/theme.dart';
@@ -88,7 +87,6 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     PlanScreen(),
     SunnahScreen(),
     InsightsScreen(),
-    SettingsScreen(),
   ];
 
   DateTime? _lastRescheduleTime;
@@ -183,19 +181,24 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(tabIndexProvider);
     final l10n = AppLocalizations.of(context)!;
-    final isId = Localizations.localeOf(context).languageCode == 'id';
+    final safeIndex = currentIndex.clamp(0, _screens.length - 1);
+    if (safeIndex != currentIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(tabIndexProvider.notifier).state = safeIndex;
+      });
+    }
 
     return Scaffold(
       body: IndexedStack(
-        index: currentIndex,
+        index: safeIndex,
         children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
+        selectedIndex: safeIndex,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         onDestinationSelected: (index) {
           // Reset selected day index when navigating away from Today screen (index 0)
-          if (currentIndex == 0 && index != 0) {
+          if (safeIndex == 0 && index != 0) {
             ref.read(selectedDayIndexProvider.notifier).state = null;
           }
           ref.read(tabIndexProvider.notifier).state = index;
@@ -225,11 +228,6 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
             icon: const Icon(Icons.insights_outlined),
             selectedIcon: const Icon(Icons.insights),
             label: l10n.insights,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.tune_outlined),
-            selectedIcon: const Icon(Icons.tune),
-            label: isId ? 'Atur' : l10n.settings,
           ),
         ],
       ),

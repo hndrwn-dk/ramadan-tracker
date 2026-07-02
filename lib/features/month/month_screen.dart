@@ -16,6 +16,7 @@ import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/features/month/widgets/month_legend_compact.dart';
 import 'package:ramadan_tracker/features/month/widgets/day_summary_sheet.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
 class MonthScreen extends ConsumerWidget {
   const MonthScreen({super.key});
@@ -48,6 +49,7 @@ class MonthScreen extends ConsumerWidget {
         title: Text(
           useSunnahMode ? sunnahStrings.sunnahMonthViewTitle : l10n.monthViewTitle,
         ),
+        actions: const [SettingsIconButton()],
       ),
       body: seasonAsync.when(
         data: (season) {

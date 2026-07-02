@@ -15,6 +15,7 @@ import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/hijri_calendar.dart';
 import 'package:ramadan_tracker/utils/islamic_events.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
+import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
 class SunnahScreen extends ConsumerWidget {
   const SunnahScreen({super.key});
@@ -37,6 +38,7 @@ class SunnahScreen extends ConsumerWidget {
                 if (stats != null) showSunnahShareDialog(context, stats, s);
               },
             ),
+          const SettingsIconButton(),
         ],
       ),
       body: isRamadanActive

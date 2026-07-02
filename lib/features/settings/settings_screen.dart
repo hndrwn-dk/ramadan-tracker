@@ -92,7 +92,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          onPressed: () => ref.read(tabIndexProvider.notifier).state = 0,
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              ref.read(tabIndexProvider.notifier).state = 0;
+            }
+          },
         ),
         title: Text(l10n.settingsTitle),
       ),

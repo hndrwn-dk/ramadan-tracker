@@ -18,6 +18,7 @@ import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.d
 import 'package:ramadan_tracker/features/year_round/widgets/season_completed_card.dart';
 import 'package:ramadan_tracker/features/year_round/widgets/year_round_actions.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/quran_icon.dart';
@@ -61,6 +62,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           onPressed: () => ref.read(tabIndexProvider.notifier).state = 0,
         ),
         title: Text(AppLocalizations.of(context)!.ramadanAutopilot),
+        actions: const [SettingsIconButton()],
       ),
       body: seasonAsync.when(
         data: (season) {

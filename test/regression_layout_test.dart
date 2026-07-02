@@ -22,27 +22,26 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('navigation settings label uses short Atur in Indonesian', (tester) async {
+    testWidgets('bottom navigation has five primary tabs (settings via app bar)', (tester) async {
       await pumpIdApp(
         tester,
         Scaffold(
           bottomNavigationBar: NavigationBar(
-            selectedIndex: 5,
+            selectedIndex: 0,
             destinations: const [
               NavigationDestination(icon: Icon(Icons.today), label: 'Hari Ini'),
               NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Bulan'),
               NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'Rencana'),
               NavigationDestination(icon: Icon(Icons.nightlight), label: 'Sunnah'),
               NavigationDestination(icon: Icon(Icons.insights), label: 'Wawasan'),
-              NavigationDestination(icon: Icon(Icons.tune), label: 'Atur'),
             ],
           ),
         ),
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Atur'), findsOneWidget);
-      expect(find.text('Pengaturan'), findsNothing);
+      expect(find.text('Hari Ini'), findsOneWidget);
+      expect(find.text('Atur'), findsNothing);
     });
   });
 }

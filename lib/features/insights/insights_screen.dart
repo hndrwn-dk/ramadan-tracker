@@ -48,6 +48,7 @@ import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
@@ -191,6 +192,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                     error: (_, __) => Text(l10n.insights),
                   )
                 : Text(l10n.insights),
+        actions: const [SettingsIconButton()],
       ),
       body: ref.watch(currentSeasonProvider).when(
         data: (season) {

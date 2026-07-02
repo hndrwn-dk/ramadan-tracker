@@ -43,7 +43,9 @@ import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.d
 import 'package:ramadan_tracker/features/year_round/widgets/year_round_actions.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_quest_provider.dart';
-import 'package:ramadan_tracker/features/engagement/widgets/daily_quests_card.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/compact_daily_quests_strip.dart';
+import 'package:ramadan_tracker/app/settings_navigation.dart';
+import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
@@ -54,6 +56,7 @@ class TodayScreen extends ConsumerStatefulWidget {
 
 class _TodayScreenState extends ConsumerState<TodayScreen> {
   bool _focusMode = false;
+  bool _focusModeManuallyToggled = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _oneTapCardKey = GlobalKey();
   final TextEditingController _reflectionController = TextEditingController();
@@ -121,10 +124,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ],
         ),
         actions: [
+          const SettingsIconButton(),
           IconButton(
-            icon: const Icon(Icons.filter_alt_outlined),
+            icon: Icon(_focusMode ? Icons.filter_alt : Icons.filter_alt_outlined),
             onPressed: () {
               setState(() {
+                _focusModeManuallyToggled = true;
                 _focusMode = !_focusMode;
               });
             },
@@ -149,6 +154,19 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final habitsAsync = ref.watch(habitsProvider);
     final seasonHabitsAsync = ref.watch(seasonHabitsProvider(seasonId));
     final entriesAsync = ref.watch(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
+    ref.listen(
+      dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
+      (previous, next) {
+        final entries = next.valueOrNull;
+        if (entries != null &&
+            !_focusModeManuallyToggled &&
+            entries.isNotEmpty &&
+            !_focusMode &&
+            mounted) {
+          setState(() => _focusMode = true);
+        }
+      },
+    );
     // Calculate showItikaf based on the displayed dayIndex, not current day
     final last10Start = totalDays - 9;
     final showItikaf = dayIndex >= last10Start && dayIndex > 0;
@@ -181,8 +199,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   const SizedBox(height: 16),
                 ],
                 _buildHeroCard(seasonId, dayIndex, habitsAsync, seasonHabitsAsync, entriesAsync),
-                const SizedBox(height: 16),
-                DailyQuestsCard(seasonId: seasonId, dayIndex: dayIndex),
                 const SizedBox(height: 16),
                 _buildTimesCard(seasonId, dayIndex),
                 const SizedBox(height: 16),
@@ -487,8 +503,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                             ),
                             TextButton(
                               onPressed: () {
-                                // Navigate to settings
-                                ref.read(tabIndexProvider.notifier).state = 5;
+                                openSettingsScreen(context, ref);
                               },
                               child: Text(AppLocalizations.of(context)!.enableLocation),
                             ),
@@ -694,8 +709,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     alignment: Alignment.centerLeft,
                     child: TextButton(
                       onPressed: () {
-                        ref.read(openSettingsSectionProvider.notifier).state = 'times';
-                        ref.read(tabIndexProvider.notifier).state = 5;
+                        openSettingsScreen(context, ref, section: 'times');
                       },
                       child: Text(l10n.prayerOffsetTipCta),
                     ),
@@ -941,6 +955,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 ),
               ],
             ),
+            CompactDailyQuestsStrip(seasonId: seasonId, dayIndex: dayIndex),
             // Reflection snippet if available
             FutureBuilder<List<Note>>(
               future: ref.read(databaseProvider).notesDao.getDayNotes(seasonId, dayIndex),
