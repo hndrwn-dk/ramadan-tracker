@@ -4,7 +4,6 @@ import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/data/providers/habit_provider.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
-import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
@@ -15,6 +14,9 @@ import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/features/month/widgets/month_legend_compact.dart';
 import 'package:ramadan_tracker/features/month/widgets/day_summary_sheet.dart';
+import 'package:ramadan_tracker/data/providers/achievement_days_provider.dart';
+import 'package:ramadan_tracker/features/month/widgets/month_journey_card.dart';
+import 'package:ramadan_tracker/features/month/widgets/season_trophy_sheet.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
@@ -29,45 +31,56 @@ class MonthScreen extends ConsumerWidget {
     final sunnahStrings = SunnahStrings.of(context);
     final useSunnahMode = seasonState.isYearRoundMode;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+    return _MonthTrophyScope(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            useSunnahMode ? sunnahStrings.sunnahMonthViewTitle : l10n.monthViewTitle,
           ),
-          onPressed: () => ref.read(tabIndexProvider.notifier).state = 0,
+          actions: const [SettingsIconButton()],
         ),
-        title: Text(
-          useSunnahMode ? sunnahStrings.sunnahMonthViewTitle : l10n.monthViewTitle,
+        body: seasonAsync.when(
+          data: (season) {
+            if (useSunnahMode) {
+              return const SunnahMonthView();
+            }
+            if (season == null) {
+              return const SunnahMonthView();
+            }
+            return buildMonthGrid(context, ref, season.id, season.days);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text(l10n.errorMessage(error.toString()))),
         ),
-        actions: const [SettingsIconButton()],
-      ),
-      body: seasonAsync.when(
-        data: (season) {
-          if (useSunnahMode) {
-            return const SunnahMonthView();
-          }
-          if (season == null) {
-            return const SunnahMonthView();
-          }
-          return _buildMonthGrid(context, ref, season.id, season.days);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text(l10n.errorMessage(error.toString()))),
       ),
     );
   }
+}
 
-  Widget _buildMonthGrid(BuildContext context, WidgetRef ref, int seasonId, int days) {
+class _MonthTrophyScope extends ConsumerStatefulWidget {
+  final Widget child;
+  const _MonthTrophyScope({required this.child});
+
+  @override
+  ConsumerState<_MonthTrophyScope> createState() => _MonthTrophyScopeState();
+}
+
+class _MonthTrophyScopeState extends ConsumerState<_MonthTrophyScope> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        SeasonTrophySheet.showIfNeeded(context, ref);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+Widget buildMonthGrid(BuildContext context, WidgetRef ref, int seasonId, int days) {
     final currentDayIndex = ref.watch(currentDayIndexProvider);
     final seasonAsync = ref.watch(currentSeasonProvider);
     
@@ -83,6 +96,10 @@ class MonthScreen extends ConsumerWidget {
         
         return Column(
           children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: MonthJourneyCard(),
+            ),
             const MonthLegendCompact(),
             Expanded(
               child: GridView.builder(
@@ -105,7 +122,10 @@ class MonthScreen extends ConsumerWidget {
                   final habitsAsync = ref.watch(habitsProvider);
                   final database = ref.watch(databaseProvider);
 
-                  return _buildDayCell(
+                  final achievementDays =
+                      ref.watch(achievementDayIndicesProvider).valueOrNull ?? const <int>{};
+
+                  return buildMonthDayCell(
                     context,
                     ref,
                     seasonId,
@@ -113,6 +133,7 @@ class MonthScreen extends ConsumerWidget {
                     isToday,
                     isLast10,
                     isInSeason,
+                    achievementDays.contains(dayIndex),
                     entriesAsync,
                     seasonHabitsAsync,
                     habitsAsync,
@@ -129,7 +150,7 @@ class MonthScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDayCell(
+Widget buildMonthDayCell(
     BuildContext context,
     WidgetRef ref,
     int seasonId,
@@ -137,6 +158,7 @@ class MonthScreen extends ConsumerWidget {
     bool isToday,
     bool isLast10,
     bool isInSeason,
+    bool hasAchievement,
     AsyncValue<List<DailyEntryModel>> entriesAsync,
     AsyncValue<List<SeasonHabitModel>> seasonHabitsAsync,
     AsyncValue<List<HabitModel>> habitsAsync,
@@ -150,7 +172,7 @@ class MonthScreen extends ConsumerWidget {
           child: InkWell(
             onTap: isInSeason
                 ? () {
-                    _showDaySummary(context, ref, seasonId, dayIndex);
+                    showMonthDaySummary(context, ref, seasonId, dayIndex);
                   }
                 : () {
                     final l10n = AppLocalizations.of(context)!;
@@ -308,6 +330,23 @@ class MonthScreen extends ConsumerWidget {
             ),
           ),
         ),
+        if (hasAchievement && isInSeason)
+          Positioned(
+            top: -2,
+            left: -2,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
         if (isLast10 && isInSeason)
           Positioned(
             top: -4,
@@ -336,7 +375,7 @@ class MonthScreen extends ConsumerWidget {
     );
   }
 
-  void _showDaySummary(BuildContext context, WidgetRef ref, int seasonId, int dayIndex) {
+void showMonthDaySummary(BuildContext context, WidgetRef ref, int seasonId, int dayIndex) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -351,8 +390,6 @@ class MonthScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
 }
 
 

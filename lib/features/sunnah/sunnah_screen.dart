@@ -15,6 +15,7 @@ import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/hijri_calendar.dart';
 import 'package:ramadan_tracker/utils/islamic_events.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
 class SunnahScreen extends ConsumerWidget {
@@ -22,13 +23,14 @@ class SunnahScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final s = SunnahStrings.of(context);
     final seasonState = ref.watch(seasonStateProvider);
     final isRamadanActive = seasonState == SeasonState.active;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isRamadanActive ? s.ramadanFocusTitle : s.sunnahTitle),
+        title: Text(l10n.sunnah),
         actions: [
           if (!isRamadanActive)
             IconButton(

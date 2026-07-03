@@ -111,7 +111,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutTitle => 'About';
 
   @override
-  String get aboutSubtitle => 'App information and settings';
+  String get aboutSubtitle => 'Share, rate, and app information';
+
+  @override
+  String get shareThisApp => 'Share this app';
+
+  @override
+  String get shareThisAppSubtitle => 'Tell friends about Ramadan Tracker';
+
+  @override
+  String get rateThisApp => 'Rate this app';
+
+  @override
+  String get rateThisAppSubtitle => 'Leave a review on Google Play';
+
+  @override
+  String shareAppMessage(String url) {
+    return 'Track Ramadan habits and sunnah fasting year-round — offline and private. Try Ramadan Tracker: $url';
+  }
 
   @override
   String get languageTitle => 'Language';
@@ -581,10 +598,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
-  String get supportDeveloper => 'Support Developer';
+  String get supportDeveloper => 'Support this app';
 
   @override
-  String get buyMeACoffee => 'Buy me a coffee';
+  String get buyMeACoffee =>
+      'Tip on Ko-fi — help keep it free, private & ad-free';
 
   @override
   String get privacyPolicy => 'Privacy Policy';
@@ -1660,6 +1678,102 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scoreLabel => 'Score';
+
+  @override
+  String get monthJourneyTitle => 'Season journey';
+
+  @override
+  String monthJourneySubtitle(String levelLabel, int unlocked, int total) {
+    return '$levelLabel · $unlocked/$total achievements';
+  }
+
+  @override
+  String monthJourneyDayProgress(int day, int total) {
+    return 'Day $day of $total';
+  }
+
+  @override
+  String monthJourneyXpToNext(int xp) {
+    return '$xp XP to next level';
+  }
+
+  @override
+  String get openTodayChecklist => 'Open today\'s checklist';
+
+  @override
+  String get todayChecklistTitle => 'Today\'s checklist';
+
+  @override
+  String weeklyAchievementsTitle(int count) {
+    return '$count new achievements this week';
+  }
+
+  @override
+  String get seasonTrophyTitle => 'Season complete';
+
+  @override
+  String get seasonTrophyMessage =>
+      'Thank you for journeying through this season. May the habits you built continue beyond Ramadan.';
+
+  @override
+  String get seasonTrophyDismiss => 'Continue';
+
+  @override
+  String get settingsSectionEngage => 'Engage';
+
+  @override
+  String get settingsSectionTrack => 'Track';
+
+  @override
+  String get settingsSectionApp => 'App';
+
+  @override
+  String get insightsStatusDone => 'Done';
+
+  @override
+  String get insightsStatusMissed => 'Missed';
+
+  @override
+  String get insightsStatusExcused => 'Excused';
+
+  @override
+  String get insightsStatusPartial => 'Partial';
+
+  @override
+  String get insightsStatusOnTrack => 'On track';
+
+  @override
+  String get insightsStatusOver => 'Over';
+
+  @override
+  String get insightsStatusMet => 'Met';
+
+  @override
+  String get insightsStatusBelow => 'Below';
+
+  @override
+  String get insightsStatusNone => 'None';
+
+  @override
+  String get insightsStatusPerfect => 'Perfect';
+
+  @override
+  String get insightsStatusNotDone => 'Not done';
+
+  @override
+  String get insightsStatusGiven => 'Given';
+
+  @override
+  String get insightsDetails => 'Details';
+
+  @override
+  String get insightsTargetLabel => 'Target';
+
+  @override
+  String get insightsTodayGiven => 'Today given';
+
+  @override
+  String get insightsSedekahTodayTitle => 'Sedekah today';
 
   @override
   String get achievementsTitle => 'Achievements';

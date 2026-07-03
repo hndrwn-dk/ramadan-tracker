@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ramadan_tracker/widgets/adaptive_date_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
@@ -69,7 +70,7 @@ class _OnboardingStep2SeasonState extends State<OnboardingStep2Season> {
 
   Future<void> _selectDate() async {
     try {
-      final picked = await showDatePicker(
+      final picked = await showAdaptiveAppDatePicker(
         context: context,
         initialDate: _startDate,
         firstDate: DateTime.now().subtract(const Duration(days: 365)),

@@ -299,8 +299,38 @@ abstract class AppLocalizations {
   /// About section subtitle
   ///
   /// In en, this message translates to:
-  /// **'App information and settings'**
+  /// **'Share, rate, and app information'**
   String get aboutSubtitle;
+
+  /// Share app menu title
+  ///
+  /// In en, this message translates to:
+  /// **'Share this app'**
+  String get shareThisApp;
+
+  /// Share app menu subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Tell friends about Ramadan Tracker'**
+  String get shareThisAppSubtitle;
+
+  /// Rate app menu title
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this app'**
+  String get rateThisApp;
+
+  /// Rate app menu subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a review on Google Play'**
+  String get rateThisAppSubtitle;
+
+  /// Message when sharing the app
+  ///
+  /// In en, this message translates to:
+  /// **'Track Ramadan habits and sunnah fasting year-round — offline and private. Try Ramadan Tracker: {url}'**
+  String shareAppMessage(String url);
 
   /// Language section title
   ///
@@ -1172,16 +1202,16 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
-  /// Support developer label
+  /// Donation CTA title in About and app bar tooltip
   ///
   /// In en, this message translates to:
-  /// **'Support Developer'**
+  /// **'Support this app'**
   String get supportDeveloper;
 
-  /// Buy me a coffee label
+  /// Donation CTA subtitle in About section
   ///
   /// In en, this message translates to:
-  /// **'Buy me a coffee'**
+  /// **'Tip on Ko-fi — help keep it free, private & ad-free'**
   String get buyMeACoffee;
 
   /// Privacy policy label
@@ -2995,6 +3025,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Score'**
   String get scoreLabel;
+
+  /// Month tab journey card title
+  ///
+  /// In en, this message translates to:
+  /// **'Season journey'**
+  String get monthJourneyTitle;
+
+  /// No description provided for @monthJourneySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{levelLabel} · {unlocked}/{total} achievements'**
+  String monthJourneySubtitle(String levelLabel, int unlocked, int total);
+
+  /// No description provided for @monthJourneyDayProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Day {day} of {total}'**
+  String monthJourneyDayProgress(int day, int total);
+
+  /// No description provided for @monthJourneyXpToNext.
+  ///
+  /// In en, this message translates to:
+  /// **'{xp} XP to next level'**
+  String monthJourneyXpToNext(int xp);
+
+  /// CTA on Today home to open logging sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Open today\'s checklist'**
+  String get openTodayChecklist;
+
+  /// Bottom sheet title for habit logging
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s checklist'**
+  String get todayChecklistTitle;
+
+  /// No description provided for @weeklyAchievementsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} new achievements this week'**
+  String weeklyAchievementsTitle(int count);
+
+  /// Trophy sheet title after Ramadan ends
+  ///
+  /// In en, this message translates to:
+  /// **'Season complete'**
+  String get seasonTrophyTitle;
+
+  /// No description provided for @seasonTrophyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for journeying through this season. May the habits you built continue beyond Ramadan.'**
+  String get seasonTrophyMessage;
+
+  /// No description provided for @seasonTrophyDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get seasonTrophyDismiss;
+
+  /// No description provided for @settingsSectionEngage.
+  ///
+  /// In en, this message translates to:
+  /// **'Engage'**
+  String get settingsSectionEngage;
+
+  /// No description provided for @settingsSectionTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Track'**
+  String get settingsSectionTrack;
+
+  /// No description provided for @settingsSectionApp.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get settingsSectionApp;
+
+  /// No description provided for @insightsStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get insightsStatusDone;
+
+  /// No description provided for @insightsStatusMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get insightsStatusMissed;
+
+  /// No description provided for @insightsStatusExcused.
+  ///
+  /// In en, this message translates to:
+  /// **'Excused'**
+  String get insightsStatusExcused;
+
+  /// No description provided for @insightsStatusPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get insightsStatusPartial;
+
+  /// No description provided for @insightsStatusOnTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get insightsStatusOnTrack;
+
+  /// No description provided for @insightsStatusOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Over'**
+  String get insightsStatusOver;
+
+  /// No description provided for @insightsStatusMet.
+  ///
+  /// In en, this message translates to:
+  /// **'Met'**
+  String get insightsStatusMet;
+
+  /// No description provided for @insightsStatusBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'Below'**
+  String get insightsStatusBelow;
+
+  /// No description provided for @insightsStatusNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get insightsStatusNone;
+
+  /// No description provided for @insightsStatusPerfect.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect'**
+  String get insightsStatusPerfect;
+
+  /// No description provided for @insightsStatusNotDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not done'**
+  String get insightsStatusNotDone;
+
+  /// No description provided for @insightsStatusGiven.
+  ///
+  /// In en, this message translates to:
+  /// **'Given'**
+  String get insightsStatusGiven;
+
+  /// No description provided for @insightsDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get insightsDetails;
+
+  /// No description provided for @insightsTargetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get insightsTargetLabel;
+
+  /// No description provided for @insightsTodayGiven.
+  ///
+  /// In en, this message translates to:
+  /// **'Today given'**
+  String get insightsTodayGiven;
+
+  /// No description provided for @insightsSedekahTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sedekah today'**
+  String get insightsSedekahTodayTitle;
 
   /// Achievements screen title
   ///

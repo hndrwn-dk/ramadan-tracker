@@ -18,6 +18,7 @@ import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:ramadan_tracker/app/platform_adaptive.dart';
 
 class RamadanCompanionApp extends ConsumerWidget {
   const RamadanCompanionApp({super.key});
@@ -189,17 +190,21 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: safeIndex,
-        children: _screens,
+      body: SafeArea(
+        child: IndexedStack(
+          index: safeIndex,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: safeIndex,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         onDestinationSelected: (index) {
-          // Reset selected day index when navigating away from Today screen (index 0)
           if (safeIndex == 0 && index != 0) {
             ref.read(selectedDayIndexProvider.notifier).state = null;
+          }
+          if (index != safeIndex) {
+            PlatformAdaptive.lightHaptic();
           }
           ref.read(tabIndexProvider.notifier).state = index;
         },

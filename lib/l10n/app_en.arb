@@ -154,9 +154,37 @@
     "description": "About section title"
   },
   
-  "aboutSubtitle": "App information and settings",
+  "aboutSubtitle": "Share, rate, and app information",
   "@aboutSubtitle": {
     "description": "About section subtitle"
+  },
+
+  "shareThisApp": "Share this app",
+  "@shareThisApp": {
+    "description": "Share app menu title"
+  },
+
+  "shareThisAppSubtitle": "Tell friends about Ramadan Tracker",
+  "@shareThisAppSubtitle": {
+    "description": "Share app menu subtitle"
+  },
+
+  "rateThisApp": "Rate this app",
+  "@rateThisApp": {
+    "description": "Rate app menu title"
+  },
+
+  "rateThisAppSubtitle": "Leave a review on Google Play",
+  "@rateThisAppSubtitle": {
+    "description": "Rate app menu subtitle"
+  },
+
+  "shareAppMessage": "Track Ramadan habits and sunnah fasting year-round — offline and private. Try Ramadan Tracker: {url}",
+  "@shareAppMessage": {
+    "description": "Message when sharing the app",
+    "placeholders": {
+      "url": { "type": "String" }
+    }
   },
   
   "languageTitle": "Language",
@@ -800,14 +828,14 @@
     "description": "Version label"
   },
   
-  "supportDeveloper": "Support Developer",
+  "supportDeveloper": "Support this app",
   "@supportDeveloper": {
-    "description": "Support developer label"
+    "description": "Donation CTA title in About and app bar tooltip"
   },
   
-  "buyMeACoffee": "Buy me a coffee",
+  "buyMeACoffee": "Tip on Ko-fi — help keep it free, private & ad-free",
   "@buyMeACoffee": {
-    "description": "Buy me a coffee label"
+    "description": "Donation CTA subtitle in About section"
   },
   
   "privacyPolicy": "Privacy Policy",
@@ -3323,6 +3351,71 @@
   "@scoreLabel": {
     "description": "Label under daily completion score ring"
   },
+
+  "monthJourneyTitle": "Season journey",
+  "@monthJourneyTitle": {
+    "description": "Month tab journey card title"
+  },
+  "monthJourneySubtitle": "{levelLabel} · {unlocked}/{total} achievements",
+  "@monthJourneySubtitle": {
+    "placeholders": {
+      "levelLabel": { "type": "String" },
+      "unlocked": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "monthJourneyDayProgress": "Day {day} of {total}",
+  "@monthJourneyDayProgress": {
+    "placeholders": {
+      "day": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "monthJourneyXpToNext": "{xp} XP to next level",
+  "@monthJourneyXpToNext": {
+    "placeholders": { "xp": { "type": "int" } }
+  },
+  "openTodayChecklist": "Open today's checklist",
+  "@openTodayChecklist": {
+    "description": "CTA on Today home to open logging sheet"
+  },
+  "todayChecklistTitle": "Today's checklist",
+  "@todayChecklistTitle": {
+    "description": "Bottom sheet title for habit logging"
+  },
+
+  "weeklyAchievementsTitle": "{count} new achievements this week",
+  "@weeklyAchievementsTitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "seasonTrophyTitle": "Season complete",
+  "@seasonTrophyTitle": {
+    "description": "Trophy sheet title after Ramadan ends"
+  },
+  "seasonTrophyMessage": "Thank you for journeying through this season. May the habits you built continue beyond Ramadan.",
+  "seasonTrophyDismiss": "Continue",
+
+  "settingsSectionEngage": "Engage",
+  "settingsSectionTrack": "Track",
+  "settingsSectionApp": "App",
+
+  "insightsStatusDone": "Done",
+  "insightsStatusMissed": "Missed",
+  "insightsStatusExcused": "Excused",
+  "insightsStatusPartial": "Partial",
+  "insightsStatusOnTrack": "On track",
+  "insightsStatusOver": "Over",
+  "insightsStatusMet": "Met",
+  "insightsStatusBelow": "Below",
+  "insightsStatusNone": "None",
+  "insightsStatusPerfect": "Perfect",
+  "insightsStatusNotDone": "Not done",
+  "insightsStatusGiven": "Given",
+  "insightsDetails": "Details",
+  "insightsTargetLabel": "Target",
+  "insightsTodayGiven": "Today given",
+  "insightsSedekahTodayTitle": "Sedekah today",
 
   "achievementsTitle": "Achievements",
   "@achievementsTitle": {

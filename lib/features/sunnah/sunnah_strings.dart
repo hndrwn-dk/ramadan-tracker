@@ -212,8 +212,7 @@ class SunnahStrings {
         'Full sunnah summary is in Insights',
       );
   String get openWawasan => t('Buka Wawasan', 'Open Insights');
-  String get sunnahInsightsTabLabel =>
-      t('Puasa Sunnah', 'Sunnah Fasts');
+  String get sunnahInsightsTabLabel => t('Sunnah', 'Sunnah');
   String get duringRamadanSunnahInsightsHint => t(
         'Riwayat puasa sunnah sepanjang tahun — termasuk catatan sebelum Ramadan. Puasa wajib Ramadan ada di tab Hari Ini / 7 Hari / Ramadan.',
         'Year-round sunnah fast history — including logs from before Ramadan. Obligatory Ramadan fasting is under Today / 7 Days / Ramadan.',

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:ramadan_tracker/utils/device_timezone.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
@@ -77,7 +78,7 @@ class _OnboardingStep5RemindersState extends ConsumerState<OnboardingStep5Remind
           tz = result.stdout.toString().trim();
         }
       } else if (Platform.isIOS) {
-        tz = 'UTC';
+        tz = await resolveDeviceTimezone();
       }
     } catch (e) {
       tz = 'UTC';

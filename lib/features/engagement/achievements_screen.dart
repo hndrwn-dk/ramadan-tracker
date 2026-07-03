@@ -5,6 +5,7 @@ import 'package:ramadan_tracker/domain/models/achievement_model.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class AchievementsScreen extends ConsumerWidget {
   const AchievementsScreen({super.key});
@@ -16,7 +17,10 @@ class AchievementsScreen extends ConsumerWidget {
     final engagementAsync = ref.watch(userEngagementProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.achievementsTitle)),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: Text(l10n.achievementsTitle),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

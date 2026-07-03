@@ -15,11 +15,12 @@ import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_ids.dart';
 import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/app/app_engagement.dart';
+import 'package:ramadan_tracker/app/donation_navigation.dart';
 import 'package:ramadan_tracker/features/settings/webview_screen.dart';
 import 'package:ramadan_tracker/data/providers/locale_provider.dart';
 import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
-import 'package:ramadan_tracker/features/engagement/achievements_screen.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -105,24 +106,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildAppearance(),
+            _buildSectionHeader(l10n.settingsSectionEngage),
+            const SizedBox(height: 8),
+            _buildAbout(),
             const SizedBox(height: 16),
-            _buildLanguage(),
-            const SizedBox(height: 16),
-            _buildSeasonManagement(),
+            _buildSectionHeader(l10n.settingsSectionTrack),
+            const SizedBox(height: 8),
+            _buildTimesAndReminders(),
             const SizedBox(height: 16),
             _buildHabitsSettings(),
             const SizedBox(height: 16),
-            _buildTimesAndReminders(),
+            _buildSeasonManagement(),
             const SizedBox(height: 16),
-            _buildAchievements(),
+            _buildSectionHeader(l10n.settingsSectionApp),
+            const SizedBox(height: 8),
+            _buildAppearance(),
             const SizedBox(height: 16),
+            _buildLanguage(),
             if (_debugEnabled) ...[
-              _buildDebugSection(),
               const SizedBox(height: 16),
+              _buildDebugSection(),
             ],
-            _buildAbout(),
           ],
         ),
       ),
@@ -1687,21 +1693,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildAchievements() {
-    final l10n = AppLocalizations.of(context)!;
-
-    return PremiumCard(
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(Icons.military_tech_outlined, color: Theme.of(context).colorScheme.primary),
-        title: Text(l10n.achievementsTitle),
-        subtitle: Text(l10n.viewAchievements),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const AchievementsScreen()),
-          );
-        },
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        textAlign: TextAlign.start,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.primary,
+            ),
       ),
     );
   }
@@ -1795,11 +1796,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
           const Divider(height: 24),
-          _buildLinkTile(
+          _buildActionTile(
+            l10n.shareThisApp,
+            l10n.shareThisAppSubtitle,
+            Icons.share_outlined,
+            () => shareApp(context),
+          ),
+          const Divider(height: 1),
+          _buildActionTile(
+            l10n.rateThisApp,
+            l10n.rateThisAppSubtitle,
+            Icons.star_outline,
+            () => openAppStoreListing(),
+          ),
+          const Divider(height: 1),
+          _buildActionTile(
             l10n.supportDeveloper,
             l10n.buyMeACoffee,
-            Icons.favorite_outline,
-            'https://buymeacoffee.com/hendrawan',
+            Icons.volunteer_activism_outlined,
+            () => openDonationPage(context),
           ),
           const Divider(height: 1),
           _buildLinkTile(
@@ -1821,6 +1836,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             duration: const Duration(milliseconds: 200),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionTile(
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      trailing: const Icon(Icons.chevron_right, size: 18),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
     );
   }

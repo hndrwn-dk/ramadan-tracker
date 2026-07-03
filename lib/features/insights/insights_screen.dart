@@ -26,7 +26,10 @@ import 'package:ramadan_tracker/features/insights/widgets/weekly_rhythm_card.dar
 import 'package:ramadan_tracker/features/insights/widgets/weekly_highlights_card.dart';
 import 'package:ramadan_tracker/features/insights/widgets/weekly_task_row.dart';
 import 'package:ramadan_tracker/features/insights/widgets/sedekah_weekly_card.dart';
+import 'package:ramadan_tracker/features/insights/widgets/weekly_achievements_card.dart';
 import 'package:ramadan_tracker/features/insights/widgets/weekly_review_bottom_sheet.dart';
+import 'package:ramadan_tracker/features/insights/widgets/insights_range_selector.dart';
+import 'package:ramadan_tracker/features/insights/utils/insights_labels.dart';
 import 'package:ramadan_tracker/features/insights/services/weekly_insights_service.dart';
 import 'package:ramadan_tracker/features/insights/widgets/season_summary_hero_card.dart';
 import 'package:ramadan_tracker/features/insights/widgets/season_trend_chart.dart';
@@ -122,21 +125,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          onPressed: () => ref.read(tabIndexProvider.notifier).state = 0,
-        ),
         title: seasonState.isYearRoundMode
             ? Text(l10n.insights)
             : _selectedRange == InsightsRange.sevenDays
@@ -331,104 +319,23 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   }
 
   Widget _buildTimeframeSelector() {
-    final l10n = AppLocalizations.of(context)!;
     final seasonState = ref.watch(seasonStateProvider);
-    if (seasonState == SeasonState.active) {
-      final s = SunnahStrings.of(context);
-      final labels = [
-        l10n.today,
-        l10n.sevenDays,
-        l10n.insightsSeasonTab,
-        s.sunnahInsightsTabLabel,
-      ];
-      final selectedIndex = _sunnahInsightsTab ? 3 : _selectedRange.index;
-      return _buildScrollablePillTabs(
-        labels: labels,
-        selectedIndex: selectedIndex,
-        onSelected: (index) {
-          setState(() {
-            if (index == 3) {
-              _sunnahInsightsTab = true;
-            } else {
-              _sunnahInsightsTab = false;
-              _selectedRange = InsightsRange.values[index];
-              if (_selectedRange != InsightsRange.today) {
-                _selectedDate = null;
-              }
-            }
-          });
-        },
-      );
-    }
-
-    return SegmentedButton<InsightsRange>(
-      segments: [
-        ButtonSegment(value: InsightsRange.today, label: Text(l10n.today)),
-        ButtonSegment(value: InsightsRange.sevenDays, label: Text(l10n.sevenDays)),
-        ButtonSegment(value: InsightsRange.season, label: Text(l10n.insightsSeasonTab)),
-      ],
-      selected: {_selectedRange},
-      onSelectionChanged: (Set<InsightsRange> newSelection) {
+    return InsightsRangeSelector(
+      selectedRange: _selectedRange,
+      sunnahTab: _sunnahInsightsTab,
+      seasonState: seasonState,
+      onRangeChanged: (range) {
         setState(() {
           _sunnahInsightsTab = false;
-          _selectedRange = newSelection.first;
-          // Reset date selection when switching away from Today tab
-          if (newSelection.first != InsightsRange.today) {
+          _selectedRange = range;
+          if (range != InsightsRange.today) {
             _selectedDate = null;
           }
         });
       },
-    );
-  }
-
-  Widget _buildScrollablePillTabs({
-    required List<String> labels,
-    required int selectedIndex,
-    required ValueChanged<int> onSelected,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (var i = 0; i < labels.length; i++) ...[
-            if (i > 0) const SizedBox(width: 8),
-            Material(
-              color: selectedIndex == i
-                  ? scheme.secondaryContainer
-                  : scheme.surfaceContainerHighest,
-              shape: StadiumBorder(
-                side: BorderSide(
-                  color: selectedIndex == i
-                      ? scheme.secondary
-                      : scheme.outline.withValues(alpha: 0.25),
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => onSelected(i),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Text(
-                    labels[i],
-                    maxLines: 1,
-                    softWrap: false,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: selectedIndex == i
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: selectedIndex == i
-                              ? scheme.onSecondaryContainer
-                              : scheme.onSurface,
-                        ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+      onSunnahTabSelected: () {
+        setState(() => _sunnahInsightsTab = true);
+      },
     );
   }
 
@@ -1179,6 +1086,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     
     // Build heatmap days and calculate metrics
     final l10n = AppLocalizations.of(context)!;
+    final labels = InsightsLabels(l10n);
     final heatmapDays = <DayStatus>[];
     String status = l10n.miss;
     String keyMetricText = '';
@@ -1328,9 +1236,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           final fastingStatus = FastingStatus.fromEntry(entry.valueInt, entry.valueBool);
           completion = FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool) ? 1.0 : 0.0;
           isMissed = !FastingStatus.isCompletedForDay(entry.valueInt, entry.valueBool);
-          if (fastingStatus == FastingStatus.fasted) dayStatusLabel = 'Done';
-          else if (FastingStatus.isExcused(fastingStatus)) dayStatusLabel = 'Excused';
-          else dayStatusLabel = 'Miss';
+          if (fastingStatus == FastingStatus.fasted) dayStatusLabel = labels.done;
+          else if (FastingStatus.isExcused(fastingStatus)) dayStatusLabel = labels.excused;
+          else dayStatusLabel = labels.missed;
           break;
         }
         case 'taraweeh':
@@ -1394,7 +1302,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         if (dayFastingEntry != null && FastingStatus.isHaidOrNifas(FastingStatus.fromEntry(dayFastingEntry.valueInt, dayFastingEntry.valueBool))) {
           completion = 1.0;
           isMissed = false;
-          dayStatusLabel = 'Excused';
+          dayStatusLabel = labels.excused;
         }
       }
 
@@ -1424,6 +1332,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     final sedekahStats = data.perHabitStats['sedekah'];
     if (sedekahStats == null) return const SizedBox.shrink();
 
+    final labels = InsightsLabels(AppLocalizations.of(context)!);
     final seasonAsync = ref.watch(currentSeasonProvider);
 
     return seasonAsync.when(
@@ -1447,14 +1356,14 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             Color statusColor;
             if (target != null && target > 0) {
               if (amount >= target.toInt()) {
-                statusText = amount > target.toInt() ? 'Over' : 'Met';
+                statusText = amount > target.toInt() ? labels.over : labels.met;
                 statusColor = Colors.green;
               } else {
-                statusText = 'Below';
+                statusText = labels.below;
                 statusColor = Colors.orange;
               }
             } else {
-              statusText = amount > 0 ? 'Given' : 'None';
+              statusText = amount > 0 ? labels.given : labels.none;
               statusColor = amount > 0 ? Colors.green : Colors.grey;
             }
 
@@ -1466,7 +1375,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Sedekah Today',
+                        labels.sedekahTodayTitle(),
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -1496,7 +1405,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Today given',
+                            labels.todayGiven,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 ),
@@ -1515,7 +1424,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              'Target',
+                              labels.target,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
@@ -1547,7 +1456,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                     child: OutlinedButton.icon(
                       onPressed: () => _navigateToSedekahAnalyticsToday(context, ref, season.id),
                       icon: const Icon(Icons.info_outline, size: 18),
-                      label: const Text('Details'),
+                      label: Text(labels.details),
                     ),
                   ),
                 ],
@@ -3155,6 +3064,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                       );
                     },
                   ),
+                  const SizedBox(height: 24),
+                  const WeeklyAchievementsCard(),
                   const SizedBox(height: 24),
                   // Weekly Rhythm Card
                   WeeklyRhythmCard(

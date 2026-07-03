@@ -111,7 +111,24 @@ class AppLocalizationsId extends AppLocalizations {
   String get aboutTitle => 'Tentang';
 
   @override
-  String get aboutSubtitle => 'Informasi aplikasi dan pengaturan';
+  String get aboutSubtitle => 'Bagikan, beri rating, dan info aplikasi';
+
+  @override
+  String get shareThisApp => 'Bagikan aplikasi ini';
+
+  @override
+  String get shareThisAppSubtitle => 'Ajak teman pakai Ramadan Tracker';
+
+  @override
+  String get rateThisApp => 'Beri rating aplikasi';
+
+  @override
+  String get rateThisAppSubtitle => 'Tulis ulasan di Google Play';
+
+  @override
+  String shareAppMessage(String url) {
+    return 'Lacak kebiasaan Ramadan dan puasa sunnah sepanjang tahun — offline dan privat. Coba Ramadan Tracker: $url';
+  }
 
   @override
   String get languageTitle => 'Bahasa';
@@ -584,10 +601,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get version => 'Versi';
 
   @override
-  String get supportDeveloper => 'Dukung Pengembang';
+  String get supportDeveloper => 'Dukung aplikasi ini';
 
   @override
-  String get buyMeACoffee => 'Beli saya kopi';
+  String get buyMeACoffee =>
+      'Dukung via Ko-fi — bantu aplikasi tetap gratis, privat & tanpa iklan';
 
   @override
   String get privacyPolicy => 'Kebijakan Privasi';
@@ -1667,6 +1685,102 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get scoreLabel => 'Skor';
+
+  @override
+  String get monthJourneyTitle => 'Perjalanan musim';
+
+  @override
+  String monthJourneySubtitle(String levelLabel, int unlocked, int total) {
+    return '$levelLabel · $unlocked/$total pencapaian';
+  }
+
+  @override
+  String monthJourneyDayProgress(int day, int total) {
+    return 'Hari $day dari $total';
+  }
+
+  @override
+  String monthJourneyXpToNext(int xp) {
+    return '$xp XP ke level berikutnya';
+  }
+
+  @override
+  String get openTodayChecklist => 'Buka checklist hari ini';
+
+  @override
+  String get todayChecklistTitle => 'Checklist hari ini';
+
+  @override
+  String weeklyAchievementsTitle(int count) {
+    return '$count pencapaian baru minggu ini';
+  }
+
+  @override
+  String get seasonTrophyTitle => 'Musim selesai';
+
+  @override
+  String get seasonTrophyMessage =>
+      'Terima kasih telah menjalani musim ini. Semoga kebiasaan baik tetap berlanjut setelah Ramadan.';
+
+  @override
+  String get seasonTrophyDismiss => 'Lanjut';
+
+  @override
+  String get settingsSectionEngage => 'Interaksi';
+
+  @override
+  String get settingsSectionTrack => 'Pelacakan';
+
+  @override
+  String get settingsSectionApp => 'Aplikasi';
+
+  @override
+  String get insightsStatusDone => 'Selesai';
+
+  @override
+  String get insightsStatusMissed => 'Terlewat';
+
+  @override
+  String get insightsStatusExcused => 'Uzur';
+
+  @override
+  String get insightsStatusPartial => 'Sebagian';
+
+  @override
+  String get insightsStatusOnTrack => 'Sesuai target';
+
+  @override
+  String get insightsStatusOver => 'Lebih';
+
+  @override
+  String get insightsStatusMet => 'Tercapai';
+
+  @override
+  String get insightsStatusBelow => 'Kurang';
+
+  @override
+  String get insightsStatusNone => 'Tidak ada';
+
+  @override
+  String get insightsStatusPerfect => 'Sempurna';
+
+  @override
+  String get insightsStatusNotDone => 'Belum';
+
+  @override
+  String get insightsStatusGiven => 'Sudah';
+
+  @override
+  String get insightsDetails => 'Detail';
+
+  @override
+  String get insightsTargetLabel => 'Target';
+
+  @override
+  String get insightsTodayGiven => 'Hari ini';
+
+  @override
+  String get insightsSedekahTodayTitle => 'Sedekah hari ini';
 
   @override
   String get achievementsTitle => 'Pencapaian';

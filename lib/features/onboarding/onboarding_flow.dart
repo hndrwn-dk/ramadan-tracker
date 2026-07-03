@@ -12,6 +12,7 @@ import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step2_seaso
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step3_habits.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step4_goals.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step5_reminders.dart';
+import 'package:ramadan_tracker/utils/device_timezone.dart';
 
 class OnboardingFlow extends ConsumerStatefulWidget {
   const OnboardingFlow({super.key});
@@ -279,8 +280,15 @@ class OnboardingData {
   int fajrAdjust = 0;
   int maghribAdjust = 0;
 
+  Future<void> ensureLocalTimezone() async {
+    if (timezone == 'UTC' || timezone.isEmpty) {
+      timezone = await resolveDeviceTimezone();
+    }
+  }
+
   // Save data without scheduling (fast, non-blocking)
   Future<void> saveWithoutScheduling(WidgetRef ref) async {
+    await ensureLocalTimezone();
     debugPrint('=== saveWithoutScheduling Started ===');
     final database = ref.read(databaseProvider);
     final now = DateTime.now();
@@ -425,6 +433,7 @@ class OnboardingData {
   }
 
   Future<void> save(WidgetRef ref) async {
+    await ensureLocalTimezone();
     debugPrint('=== save() Started (CreateSeasonFlow) ===');
     final database = ref.read(databaseProvider);
     final now = DateTime.now();
