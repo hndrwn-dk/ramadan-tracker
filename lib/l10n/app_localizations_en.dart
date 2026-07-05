@@ -2176,6 +2176,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todayHomeJourneyLine(
+      int level, int xp, int questCompleted, int questTotal) {
+    return 'Level $level · $xp XP · $questCompleted/$questTotal quests today';
+  }
+
+  @override
   String todayHomeXpToNext(int xp, int level) {
     return '$xp XP to level $level';
   }

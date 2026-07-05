@@ -44,7 +44,6 @@ import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.d
 import 'package:ramadan_tracker/features/year_round/widgets/year_round_actions.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_quest_provider.dart';
-import 'package:ramadan_tracker/features/engagement/widgets/compact_daily_quests_strip.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_fasting_times_card.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_habit_trends_card.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_home_engagement.dart';
@@ -889,10 +888,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TodayHomeGreeting(dayIndex: dayIndex, totalDays: totalDays),
-            CoachMarkTip(
-              coachKey: CoachMarkService.todayQuests,
-              message: l10n.coachMarkTodayQuests,
-            ),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -936,15 +931,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 ),
               ],
             ),
-            CompactDailyQuestsStrip(seasonId: seasonId, dayIndex: dayIndex),
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
             CoachMarkTip(
               coachKey: CoachMarkService.todayJourney,
               message: l10n.coachMarkTodayJourney,
             ),
-            TodayJourneyMiniStrip(),
+            TodayJourneyMiniStrip(seasonId: seasonId, dayIndex: dayIndex),
             const SizedBox(height: 16),
             Text(
               l10n.todayHomeLogPrompt,

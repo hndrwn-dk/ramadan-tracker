@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/data/providers/daily_quest_provider.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
@@ -61,15 +62,49 @@ class TodayHomeGreeting extends StatelessWidget {
   }
 }
 
-/// Compact companion level + XP progress; taps through to achievements.
+/// Companion level, XP, and daily quest progress; taps through to achievements.
 class TodayJourneyMiniStrip extends ConsumerWidget {
-  const TodayJourneyMiniStrip({super.key});
+  final int seasonId;
+  final int dayIndex;
+
+  const TodayJourneyMiniStrip({
+    super.key,
+    required this.seasonId,
+    required this.dayIndex,
+  });
+
+  static String _headline(
+    AppLocalizations l10n,
+    int level,
+    int totalXp,
+    AsyncValue<DailyQuestState> questsAsync,
+  ) {
+    return questsAsync.when(
+      data: (state) {
+        if (state.quests.isEmpty) {
+          return l10n.todayHomeCompanionLine(level, totalXp);
+        }
+        final completed = state.progress.where((p) => p.completed).length;
+        return l10n.todayHomeJourneyLine(
+          level,
+          totalXp,
+          completed,
+          state.quests.length,
+        );
+      },
+      loading: () => l10n.todayHomeCompanionLine(level, totalXp),
+      error: (_, __) => l10n.todayHomeCompanionLine(level, totalXp),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final engagementAsync = ref.watch(userEngagementProvider);
     final seasonAsync = ref.watch(currentSeasonProvider);
+    final questsAsync = ref.watch(
+      dailyQuestsProvider((seasonId: seasonId, dayIndex: dayIndex)),
+    );
 
     return engagementAsync.when(
       data: (engagement) {
@@ -81,6 +116,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
             : 1.0;
         final scheme = Theme.of(context).colorScheme;
         final tierName = _companionTierName(l10n, level);
+        final headline = _headline(l10n, level, engagement.totalXp, questsAsync);
 
         return seasonAsync.when(
           data: (season) {
@@ -116,7 +152,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                l10n.todayHomeCompanionLine(level, engagement.totalXp),
+                                headline,
                                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -172,8 +208,22 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
               },
             );
           },
-          loading: () => _buildProgressOnly(context, l10n, level, engagement, progress, xpToNext),
-          error: (_, __) => _buildProgressOnly(context, l10n, level, engagement, progress, xpToNext),
+          loading: () => _buildProgressOnly(
+            context,
+            l10n,
+            headline,
+            progress,
+            xpToNext,
+            level,
+          ),
+          error: (_, __) => _buildProgressOnly(
+            context,
+            l10n,
+            headline,
+            progress,
+            xpToNext,
+            level,
+          ),
         );
       },
       loading: () => const SizedBox.shrink(),
@@ -197,10 +247,10 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
   Widget _buildProgressOnly(
     BuildContext context,
     AppLocalizations l10n,
-    int level,
-    dynamic engagement,
+    String headline,
     double progress,
     int xpToNext,
+    int level,
   ) {
     final scheme = Theme.of(context).colorScheme;
     return InkWell(
@@ -216,7 +266,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.todayHomeCompanionLine(level, engagement.totalXp),
+              headline,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),

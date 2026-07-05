@@ -698,6 +698,7 @@
   "todayNudgeLastTen": "Puncak Ramadan — jadikan malam-malam ini berarti.",
   "todayHomeLogPrompt": "Catat puasa, sholat, Al-Quran, dzikir, dan sedekah dalam satu checklist.",
   "todayHomeCompanionLine": "Level {level} · {xp} XP",
+  "todayHomeJourneyLine": "Level {level} · {xp} XP · {questCompleted}/{questTotal} misi hari ini",
   "todayHomeXpToNext": "{xp} XP menuju level {level}",
 
   "onboardingLanguageStep": "Langkah 1 · Bahasa",

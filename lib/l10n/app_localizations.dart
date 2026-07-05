@@ -3878,6 +3878,13 @@ abstract class AppLocalizations {
   /// **'Level {level} · {xp} XP'**
   String todayHomeCompanionLine(int level, int xp);
 
+  /// No description provided for @todayHomeJourneyLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level} · {xp} XP · {questCompleted}/{questTotal} quests today'**
+  String todayHomeJourneyLine(
+      int level, int xp, int questCompleted, int questTotal);
+
   /// No description provided for @todayHomeXpToNext.
   ///
   /// In en, this message translates to:
