@@ -9,6 +9,7 @@ import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/data/providers/last10_provider.dart';
 import 'package:ramadan_tracker/data/providers/quran_provider.dart';
 import 'package:ramadan_tracker/domain/services/completion_service.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/widgets/habit_toggle.dart';
 import 'package:ramadan_tracker/widgets/quran_tracker.dart';
@@ -23,6 +24,7 @@ import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class DayDetailScreen extends ConsumerStatefulWidget {
   final int seasonId;
@@ -39,14 +41,6 @@ class DayDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
-  final TextEditingController _reflectionController = TextEditingController();
-
-  @override
-  void dispose() {
-    _reflectionController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final seasonAsync = ref.watch(currentSeasonProvider);
@@ -56,6 +50,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: Text('Day ${widget.dayIndex}'),
       ),
       body: GestureDetector(
@@ -98,8 +93,6 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
               entriesAsync,
               showItikaf,
             ),
-            const SizedBox(height: 16),
-            _buildReflectionCard(),
           ],
         ),
       ),
@@ -134,15 +127,16 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                         ),
                         builder: (context, snapshot) {
                           final score = snapshot.data ?? 0.0;
-                          return ScoreRing(score: score);
+                          final l10n = AppLocalizations.of(context)!;
+                          return ScoreRing(score: score, label: l10n.scoreLabel);
                         },
                       );
                     },
-                    loading: () => const ScoreRing(score: 0),
-                    error: (_, __) => const ScoreRing(score: 0),
+                    loading: () => ScoreRing(score: 0, label: AppLocalizations.of(context)!.scoreLabel),
+                    error: (_, __) => ScoreRing(score: 0, label: AppLocalizations.of(context)!.scoreLabel),
                   ),
-                  loading: () => const ScoreRing(score: 0),
-                  error: (_, __) => const ScoreRing(score: 0),
+                  loading: () => ScoreRing(score: 0, label: AppLocalizations.of(context)!.scoreLabel),
+                  error: (_, __) => ScoreRing(score: 0, label: AppLocalizations.of(context)!.scoreLabel),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,47 +370,6 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
     return Column(children: sortedHabits);
   }
 
-  Widget _buildReflectionCard() {
-    return FutureBuilder<List<Note>>(
-      future: ref.read(databaseProvider).notesDao.getDayNotes(widget.seasonId, widget.dayIndex),
-      builder: (context, snapshot) {
-        final notes = snapshot.data ?? [];
-        final note = notes.isNotEmpty ? notes.first : null;
-        _reflectionController.text = note?.body ?? '';
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Reflection',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _reflectionController,
-                  maxLines: 3,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    hintText: 'How was today?',
-                  ),
-                  onChanged: (text) {
-                    _saveReflection(text.isEmpty ? null : text, note?.id);
-                  },
-                  onSubmitted: (_) {
-                    FocusScope.of(context).unfocus();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Future<Map<String, int>> _calculateCompletedCount({
     required int seasonId,
     required int dayIndex,
@@ -546,39 +499,6 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
   Future<void> _setIntHabit(int habitId, int value) async {
     final database = ref.read(databaseProvider);
     await database.dailyEntriesDao.setIntValue(widget.seasonId, widget.dayIndex, habitId, value);
-    ref.invalidate(dailyEntriesProvider((seasonId: widget.seasonId, dayIndex: widget.dayIndex)));
-  }
-
-  Future<void> _saveReflection(String? text, int? noteId) async {
-    final database = ref.read(databaseProvider);
-    if (text == null || text.isEmpty) {
-      if (noteId != null) {
-        await database.notesDao.deleteNote(noteId);
-      }
-    } else {
-      if (noteId != null) {
-        final existingNotes = await database.notesDao.getDayNotes(widget.seasonId, widget.dayIndex);
-        if (existingNotes.isNotEmpty) {
-          final note = existingNotes.first;
-          await database.notesDao.updateNote(
-            Note(
-              id: note.id,
-              seasonId: note.seasonId,
-              dayIndex: note.dayIndex,
-              title: note.title,
-              body: text,
-              createdAt: note.createdAt,
-            ),
-          );
-        }
-      } else {
-        await database.notesDao.createNote(
-          seasonId: widget.seasonId,
-          dayIndex: widget.dayIndex,
-          body: text,
-        );
-      }
-    }
     ref.invalidate(dailyEntriesProvider((seasonId: widget.seasonId, dayIndex: widget.dayIndex)));
   }
 }

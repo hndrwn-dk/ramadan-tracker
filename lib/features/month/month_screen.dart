@@ -13,10 +13,13 @@ import 'package:ramadan_tracker/domain/services/completion_service.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/features/month/widgets/month_legend_compact.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/features/month/widgets/day_summary_sheet.dart';
 import 'package:ramadan_tracker/data/providers/achievement_days_provider.dart';
 import 'package:ramadan_tracker/features/month/widgets/month_journey_card.dart';
 import 'package:ramadan_tracker/features/month/widgets/season_trophy_sheet.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/coach_mark_tip.dart';
+import 'package:ramadan_tracker/domain/services/coach_mark_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
@@ -93,53 +96,85 @@ Widget buildMonthGrid(BuildContext context, WidgetRef ref, int seasonId, int day
         
         // Calculate last 10 days based on season days, not calendar
         final last10Start = season.days - 9;
+        const horizontalPad = 20.0;
+        const gridGap = 10.0;
         
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 0),
+              child: CoachMarkTip(
+                coachKey: CoachMarkService.monthCalendar,
+                message: AppLocalizations.of(context)!.coachMarkMonthCalendar,
+              ),
+            ),
             const Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: EdgeInsets.fromLTRB(horizontalPad, 0, horizontalPad, 0),
               child: MonthJourneyCard(),
             ),
-            const MonthLegendCompact(),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 0),
+              child: MonthLegendCompact(),
+            ),
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(20),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 20),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: AppSurface(
+                    padding: const EdgeInsets.all(12),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        crossAxisSpacing: gridGap,
+                        mainAxisSpacing: gridGap,
+                        childAspectRatio: 1,
+                      ),
+                      itemCount: days,
+                      itemBuilder: (context, index) {
+                        final dayIndex = index + 1;
+                        final isToday = dayIndex == currentDayIndex;
+                        final isLast10 =
+                            dayIndex >= last10Start && dayIndex <= season.days;
+                        final isInSeason =
+                            dayIndex >= 1 && dayIndex <= season.days;
+
+                        final entriesAsync = ref.watch(
+                          dailyEntriesProvider(
+                            (seasonId: seasonId, dayIndex: dayIndex),
+                          ),
+                        );
+                        final seasonHabitsAsync =
+                            ref.watch(seasonHabitsProvider(seasonId));
+                        final habitsAsync = ref.watch(habitsProvider);
+                        final database = ref.watch(databaseProvider);
+
+                        final achievementDays =
+                            ref.watch(achievementDayIndicesProvider).valueOrNull ??
+                                const <int>{};
+
+                        return buildMonthDayCell(
+                          context,
+                          ref,
+                          seasonId,
+                          dayIndex,
+                          isToday,
+                          isLast10,
+                          isInSeason,
+                          achievementDays.contains(dayIndex),
+                          entriesAsync,
+                          seasonHabitsAsync,
+                          habitsAsync,
+                          database,
+                        );
+                      },
+                    ),
+                  ),
                 ),
-                itemCount: days,
-                itemBuilder: (context, index) {
-                  final dayIndex = index + 1;
-                  final isToday = dayIndex == currentDayIndex;
-                  final isLast10 = dayIndex >= last10Start && dayIndex <= season.days;
-                  final isInSeason = dayIndex >= 1 && dayIndex <= season.days;
-                  
-                  final entriesAsync = ref.watch(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
-                  final seasonHabitsAsync = ref.watch(seasonHabitsProvider(seasonId));
-                  final habitsAsync = ref.watch(habitsProvider);
-                  final database = ref.watch(databaseProvider);
-
-                  final achievementDays =
-                      ref.watch(achievementDayIndicesProvider).valueOrNull ?? const <int>{};
-
-                  return buildMonthDayCell(
-                    context,
-                    ref,
-                    seasonId,
-                    dayIndex,
-                    isToday,
-                    isLast10,
-                    isInSeason,
-                    achievementDays.contains(dayIndex),
-                    entriesAsync,
-                    seasonHabitsAsync,
-                    habitsAsync,
-                    database,
-                  );
-                },
               ),
             ),
           ],
@@ -187,6 +222,8 @@ Widget buildMonthDayCell(
             child: Opacity(
               opacity: isInSeason ? 1.0 : 0.4,
               child: Container(
+                width: double.infinity,
+                height: double.infinity,
                 decoration: BoxDecoration(
                   gradient: isToday
                       ? LinearGradient(
@@ -198,12 +235,12 @@ Widget buildMonthDayCell(
                           ],
                         )
                       : null,
-                  color: isToday ? null : Theme.of(context).cardColor,
+                  color: isToday ? null : AppSurface.cellFillColor(context),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isToday
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                        : AppSurface.borderColor(context),
                     width: isToday ? 2.5 : 1,
                   ),
                   boxShadow: isToday
@@ -214,19 +251,14 @@ Widget buildMonthDayCell(
                             offset: const Offset(0, 4),
                           ),
                         ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                      : null,
                 ),
                 child: Stack(
+                  fit: StackFit.expand,
                   children: [
                     Center(
-                      child: Transform.scale(
-                        scale: 0.9,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
@@ -238,7 +270,8 @@ Widget buildMonthDayCell(
                                     color: isToday
                                         ? Theme.of(context).colorScheme.primary
                                         : null,
-                                    fontSize: 12,
+                                    fontSize: 11,
+                                    height: 1.1,
                                   ),
                             ),
                             entriesAsync.when(
@@ -269,14 +302,14 @@ Widget buildMonthDayCell(
                                             if (hasEntries || score > 0) {
                                               final opacity = (score / 100).clamp(0.0, 1.0);
                                               scoreWidget = Container(
-                                                width: 16,
-                                                height: 16,
-                                                margin: const EdgeInsets.only(top: 2),
+                                                width: 14,
+                                                height: 14,
+                                                margin: const EdgeInsets.only(top: 1),
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
                                                   border: Border.all(
                                                     color: Theme.of(context).colorScheme.primary,
-                                                    width: 2,
+                                                    width: 1.5,
                                                   ),
                                                   color: score >= 100
                                                       ? Theme.of(context).colorScheme.primary
@@ -286,7 +319,7 @@ Widget buildMonthDayCell(
                                                     ? Center(
                                                         child: Icon(
                                                           Icons.check,
-                                                          size: 10,
+                                                          size: 9,
                                                           color: Theme.of(context).colorScheme.onPrimary,
                                                         ),
                                                       )
@@ -298,8 +331,8 @@ Widget buildMonthDayCell(
                                         );
                                       },
                                       loading: () => const SizedBox(
-                                        width: 12,
-                                        height: 12,
+                                        width: 10,
+                                        height: 10,
                                         child: CircularProgressIndicator(strokeWidth: 1.5),
                                       ),
                                       error: (_, __) => const SizedBox.shrink(),
@@ -314,8 +347,8 @@ Widget buildMonthDayCell(
                                 );
                               },
                               loading: () => const SizedBox(
-                                width: 12,
-                                height: 12,
+                                width: 10,
+                                height: 10,
                                 child: CircularProgressIndicator(strokeWidth: 1.5),
                               ),
                               error: (_, __) => const SizedBox.shrink(),

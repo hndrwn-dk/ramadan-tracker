@@ -30,7 +30,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withOpacity(0.22),
             width: 1,
           ),
         ),
@@ -248,12 +248,15 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colorScheme.surface,
       cardTheme: CardThemeData(
-        color: colorScheme.surface,
+        color: Color.alphaBlend(
+          colorScheme.primary.withValues(alpha: 0.12),
+          colorScheme.surface,
+        ),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.onSurface.withOpacity(0.22),
             width: 1,
           ),
         ),

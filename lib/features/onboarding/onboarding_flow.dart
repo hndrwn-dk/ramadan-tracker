@@ -7,11 +7,17 @@ import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step0_language.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step1_welcome.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step2_season.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step_location.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step3_habits.dart';
-import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step4_goals.dart';
-import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step5_reminders.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step5_goals_quran_dhikr.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step6_goals_sedekah.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step7_reminders.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step8_summary.dart';
+import 'package:ramadan_tracker/features/onboarding/widgets/onboarding_shared_widgets.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/device_timezone.dart';
 
 class OnboardingFlow extends ConsumerStatefulWidget {
@@ -22,49 +28,85 @@ class OnboardingFlow extends ConsumerStatefulWidget {
 }
 
 class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
+  static const int _totalSteps = 9;
+
+  final PageController _pageController = PageController();
   int _currentStep = 0;
-  int? _lastStep;
 
   OnboardingData _data = OnboardingData();
 
-  Widget _buildCurrentStep() {
-    switch (_currentStep) {
+  bool get _languageChosen => _data.selectedLanguageCode != null;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildStepAt(int index) {
+    switch (index) {
       case 0:
-        return OnboardingStep1Welcome(
+        return OnboardingStep0Language(
           key: const ValueKey(0),
           data: _data,
           onNext: _nextStep,
         );
       case 1:
-        return OnboardingStep2Season(
+        return OnboardingStep1Welcome(
           key: const ValueKey(1),
           data: _data,
           onNext: _nextStep,
-          onPrevious: _previousStep,
         );
       case 2:
-        return OnboardingStep3Habits(
+        return OnboardingStep2Season(
           key: const ValueKey(2),
           data: _data,
           onNext: _nextStep,
           onPrevious: _previousStep,
         );
       case 3:
-        return OnboardingStep4Goals(
+        return OnboardingStepLocation(
           key: const ValueKey(3),
           data: _data,
           onNext: _nextStep,
           onPrevious: _previousStep,
         );
       case 4:
-        return OnboardingStep5Reminders(
+        return OnboardingStep3Habits(
           key: const ValueKey(4),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 5:
+        return OnboardingStep5GoalsQuranDhikr(
+          key: const ValueKey(5),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 6:
+        return OnboardingStep6GoalsSedekah(
+          key: const ValueKey(6),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 7:
+        return OnboardingStep7Reminders(
+          key: const ValueKey(7),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 8:
+        return OnboardingStep8Summary(
+          key: const ValueKey(8),
           data: _data,
           onPrevious: _previousStep,
           onFinish: () async {
             debugPrint('=== Onboarding Finish Started ===');
             try {
-              // Save data first (fast operations)
               debugPrint('Saving onboarding data...');
               await _data.saveWithoutScheduling(ref);
               debugPrint('Onboarding data saved successfully');
@@ -74,64 +116,61 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
               ref.invalidate(currentSeasonProvider);
 
               await Future.delayed(const Duration(milliseconds: 100));
-              debugPrint('Waited for provider update');
-              
+
               if (mounted) {
                 ref.read(tabIndexProvider.notifier).state = 0;
-                debugPrint('Navigating to MainScreen...');
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const MainScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const MainScreen()),
                   (route) => false,
                 );
-                debugPrint('Navigation completed');
-              } else {
-                debugPrint('Widget not mounted, skipping navigation');
               }
-              
-              // Schedule notifications in background (non-blocking)
-              // This prevents UI freeze from Android rate limiting
-              debugPrint('Scheduling notifications in background...');
+
               _data.scheduleNotificationsInBackground(ref);
-              debugPrint('=== Onboarding Finish Completed ===');
             } catch (e, stackTrace) {
               debugPrint('=== ERROR in Onboarding Finish ===');
               debugPrint('Error: $e');
               debugPrint('Stack: $stackTrace');
-              debugPrint('=== End Error ===');
             }
           },
         );
       default:
-        return OnboardingStep1Welcome(
-          key: const ValueKey(0),
-          data: _data,
-          onNext: _nextStep,
-        );
+        return const SizedBox.shrink();
     }
   }
 
+  void _goToStep(int step) {
+    if (step < 0 || step >= _totalSteps) return;
+    if (step > 0 && !_languageChosen) return;
+    setState(() => _currentStep = step);
+    _pageController.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void _nextStep() {
-    if (_currentStep < 4) {
-      final nextStep = _currentStep + 1;
-      // Update state - AnimatedSwitcher will handle the transition smoothly
-      setState(() {
-        _lastStep = _currentStep;
-        _currentStep = nextStep;
-      });
+    if (_currentStep < _totalSteps - 1) {
+      _goToStep(_currentStep + 1);
     }
   }
 
   void _previousStep() {
     if (_currentStep > 0) {
-      final prevStep = _currentStep - 1;
-      // Update state - AnimatedSwitcher will handle the transition smoothly
-      setState(() {
-        _lastStep = _currentStep;
-        _currentStep = prevStep;
-      });
+      _goToStep(_currentStep - 1);
     }
+  }
+
+  void _onPageChanged(int index) {
+    if (index > 0 && !_languageChosen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(0);
+        }
+      });
+      return;
+    }
+    setState(() => _currentStep = index);
   }
 
   Future<void> _skipSetup() async {
@@ -152,89 +191,27 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final showSkip = _currentStep >= 1 && _currentStep < _totalSteps - 1;
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: _previousStep,
-                    ),
-                  if (_currentStep > 0)
-                    Expanded(
-                      child: LinearProgressIndicator(
-                        value: _currentStep / 4,
-                        backgroundColor: Colors.grey.withOpacity(0.2),
-                      ),
-                    )
-                  else
-                    const Spacer(),
-                  TextButton(
-                    onPressed: _skipSetup,
-                    child: Text(
-                      Localizations.localeOf(context).languageCode == 'id'
-                          ? 'Lewati dulu'
-                          : 'Skip for now',
-                    ),
-                  ),
-                ],
-              ),
+            OnboardingFlowHeader(
+              currentStep: _currentStep,
+              totalSteps: _totalSteps,
+              onBack: _currentStep > 0 ? _previousStep : null,
+              onSkip: showSkip ? _skipSetup : null,
+              skipLabel: showSkip ? l10n.onboardingSkipForNow : null,
             ),
             Expanded(
-              child: ClipRect(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 150),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  layoutBuilder: (currentChild, previousChildren) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      clipBehavior: Clip.hardEdge,
-                      children: [
-                        ...previousChildren,
-                        if (currentChild != null) currentChild,
-                      ],
-                    );
-                  },
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    final int? childStep = (child.key is ValueKey<int>)
-                        ? (child.key as ValueKey<int>).value
-                        : null;
-
-                    final bool isForward = _lastStep == null || _currentStep > _lastStep!;
-                    final bool isIncoming = childStep == _currentStep;
-
-                    // Very subtle slide - just enough to feel smooth, not dramatic
-                    final Animation<double> slideAnim =
-                        isIncoming ? animation : ReverseAnimation(animation);
-
-                    // Reduced offset for more subtle movement
-                    final Offset inBegin = Offset(isForward ? 0.15 : -0.15, 0.0);
-                    final Offset outEnd = Offset(isForward ? -0.15 : 0.15, 0.0);
-
-                    final Tween<Offset> tween = isIncoming
-                        ? Tween<Offset>(begin: inBegin, end: Offset.zero)
-                        : Tween<Offset>(begin: Offset.zero, end: outEnd);
-
-                    // Fast fade + minimal slide for instant feel
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: tween.animate(CurvedAnimation(
-                          parent: slideAnim,
-                          curve: Curves.easeOut,
-                        )),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: _buildCurrentStep(),
-                ),
+              child: PageView.builder(
+                controller: _pageController,
+                physics: const ClampingScrollPhysics(),
+                onPageChanged: _onPageChanged,
+                itemCount: _totalSteps,
+                itemBuilder: (context, index) => _buildStepAt(index),
               ),
             ),
           ],
@@ -245,20 +222,22 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
 }
 
 class OnboardingData {
+  String? selectedLanguageCode;
+
   String seasonLabel = '';
   DateTime? startDate;
   int days = 30;
   int hijriAdjustment = 0;
-  
+
   Set<String> selectedHabits = {'fasting', 'quran_pages', 'dhikr', 'taraweeh', 'sedekah'};
-  
+
   String quranGoal = '1_khatam';
   int customQuranPages = 20;
   int dhikrTarget = 100;
   bool sedekahGoalEnabled = false;
   int sedekahAmount = 0;
   String sedekahCurrency = 'IDR';
-  
+
   bool sahurEnabled = true;
   int sahurOffsetMinutes = 30;
   bool iftarEnabled = true;
@@ -292,7 +271,7 @@ class OnboardingData {
     debugPrint('=== saveWithoutScheduling Started ===');
     final database = ref.read(databaseProvider);
     final now = DateTime.now();
-    
+
     debugPrint('Creating season: label=$seasonLabel, startDate=$startDate, days=$days');
     final seasonId = await database.ramadanSeasonsDao.createSeason(
       label: seasonLabel.isEmpty ? 'Ramadan ${now.year}' : seasonLabel,
@@ -305,7 +284,7 @@ class OnboardingData {
     debugPrint('Setting onboarding flag: $flagKey');
     await database.kvSettingsDao.setValue(flagKey, 'true');
     debugPrint('Onboarding flag set to true');
-    
+
     if (latitude != null && longitude != null) {
       await database.kvSettingsDao.setValue('prayer_latitude', latitude!.toString());
       await database.kvSettingsDao.setValue('prayer_longitude', longitude!.toString());
@@ -323,25 +302,21 @@ class OnboardingData {
     await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
     await database.kvSettingsDao.setValue('night_plan_hour', nightPlanHour.clamp(2, 4).toString());
     await database.kvSettingsDao.setValue('night_plan_minute', nightPlanMinute.clamp(0, 59).toString());
-    
-    // Goal reminder settings
+
     await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
     await database.kvSettingsDao.setValue('taraweeh_rakaat_per_day', taraweehRakaatPerDay.toString());
 
-    // Set prayers to detailed mode by default (track all prayers individually)
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
-    
-    if (selectedHabits.contains('sedekah')) {
-      await database.kvSettingsDao.setValue('sedekah_currency', sedekahCurrency);
-      await database.kvSettingsDao.setValue('sedekah_goal_enabled', sedekahGoalEnabled.toString());
-      if (sedekahGoalEnabled && sedekahAmount > 0) {
-        await database.kvSettingsDao.setValue('sedekah_goal_amount', sedekahAmount.toString());
-      } else {
-        await database.kvSettingsDao.deleteValue('sedekah_goal_amount');
-      }
+
+    await database.kvSettingsDao.setValue('sedekah_currency', sedekahCurrency);
+    await database.kvSettingsDao.setValue('sedekah_goal_enabled', sedekahGoalEnabled.toString());
+    if (sedekahGoalEnabled && sedekahAmount > 0) {
+      await database.kvSettingsDao.setValue('sedekah_goal_amount', sedekahAmount.toString());
+    } else {
+      await database.kvSettingsDao.deleteValue('sedekah_goal_amount');
     }
 
     final habits = await database.habitsDao.getAllHabits();
@@ -394,63 +369,35 @@ class OnboardingData {
         createdAt: now.millisecondsSinceEpoch,
       ),
     );
-    
-    // Verify the flag was saved
-    final verifyFlag = await database.kvSettingsDao.getValue('onboarding_done_season_$seasonId');
-    debugPrint('Verification: onboarding_done_season_$seasonId = $verifyFlag');
-    
-    // Verify season exists
-    final verifySeason = await database.ramadanSeasonsDao.getSeasonById(seasonId);
-    debugPrint('Verification: Season $seasonId exists = ${verifySeason != null}');
-    
-    // Verify habits
-    final verifyHabits = await database.seasonHabitsDao.getSeasonHabits(seasonId);
-    debugPrint('Verification: Season habits count = ${verifyHabits.length}');
-    
+
     debugPrint('=== saveWithoutScheduling Completed ===');
-    
-    // Note: Notification scheduling is done separately in background to prevent UI blocking
   }
 
-  // Schedule notifications in background (non-blocking)
   void scheduleNotificationsInBackground(WidgetRef ref) {
-    // Run in background isolate to prevent UI blocking
     Future.microtask(() async {
       try {
         final database = ref.read(databaseProvider);
-        debugPrint('=== ONBOARDING: Scheduling notifications in background ===');
-        
         await NotificationService.rescheduleAllNotificationTypes(database: database);
-        
-        debugPrint('=== ONBOARDING: Background scheduling completed ===');
       } catch (e, stackTrace) {
-        debugPrint('=== ONBOARDING: Background scheduling failed ===');
-        debugPrint('  Error: $e');
-        debugPrint('  Stack trace: $stackTrace');
-        // Don't show error to user - notifications can be scheduled later from settings
+        debugPrint('Background scheduling failed: $e');
+        debugPrint('$stackTrace');
       }
     });
   }
 
   Future<void> save(WidgetRef ref) async {
     await ensureLocalTimezone();
-    debugPrint('=== save() Started (CreateSeasonFlow) ===');
     final database = ref.read(databaseProvider);
     final now = DateTime.now();
-    
-    debugPrint('Creating season: label=$seasonLabel, startDate=$startDate, days=$days');
+
     final seasonId = await database.ramadanSeasonsDao.createSeason(
       label: seasonLabel.isEmpty ? 'Ramadan ${now.year}' : seasonLabel,
       startDate: startDate ?? now,
       days: days,
     );
-    debugPrint('Season created with ID: $seasonId');
 
-    final flagKey = 'onboarding_done_season_$seasonId';
-    debugPrint('Setting onboarding flag: $flagKey');
-    await database.kvSettingsDao.setValue(flagKey, 'true');
-    debugPrint('Onboarding flag set to true');
-    
+    await database.kvSettingsDao.setValue('onboarding_done_season_$seasonId', 'true');
+
     if (latitude != null && longitude != null) {
       await database.kvSettingsDao.setValue('prayer_latitude', latitude!.toString());
       await database.kvSettingsDao.setValue('prayer_longitude', longitude!.toString());
@@ -468,30 +415,24 @@ class OnboardingData {
     await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
     await database.kvSettingsDao.setValue('night_plan_hour', nightPlanHour.clamp(2, 4).toString());
     await database.kvSettingsDao.setValue('night_plan_minute', nightPlanMinute.clamp(0, 59).toString());
-    
-    // Goal reminder settings
+
     await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
     await database.kvSettingsDao.setValue('taraweeh_rakaat_per_day', taraweehRakaatPerDay.toString());
 
-    // Set prayers to detailed mode by default (track all prayers individually)
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
-    
-    if (selectedHabits.contains('sedekah')) {
-      await database.kvSettingsDao.setValue('sedekah_currency', sedekahCurrency);
-      await database.kvSettingsDao.setValue('sedekah_goal_enabled', sedekahGoalEnabled.toString());
-      if (sedekahGoalEnabled && sedekahAmount > 0) {
-        await database.kvSettingsDao.setValue('sedekah_goal_amount', sedekahAmount.toString());
-      } else {
-        await database.kvSettingsDao.deleteValue('sedekah_goal_amount');
-      }
+
+    await database.kvSettingsDao.setValue('sedekah_currency', sedekahCurrency);
+    await database.kvSettingsDao.setValue('sedekah_goal_enabled', sedekahGoalEnabled.toString());
+    if (sedekahGoalEnabled && sedekahAmount > 0) {
+      await database.kvSettingsDao.setValue('sedekah_goal_amount', sedekahAmount.toString());
+    } else {
+      await database.kvSettingsDao.deleteValue('sedekah_goal_amount');
     }
 
-    debugPrint('Setting season habits...');
     final habits = await database.habitsDao.getAllHabits();
-    debugPrint('Found ${habits.length} habits, selected: ${selectedHabits.length}');
     for (final habit in habits) {
       final isEnabled = selectedHabits.contains(habit.key);
       await database.seasonHabitsDao.setSeasonHabit(
@@ -505,7 +446,6 @@ class OnboardingData {
         ),
       );
     }
-    debugPrint('Season habits set');
 
     int pagesPerJuz = 20;
     int juzTargetPerDay = 1;
@@ -522,7 +462,6 @@ class OnboardingData {
       totalJuz = (totalPages / pagesPerJuz).ceil();
     }
 
-    debugPrint('Setting Quran plan...');
     await database.quranPlanDao.setPlan(
       QuranPlanData(
         seasonId: seasonId,
@@ -535,9 +474,7 @@ class OnboardingData {
         createdAt: now.millisecondsSinceEpoch,
       ),
     );
-    debugPrint('Quran plan set');
 
-    debugPrint('Setting Dhikr plan...');
     await database.dhikrPlanDao.setPlan(
       DhikrPlanData(
         seasonId: seasonId,
@@ -545,32 +482,9 @@ class OnboardingData {
         createdAt: now.millisecondsSinceEpoch,
       ),
     );
-    debugPrint('Dhikr plan set');
-    
-    // Verify the flag was saved
-    final verifyFlag = await database.kvSettingsDao.getValue('onboarding_done_season_$seasonId');
-    debugPrint('Verification: onboarding_done_season_$seasonId = $verifyFlag');
-    
-    // Verify season exists
-    final verifySeason = await database.ramadanSeasonsDao.getSeasonById(seasonId);
-    debugPrint('Verification: Season $seasonId exists = ${verifySeason != null}');
-    
-    // Verify habits
-    final verifyHabits = await database.seasonHabitsDao.getSeasonHabits(seasonId);
-    debugPrint('Verification: Season habits count = ${verifyHabits.length}');
-    
-    debugPrint('=== save() Completed (CreateSeasonFlow) ===');
 
     if (latitude != null && longitude != null) {
       try {
-        debugPrint('=== ONBOARDING: Scheduling all reminders ===');
-        debugPrint('  Season ID: $seasonId');
-        debugPrint('  Location: $latitude, $longitude');
-        debugPrint('  Timezone: $timezone');
-        debugPrint('  Sahur enabled: $sahurEnabled, offset: $sahurOffsetMinutes');
-        debugPrint('  Iftar enabled: $iftarEnabled, offset: $iftarOffsetMinutes');
-        debugPrint('  Night plan enabled: $nightPlanEnabled');
-        
         await NotificationService.scheduleAllReminders(
           database: database,
           seasonId: seasonId,
@@ -587,29 +501,10 @@ class OnboardingData {
           fajrAdjust: fajrAdjust,
           maghribAdjust: maghribAdjust,
         );
-        
-        // Verify notifications were scheduled
-        final pending = await NotificationService.getPendingNotifications();
-        debugPrint('=== ONBOARDING: Reminders scheduled successfully ===');
-        debugPrint('  Total pending notifications: ${pending.length}');
-        if (pending.isNotEmpty) {
-          debugPrint('  First few notifications:');
-          for (var i = 0; i < pending.length && i < 5; i++) {
-            final notif = pending[i];
-            debugPrint('    - ${notif.title}: ${notif.body} (ID: ${notif.id})');
-          }
-        }
       } catch (e, stackTrace) {
-        // Log error but don't block onboarding completion
-        // Notifications can be set up later from settings
-        debugPrint('=== ONBOARDING: Failed to schedule reminders ===');
-        debugPrint('  Error: $e');
-        debugPrint('  Stack trace: $stackTrace');
+        debugPrint('Failed to schedule reminders: $e');
+        debugPrint('$stackTrace');
       }
-    } else {
-      debugPrint('=== ONBOARDING: Skipping reminder scheduling (no location) ===');
     }
   }
 }
-
-

@@ -37,4 +37,11 @@ class CompanionLevel {
   /// Localized display name key suffix: companionLevelName1 .. companionLevelName10
   static String nameKeyForLevel(int level) =>
       'companionLevelName${level.clamp(1, 10)}';
+
+  /// Tier group key for localized companion names (Mubtadi / Mumayyiz / Mujahid).
+  static String tierKeyForLevel(int level) {
+    if (level <= 3) return 'companionTierMubtadi';
+    if (level <= 6) return 'companionTierMumayyiz';
+    return 'companionTierMujahid';
+  }
 }

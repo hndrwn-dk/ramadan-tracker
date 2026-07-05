@@ -12,6 +12,7 @@ import 'package:ramadan_tracker/widgets/prayers_icon.dart';
 import 'package:ramadan_tracker/widgets/quran_icon.dart';
 import 'package:ramadan_tracker/widgets/tahajud_icon.dart';
 import 'package:ramadan_tracker/widgets/taraweeh_icon.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class TodayRemainingCard extends ConsumerWidget {
   final int seasonId;
@@ -176,43 +177,30 @@ class TodayRemainingCard extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        return AppSurface(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.today,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.todayRemaining,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 16),
+              ...items,
             ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.today,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      AppLocalizations.of(context)!.todayRemaining,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ...items,
-              ],
-            ),
           ),
         );
       },

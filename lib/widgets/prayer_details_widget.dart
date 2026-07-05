@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/prayers_icon.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 final prayerDetailsProvider = FutureProvider.family<PrayerDetail?, ({int seasonId, int dayIndex})>((ref, params) async {
   final database = ref.read(databaseProvider);
@@ -16,11 +17,13 @@ final prayerDetailsProvider = FutureProvider.family<PrayerDetail?, ({int seasonI
 class PrayerDetailsWidget extends ConsumerWidget {
   final int seasonId;
   final int dayIndex;
+  final bool controlsOnly;
 
   const PrayerDetailsWidget({
     super.key,
     required this.seasonId,
     required this.dayIndex,
+    this.controlsOnly = false,
   });
 
   @override
@@ -39,22 +42,24 @@ class PrayerDetailsWidget extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                PrayersIcon(
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  getHabitDisplayName(context, 'prayers'),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            if (!controlsOnly) ...[
+              Row(
+                children: [
+                  PrayersIcon(
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    getHabitDisplayName(context, 'prayers'),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Expanded(
@@ -69,16 +74,17 @@ class PrayerDetailsWidget extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  '$completedCount/5',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: completedCount == 5
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
-                ),
+                if (!controlsOnly) const SizedBox(width: 12),
+                if (!controlsOnly)
+                  Text(
+                    '$completedCount/5',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: completedCount == 5
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                  ),
               ],
             ),
           ],
@@ -120,7 +126,7 @@ class PrayerDetailsWidget extends ConsumerWidget {
                 border: Border.all(
                   color: completed
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      : AppSurface.borderColor(context),
                   width: completed ? 2 : 1,
                 ),
               ),

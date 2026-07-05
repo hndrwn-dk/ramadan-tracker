@@ -16,6 +16,7 @@ import 'package:ramadan_tracker/features/insights/models/habit_stats.dart';
 import 'package:ramadan_tracker/features/insights/services/insights_service.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class TaskDetailInsightsScreen extends ConsumerStatefulWidget {
   final String habitKey;
@@ -41,6 +42,7 @@ class _TaskDetailInsightsScreenState extends ConsumerState<TaskDetailInsightsScr
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: Text(_getHabitDisplayName(widget.habitKey)),
       ),
       body: seasonAsync.when(

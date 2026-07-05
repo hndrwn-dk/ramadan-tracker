@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/habit_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
+import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/features/insights/models/insights_range.dart';
@@ -43,13 +44,13 @@ import 'package:ramadan_tracker/features/insights/screens/obligations_review_scr
 import 'package:ramadan_tracker/features/insights/widgets/sunnah_insights_section.dart';
 import 'package:ramadan_tracker/features/insights/widgets/sunnah_only_insights_view.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
-import 'package:ramadan_tracker/features/insights/widgets/mood_reflection_season_card.dart';
 import 'package:ramadan_tracker/features/insights/widgets/season_audit_bottom_sheet.dart';
 import 'package:ramadan_tracker/features/insights/widgets/day_summary_bottom_sheet.dart';
 import 'package:ramadan_tracker/features/insights/services/season_insights_service.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
@@ -361,7 +362,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                  color: AppSurface.borderColor(context),
                 ),
               ),
               child: Row(
@@ -505,7 +506,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                       ],
                     ),
                   ),
-                  ScoreRing(score: data.avgScore.toDouble()),
+                  ScoreRing(score: data.avgScore.toDouble(), label: l10n.scoreLabel),
                 ],
               ),
               const SizedBox(height: 16),
@@ -561,8 +562,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
           return OutlinedButton.icon(
             onPressed: () {
               final dayIndex = season.getDayIndex(selectedDate);
-              ref.read(selectedDayIndexProvider.notifier).state = dayIndex;
-              ref.read(tabIndexProvider.notifier).state = 0;
+              openDayChecklist(context, ref, dayIndex: dayIndex);
             },
             icon: const Icon(Icons.today, size: 18),
             label: Text(l10n.viewDay(DateFormat('MMM d').format(selectedDate))),
@@ -658,13 +658,37 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     );
   }
 
-  void _showWeeklyReview(BuildContext context, WidgetRef ref, InsightsData data) {
-    // Show weekly review bottom sheet
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _WeeklyReviewSheet(data: data),
+  Future<void> _showWeeklyReview(BuildContext context, WidgetRef ref, InsightsData data) async {
+    final season = await ref.read(currentSeasonProvider.future);
+    if (season == null || !context.mounted) return;
+
+    final currentDayIndex = ref.read(currentDayIndexProvider);
+    final range = WeeklyInsightsService.getLast7DaysRange(
+      season: season,
+      currentDayIndex: currentDayIndex,
+    );
+    final database = ref.read(databaseProvider);
+    final allHabits = await ref.read(habitsProvider.future);
+    final seasonHabits = await ref.read(seasonHabitsProvider(season.id).future);
+    final dayStatuses = await WeeklyInsightsService.getWeeklyDayStatuses(
+      season: season,
+      startDayIndex: range.startDayIndex,
+      endDayIndex: range.endDayIndex,
+      database: database,
+      allHabits: allHabits,
+      seasonHabits: seasonHabits,
+    );
+
+    if (!context.mounted) return;
+    WeeklyReviewBottomSheet.show(
+      context,
+      dayStatuses: dayStatuses,
+      season: season,
+      endDayIndex: range.endDayIndex,
+      onAuditDay: (dayIndex) {
+        ref.read(selectedDayIndexProvider.notifier).state = dayIndex;
+        ref.read(tabIndexProvider.notifier).state = 0;
+      },
     );
   }
 
@@ -2288,17 +2312,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             final highlightsData = snapshot.data!;
             var highlights = <Widget>[];
 
-            // Reflection mood
-            final mood = highlightsData['mood'] as String?;
-            if (mood != null) {
-              highlights.add(_buildHighlightCard(
-                context,
-                icon: _getMoodIcon(mood),
-                title: 'Mood: $mood',
-                subtitle: 'Reflection recorded',
-              ));
-            }
-
             // Quran stats
             final quranStats = highlightsData['quranStats'] as HabitStats?;
             if (quranStats != null && quranStats.targetValue != null && quranStats.targetValue! > 0) {
@@ -2396,12 +2409,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
   }
 
   Future<Map<String, dynamic>> _buildTodayHighlightsData(WidgetRef ref, int seasonId, int dayIndex, InsightsData data) async {
-    final database = ref.read(databaseProvider);
-
-    // Reflection mood summary
-    final notes = await database.notesDao.getDayNotes(seasonId, dayIndex);
-    final note = notes.isNotEmpty ? notes.first : null;
-
     // Quran stats
     final quranStats = data.perHabitStats['quran_pages'];
 
@@ -2416,7 +2423,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
     }
 
     return {
-      'mood': note?.mood,
       'quranStats': quranStats,
       'prayersStats': prayersStats,
       'sedekahData': sedekahData,
@@ -2695,22 +2701,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
       ),
     );
   }
-
-  IconData _getMoodIcon(String mood) {
-    switch (mood.toLowerCase()) {
-      case 'excellent':
-        return Icons.sentiment_very_satisfied;
-      case 'good':
-        return Icons.sentiment_satisfied;
-      case 'okay':
-        return Icons.sentiment_neutral;
-      case 'difficult':
-        return Icons.sentiment_dissatisfied;
-      default:
-        return Icons.mood;
-    }
-  }
-
 
   Future<Map<String, dynamic>> _getTodaySedekahData(WidgetRef ref, int seasonId, int dayIndex) async {
     final database = ref.read(databaseProvider);
@@ -3054,6 +3044,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                         context,
                         dayStatuses: dayStatuses,
                         season: season,
+                        endDayIndex: dayStatuses.isNotEmpty
+                            ? dayStatuses.last.dayIndex
+                            : season.getDayIndex(DateTime.now()),
                         onAuditDay: (dayIndex) {
                           ref.read(selectedDayIndexProvider.notifier).state = dayIndex;
                           ref.read(tabIndexProvider.notifier).state = 0;
@@ -3369,10 +3362,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             final sedekahAnalytics = seasonData['sedekahAnalytics'] as SedekahSeasonAnalytics?;
             final obligationsAnalytics =
                 seasonData['obligationsAnalytics'] as ObligationsSeasonAnalytics?;
-            final reflectionAnalytics = seasonData['reflectionAnalytics'] as ReflectionSeasonAnalytics? ?? ReflectionSeasonAnalytics(
-              moodCounts: {},
-              avgScoreByMood: {},
-            );
             final currency = (seasonData['currency'] as String?) ?? 'IDR';
             
             return SingleChildScrollView(
@@ -3429,7 +3418,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                             seasonHabits: await ref.read(seasonHabitsProvider(season.id).future),
                             database: ref.read(databaseProvider),
                           );
-                          final dayStatus = dayStatuses.firstWhere((d) => d.dayIndex == dayIndex);
                           // Dismiss loading overlay before showing bottom sheet
                           if (context.mounted) {
                             Navigator.of(context).pop();
@@ -3439,8 +3427,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                               date: date,
                               score: summary['score'] as int,
                               drivers: summary['drivers'] as Map<String, dynamic>,
-                              mood: dayStatus.mood,
-                              reflection: dayStatus.reflection,
                               season: season,
                               onOpenDay: () {
                                 ref.read(selectedDayIndexProvider.notifier).state = dayIndex;
@@ -3483,7 +3469,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                             seasonHabits: await ref.read(seasonHabitsProvider(season.id).future),
                             database: ref.read(databaseProvider),
                           );
-                          final dayStatus = dayStatuses.firstWhere((d) => d.dayIndex == dayIndex);
                           // Dismiss loading overlay before showing bottom sheet
                           if (context.mounted) {
                             Navigator.of(context).pop();
@@ -3493,8 +3478,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                               date: date,
                               score: summary['score'] as int,
                               drivers: summary['drivers'] as Map<String, dynamic>,
-                              mood: dayStatus.mood,
-                              reflection: dayStatus.reflection,
                               season: season,
                               onOpenDay: () {
                                 ref.read(selectedDayIndexProvider.notifier).state = dayIndex;
@@ -3568,17 +3551,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
                     const SizedBox(height: 24),
                   ],
                   const SunnahInsightsSection(),
-                  const SizedBox(height: 24),
-                  // Mood & Reflection
-                  MoodReflectionSeasonCard(
-                    analytics: reflectionAnalytics,
-                    onReviewReflections: () {
-                      // TODO: Implement reflection review screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Reflection review coming soon')),
-                      );
-                    },
-                  ),
                   const SizedBox(height: 24),
                   // Task Insights
                   Text(
@@ -3715,14 +3687,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         // Sedekah habit might not exist, skip it
       }
       
-      // Get reflection analytics
-      final reflectionAnalytics = await SeasonInsightsService.getReflectionSeasonAnalytics(
-        season: season,
-        database: database,
-        allHabits: allHabits,
-        seasonHabits: seasonHabits,
-      );
-      
       final currency = await database.kvSettingsDao.getValue('sedekah_currency') ?? 'IDR';
 
       final obligationsAnalytics =
@@ -3740,7 +3704,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         'taskAnalytics': taskAnalytics,
         'sedekahAnalytics': sedekahAnalytics,
         'obligationsAnalytics': obligationsAnalytics,
-        'reflectionAnalytics': reflectionAnalytics,
         'currency': currency,
       };
     } catch (e) {
@@ -3760,10 +3723,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         'taskAnalytics': <String, TaskSeasonAnalytics>{},
         'sedekahAnalytics': null,
         'obligationsAnalytics': null,
-        'reflectionAnalytics': ReflectionSeasonAnalytics(
-          moodCounts: {},
-          avgScoreByMood: {},
-        ),
         'currency': 'IDR',
       };
     }
@@ -3842,7 +3801,7 @@ class _WeeklyReviewSheet extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  color: AppSurface.borderColor(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -4013,7 +3972,7 @@ class _SeasonComparisonSheet extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  color: AppSurface.borderColor(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -4227,7 +4186,7 @@ class _WhatMissingSheet extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  color: AppSurface.borderColor(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -4615,7 +4574,7 @@ class _TodayReviewSheet extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  color: AppSurface.borderColor(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

@@ -1128,6 +1128,13 @@
     "description": "Sahur countdown with time string",
     "placeholders": {"time": {"type": "String"}}
   },
+  "sahurTomorrowIn": "Sahur tomorrow in {time}",
+  "@sahurTomorrowIn": {
+    "description": "Countdown to next day's sahur",
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "todayFastingCountdownLabel": "Next",
+  "todayFastingCountdownHint": "Enable location for live Sahur and Iftar times",
   "sahurPassed": "Sahur passed \u2022 {time}",
   "@sahurPassed": {
     "description": "Sahur time passed",
@@ -3383,6 +3390,49 @@
   "@todayChecklistTitle": {
     "description": "Bottom sheet title for habit logging"
   },
+  "dayChecklistTitle": "Day {day} checklist",
+  "@dayChecklistTitle": {
+    "description": "Checklist title when viewing a non-today season day",
+    "placeholders": {
+      "day": { "type": "int" }
+    }
+  },
+  "checklistProgressDone": "{completed} of {total} done",
+  "@checklistProgressDone": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "checklistNudgeStart": "Let's begin today's ibadah",
+  "checklistNudgePartial": "Keep going, you're doing well",
+  "checklistNudgeAlmost": "Alhamdulillah, almost there",
+  "checklistNudgeDone": "Alhamdulillah, all done for today",
+  "checklistNotDoneYet": "Not done yet",
+  "checklistPagesOf": "{current} of {target} pages",
+  "@checklistPagesOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "checklistCountOf": "{current} of {target}",
+  "@checklistCountOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "checklistPrayersOf": "{current} of {target}",
+  "@checklistPrayersOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "checklistEnterAmount": "Enter amount",
+  "checklistEnterPages": "Enter pages read",
+  "checklistEnterDhikr": "Enter dhikr count",
 
   "weeklyAchievementsTitle": "{count} new achievements this week",
   "@weeklyAchievementsTitle": {
@@ -3455,6 +3505,92 @@
     "description": "Link to achievements screen"
   },
 
+  "companionTierMubtadi": "Mubtadi — Beginner",
+  "companionTierMumayyiz": "Mumayyiz — Steady",
+  "companionTierMujahid": "Mujahid — Committed",
+
+  "streakShieldsRemaining": "{count} mercy shields left this season",
+  "@streakShieldsRemaining": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "coachMarkDismiss": "Got it",
+  "coachMarkTodayQuests": "Complete up to 3 small goals each day for bonus XP.",
+  "coachMarkTodayJourney": "Tap your level to view achievements and companion progress.",
+  "coachMarkMonthCalendar": "Tap a day to log habits or review your month at a glance.",
+
+  "preRamadanQuestsTitle": "Prep quests",
+  "preRamadanQuestReviewPlan": "Review or create your Ramadan season",
+  "preRamadanQuestLogSunnah": "Log a sunnah fast today",
+  "preRamadanQuestReminders": "Turn on Sahur or Iftar reminders",
+  "preRamadanQuestCreateSeason": "Set up your Ramadan season",
+
+  "weeklyQuestSummary": "{completed} of {total} daily quests completed this week",
+  "@weeklyQuestSummary": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "weeklyReviewAudit": "Audit",
+  "weeklyReviewDayLabel": "Day {day}",
+  "@weeklyReviewDayLabel": {
+    "placeholders": { "day": { "type": "int" } }
+  },
+
+  "sunnahMonthlyChallengeTitle": "Monthly challenge",
+  "sunnahMonthlySeninKamisProgress": "Mon/Thu fasts: {done} / {target}",
+  "@sunnahMonthlySeninKamisProgress": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "sunnahMonthlyShawwalProgress": "Shawwal days: {done} / {target}",
+  "@sunnahMonthlyShawwalProgress": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+
+  "todayQadhaSubtitle": "Zakat, Fidyah, and missed fast obligations",
+  "shareAction": "Share",
+  "achievementShareTagline": "Ramadan Tracker — offline worship companion",
+
+  "reflectionPromptGratitude": "What are you grateful for today?",
+  "reflectionPromptChallenge": "What was hardest today, and how did you respond?",
+  "reflectionPromptDua": "Is there a dua on your heart tonight?",
+  "reflectionPromptQuran": "What verse or lesson stayed with you today?",
+  "reflectionPromptCommunity": "Who did you support or check on today?",
+  "reflectionPromptPatience": "Where did you practice sabr today?",
+  "reflectionPromptTomorrow": "What is one intention for tomorrow?",
+
+  "seasonReportTitle": "Season Report",
+  "seasonReportSummary": "Season Summary",
+  "seasonReportHabits": "Habit Summary",
+  "seasonReportComparison": "Season Comparison",
+  "seasonReportAvgScore": "Average score: {score}",
+  "@seasonReportAvgScore": {
+    "placeholders": { "score": { "type": "String" } }
+  },
+  "seasonReportPerfectDays": "Strong days: {done} / {total}",
+  "@seasonReportPerfectDays": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "seasonReportLongestStreak": "Longest streak: {days} days",
+  "@seasonReportLongestStreak": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "seasonReportTrophies": "Achievement trophies",
+  "habitMasteryBronze": "Bronze",
+  "habitMasterySilver": "Silver",
+  "habitMasteryGold": "Gold",
+  "widgetLogSunnah": "Log fast",
+
   "weeklyReviewTitle": "Review Missed Days",
   "@weeklyReviewTitle": {
     "description": "Weekly review bottom sheet title"
@@ -3509,6 +3645,91 @@
   "questLogPrayers": "Log your prayers",
   "questLogDhikr": "Do dhikr today",
   "questLogTaraweeh": "Log Taraweeh",
-  "questScore60": "Reach 60% daily score"
+  "questScore60": "Reach 60% daily score",
+
+  "todayGreetingMorning": "Good morning",
+  "todayGreetingAfternoon": "Good afternoon",
+  "todayGreetingEvening": "Good evening",
+  "todayNudgeDayOne": "Day one — small steps count. Start with what you can today.",
+  "todayNudgeEarly": "Build your rhythm — each day strengthens the next.",
+  "todayNudgeMid": "You are in the flow. Stay consistent with what matters most.",
+  "todayNudgeLastTen": "The blessed final stretch — make these nights count.",
+  "todayHomeLogPrompt": "Track fasting, prayer, Quran, dhikr, and sedekah in one checklist.",
+  "todayHomeCompanionLine": "Level {level} · {xp} XP",
+  "@todayHomeCompanionLine": {
+    "placeholders": {
+      "level": { "type": "int" },
+      "xp": { "type": "int" }
+    }
+  },
+  "todayHomeXpToNext": "{xp} XP to level {level}",
+  "@todayHomeXpToNext": {
+    "placeholders": {
+      "xp": { "type": "int" },
+      "level": { "type": "int" }
+    }
+  },
+
+  "onboardingLanguageStep": "Step 1 · Language",
+  "onboardingLanguageWelcome": "Welcome — let's personalize your Ramadan journey",
+  "onboardingLanguageNudge": "You can change this anytime in Settings.",
+  "languageOptionEnHint": "Default · International",
+  "languageOptionIdHint": "Local language · Indonesia",
+  "onboardingValueOffline": "Works fully offline — no account needed",
+  "onboardingValuePrivate": "Your data stays private on this device",
+  "onboardingValueRamadan": "Built for fasting, prayer, Quran, and daily worship",
+  "onboardingStepProgress": "Step {current} of {total}",
+  "@onboardingStepProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "onboardingWelcomeNudge": "A calm companion for your Ramadan — setup takes about one minute.",
+  "onboardingSkipForNow": "Skip for now",
+  "onboardingLocationTitle": "Enable location",
+  "onboardingLocationSubtitle": "For automatic imsak, sahur, and iftar times",
+  "onboardingAllowLocation": "Allow location",
+  "onboardingGoalsQuranDhikrTitle": "Daily Goals — Quran & Dhikr",
+  "onboardingGoalsSedekahTitle": "Sedekah Goal",
+  "onboardingReadyTitle": "You're ready!",
+  "onboardingRemindersFastingSection": "Fasting times",
+  "onboardingRemindersGoalsSection": "Daily goals",
+  "onboardingRemindersGoalsMaster": "Goal reminders",
+  "onboardingRemindersGoalsMasterHint": "Gentle nudges if today's target is not done yet",
+  "onboardingRemindersCustomizeGoals": "Customize per goal",
+  "onboardingRemindersAdjustTiming": "Adjust timing",
+
+  "todayTrendsTitle": "Trends",
+  "todayTrendsSubtitle": "Last 7 days",
+  "todayTrendQuranPerDay": "{count} PG/DAY",
+  "@todayTrendQuranPerDay": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "todayTrendCountPerDay": "{count}/DAY",
+  "@todayTrendCountPerDay": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "todayTrendPrayersPerDay": "{avg}/5 AVG",
+  "@todayTrendPrayersPerDay": {
+    "placeholders": { "avg": { "type": "String" } }
+  },
+  "todayTrendSedekahPerDay": "{amount}/DAY",
+  "@todayTrendSedekahPerDay": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "todayTrendDaysDone": "{done}/{total} DAYS",
+  "@todayTrendDaysDone": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "seasonShareTitle": "My Ramadan season",
+  "seasonShareTagline": "Ramadan Tracker — offline worship companion",
+  "seasonReportViewReport": "View season report",
+  "seasonComparisonAvgScore": "Avg score",
+  "seasonComparisonStrongDays": "Strong days"
 }
 

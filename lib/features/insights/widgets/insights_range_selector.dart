@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/features/insights/models/insights_range.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
@@ -87,7 +88,7 @@ class _ScrollablePillTabs extends StatelessWidget {
             side: BorderSide(
               color: selected
                   ? scheme.secondaryContainer
-                  : scheme.outline.withValues(alpha: 0.35),
+                  : AppSurface.borderColor(context),
             ),
           ),
           child: InkWell(

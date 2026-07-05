@@ -3,6 +3,7 @@ import 'package:ramadan_tracker/features/insights/services/season_insights_servi
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 /// Compact Zakat & Fidyah card for Today / 7 Days Wawasan tabs.
 class ObligationsRangeCard extends StatelessWidget {
@@ -174,7 +175,7 @@ class ObligationsRangeCard extends StatelessWidget {
                     Container(
                       height: 2,
                       decoration: BoxDecoration(
-                        color: scheme.outline.withValues(alpha: 0.15),
+                        color: AppSurface.borderColor(context),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),

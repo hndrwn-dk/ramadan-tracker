@@ -15,6 +15,7 @@ import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/data/providers/quran_provider.dart';
 import 'package:ramadan_tracker/data/providers/completion_score_provider.dart';
 import 'package:ramadan_tracker/domain/services/completion_service.dart';
+import 'package:ramadan_tracker/domain/services/streak_shield_service.dart';
 import 'package:ramadan_tracker/app/app.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
@@ -44,28 +45,37 @@ import 'package:ramadan_tracker/features/year_round/widgets/year_round_actions.d
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_quest_provider.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/compact_daily_quests_strip.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_fasting_times_card.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_habit_trends_card.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_home_engagement.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_qadha_entry_tile.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/coach_mark_tip.dart';
+import 'package:ramadan_tracker/domain/services/coach_mark_service.dart';
 import 'package:ramadan_tracker/app/settings_navigation.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 import 'package:ramadan_tracker/widgets/donation_icon_button.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
+import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_checklist_body.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_checklist_sticky_bar.dart';
+import 'package:ramadan_tracker/data/providers/checklist_progress_provider.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
-  const TodayScreen({super.key});
+  const TodayScreen({super.key, this.checklistOnly = false});
+
+  /// Full-screen daily habit logging (pushed from Today home).
+  final bool checklistOnly;
 
   @override
   ConsumerState<TodayScreen> createState() => _TodayScreenState();
 }
 
 class _TodayScreenState extends ConsumerState<TodayScreen> {
-  bool _focusMode = false;
-  bool _focusModeManuallyToggled = false;
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey _oneTapCardKey = GlobalKey();
-  final TextEditingController _reflectionController = TextEditingController();
 
   @override
   void dispose() {
-    _reflectionController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -76,6 +86,39 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final seasonAsync = ref.watch(currentSeasonProvider);
     final dayIndex = ref.watch(activeDayIndexForUIProvider);
     final seasonState = ref.watch(seasonStateProvider);
+
+    if (widget.checklistOnly) {
+      return seasonAsync.when(
+        data: (season) {
+          if (season == null) {
+            return Scaffold(
+              appBar: AppBar(
+                leading: const AppBackButton(),
+                title: Text(l10n.todayChecklistTitle),
+              ),
+              body: const YearRoundNoSeasonBody(),
+            );
+          }
+          final last10Start = season.days - 9;
+          final showItikaf = dayIndex >= last10Start && dayIndex > 0;
+          return _buildChecklistOnlyScaffold(
+            season.id,
+            dayIndex,
+            showItikaf,
+          );
+        },
+        loading: () => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        error: (error, stack) => Scaffold(
+          appBar: AppBar(
+            leading: const AppBackButton(),
+            title: Text(l10n.todayChecklistTitle),
+          ),
+          body: Center(child: Text(l10n.errorMessage(error.toString()))),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -106,7 +149,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               data: (season) {
                 if (season == null) return const SizedBox.shrink();
                 final now = DateTime.now();
-                final dateStr = DateFormat('MMM d, yyyy').format(now);
+                final displayDate = season.getDateForDay(dayIndex);
+                final dateStr = DateFormat('MMM d, yyyy').format(displayDate);
                 String subtitle;
                 if (seasonState == SeasonState.preRamadan) {
                   subtitle = l10n.preRamadanWithDate(dateStr);
@@ -128,16 +172,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         actions: [
           const DonationIconButton(),
           const SettingsIconButton(),
-          IconButton(
-            icon: Icon(_focusMode ? Icons.filter_alt : Icons.filter_alt_outlined),
-            onPressed: () {
-              setState(() {
-                _focusModeManuallyToggled = true;
-                _focusMode = !_focusMode;
-              });
-            },
-            tooltip: l10n.focusMode,
-          ),
         ],
       ),
       body: seasonAsync.when(
@@ -153,28 +187,46 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildContent(int seasonId, int dayIndex, int totalDays, SeasonState state) {
-    final habitsAsync = ref.watch(habitsProvider);
-    final seasonHabitsAsync = ref.watch(seasonHabitsProvider(seasonId));
-    final entriesAsync = ref.watch(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
-    ref.listen(
-      dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
-      (previous, next) {
-        final entries = next.valueOrNull;
-        if (entries != null &&
-            !_focusModeManuallyToggled &&
-            entries.isNotEmpty &&
-            !_focusMode &&
-            mounted) {
-          setState(() => _focusMode = true);
-        }
-      },
-    );
-    // Calculate showItikaf based on the displayed dayIndex, not current day
-    final last10Start = totalDays - 9;
-    final showItikaf = dayIndex >= last10Start && dayIndex > 0;
+  Widget _buildChecklistOnlyScaffold(
+    int seasonId,
+    int dayIndex,
+    bool showItikaf,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final season = ref.watch(currentSeasonProvider).value;
 
-    return RefreshIndicator(
+    final isSeasonToday = season != null &&
+        dayIndex == season.getDayIndex(DateTime.now());
+    final title = isSeasonToday
+        ? l10n.todayChecklistTitle
+        : l10n.dayChecklistTitle(dayIndex);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: Text(title),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(
+            dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
+          );
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: TodayChecklistBody(
+            seasonId: seasonId,
+            dayIndex: dayIndex,
+            showItikaf: showItikaf,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(int seasonId, int dayIndex, int totalDays, SeasonState state) {
+    final scrollBody = RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
       },
@@ -190,61 +242,39 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ],
             if (state == SeasonState.postRamadan) ...[
               _buildSeasonEndedCard(seasonId),
+              const SizedBox(height: 12),
+              const TodayQadhaEntryTile(),
               const SizedBox(height: 24),
               const YearRoundActions(compact: true),
             ],
-            // Only show tracking content if season is active
             if (state == SeasonState.active) ...[
-              if (!_focusMode) ...[
-                if (_isInLast10Days(dayIndex, totalDays)) ...[
-                  _buildLast10DaysHeroCard(dayIndex, totalDays),
-                  const SizedBox(height: 16),
-                ],
-                _buildHeroCard(seasonId, dayIndex, habitsAsync, seasonHabitsAsync, entriesAsync),
-                const SizedBox(height: 12),
-                _buildTimesCard(seasonId, dayIndex, slim: true),
-                const SizedBox(height: 12),
+              _buildTimesCard(seasonId, dayIndex, slim: true),
+              const SizedBox(height: 12),
+              if (_isInLast10Days(dayIndex, totalDays)) ...[
+                _buildLast10DaysHeroCard(dayIndex, totalDays),
+                const SizedBox(height: 16),
               ],
-              entriesAsync.when(
-                data: (entries) {
-                  if (entries.isEmpty && !_focusMode) {
-                    return Column(
-                      children: [
-                        _buildStartHereCard(seasonId, dayIndex, totalDays),
-                        const SizedBox(height: 12),
-                      ],
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-              if (!_focusMode)
-                _buildOpenChecklistCta(
-                  seasonId,
-                  dayIndex,
-                  habitsAsync,
-                  seasonHabitsAsync,
-                  entriesAsync,
-                  showItikaf,
-                ),
-              if (_focusMode)
-                _buildOneTapTodayCard(
-                  seasonId,
-                  dayIndex,
-                  habitsAsync,
-                  seasonHabitsAsync,
-                  entriesAsync,
-                  showItikaf,
-                ),
-              const SizedBox(height: 16),
-              _buildReflectionCard(seasonId, dayIndex),
+              _buildHeroCard(seasonId, dayIndex, totalDays),
+              const SizedBox(height: 12),
+              TodayHabitTrendsCard(seasonId: seasonId, dayIndex: dayIndex),
+              const SizedBox(height: 8),
             ],
           ],
         ),
       ),
     );
+
+    if (state == SeasonState.active) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: scrollBody),
+          TodayChecklistStickyBar(seasonId: seasonId, dayIndex: dayIndex),
+        ],
+      );
+    }
+
+    return scrollBody;
   }
 
   bool _isInLast10Days(int dayIndex, int totalDays) {
@@ -497,6 +527,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             final showSahurCountdown = settingsSnapshot.data?['show_sahur_countdown'] ?? false;
             
             if (fajrUtc == null || maghribUtc == null) {
+              if (slim) {
+                return TodayFastingTimesPlaceholder(
+                  onEnableLocation: () => openSettingsScreen(context, ref),
+                );
+              }
               // Show card with message if location not set
               return Card(
                 child: Padding(
@@ -549,42 +584,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             final iftarTime = maghrib.add(Duration(minutes: iftarOffset));
 
             if (slim) {
-              return AppSurface(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.sahur,
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            DateFormat('HH:mm').format(sahurTime),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.iftar,
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          Text(
-                            DateFormat('HH:mm').format(iftarTime),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              return TodayFastingTimesCard(
+                sahurTime: sahurTime,
+                iftarTime: iftarTime,
+                fajr: fajr,
+                maghrib: maghrib,
               );
             }
 
@@ -775,69 +779,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildStartHereCard(int seasonId, int dayIndex, int totalDays) {
-    final l10n = AppLocalizations.of(context)!;
-    final showItikaf = dayIndex >= (totalDays - 9) && dayIndex > 0;
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.todayIn10Seconds,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.todayIn10SecondsMessage,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _openTodayChecklistSheet(
-                      seasonId: seasonId,
-                      dayIndex: dayIndex,
-                      showItikaf: showItikaf,
-                    ),
-                    child: Text(l10n.openTodayChecklist),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      // Navigate to Edit Goals flow
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => EditGoalsFlow(seasonId: seasonId),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.onSurface,
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Text(l10n.editGoals),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<Map<String, DateTime>> _getPrayerTimes(int seasonId) async {
     final result = await _getPrayerTimesWithTimezone(seasonId);
     if (result.isEmpty) return {};
@@ -931,118 +872,108 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
   }
 
-  Widget _buildHeroCard(
-    int seasonId,
-    int dayIndex,
-    AsyncValue<List<dynamic>> habitsAsync,
-    AsyncValue<List<dynamic>> seasonHabitsAsync,
-    AsyncValue<List<dynamic>> entriesAsync,
-  ) {
+  Widget _buildHeroCard(int seasonId, int dayIndex, int totalDays) {
     final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final season = ref.watch(currentSeasonProvider).value;
+    final isSeasonToday =
+        season != null && dayIndex == season.getDayIndex(DateTime.now());
+    final checklistLabel = isSeasonToday
+        ? l10n.openTodayChecklist
+        : l10n.dayChecklistTitle(dayIndex);
+
     return AppSurface(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            TodayHomeGreeting(dayIndex: dayIndex, totalDays: totalDays),
+            CoachMarkTip(
+              coachKey: CoachMarkService.todayQuests,
+              message: l10n.coachMarkTodayQuests,
+            ),
+            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // Use completion score provider which auto-refreshes when entries or quran daily changes
                 ref.watch(completionScoreProvider((seasonId: seasonId, dayIndex: dayIndex))).when(
                   data: (score) => ScoreRing(score: score, label: l10n.scoreLabel),
                   loading: () => ScoreRing(score: 0, label: l10n.scoreLabel),
                   error: (_, __) => ScoreRing(score: 0, label: l10n.scoreLabel),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FutureBuilder<int>(
-                      future: _calculateStreak(seasonId, dayIndex),
-                      builder: (context, snapshot) {
-                        final streak = snapshot.data ?? 0;
-                    return Text(
-                      AppLocalizations.of(context)!.streakDays(streak),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    );
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    seasonHabitsAsync.when(
-                      data: (seasonHabits) => entriesAsync.when(
-                        data: (entries) {
-                          return habitsAsync.when(
-                            data: (allHabits) {
-                              return FutureBuilder<Map<String, int>>(
-                                future: _calculateCompletedCount(
-                                  seasonId: seasonId,
-                                  dayIndex: dayIndex,
-                                  enabledHabits: (seasonHabits as List).where((sh) => sh.isEnabled).toList(),
-                                  entries: entries.cast(),
-                                  allHabits: allHabits,
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FutureBuilder<int>(
+                        future: _calculateStreak(seasonId, dayIndex),
+                        builder: (context, snapshot) {
+                          final streak = snapshot.data ?? 0;
+                          return Text(
+                            l10n.streakDays(streak),
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                builder: (context, snapshot) {
-                                  final result = snapshot.data ?? {'completed': 0, 'total': 0};
-                                  return Text(
-                                    AppLocalizations.of(context)!.doneCount(result['completed']!, result['total']!),
-                                    style: Theme.of(context).textTheme.bodyMedium,
-                                  );
-                                },
-                              );
-                            },
-                            loading: () => Text(AppLocalizations.of(context)!.doneCount(0, 0)),
-                            error: (_, __) => Text(AppLocalizations.of(context)!.doneCount(0, 0)),
                           );
                         },
-                        loading: () => Text(AppLocalizations.of(context)!.doneCount(0, 0)),
-                        error: (_, __) => Text(AppLocalizations.of(context)!.doneCount(0, 0)),
                       ),
-                      loading: () => Text(AppLocalizations.of(context)!.doneCount(0, 0)),
-                      error: (_, __) => Text(AppLocalizations.of(context)!.doneCount(0, 0)),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      ref.watch(
+                        checklistProgressProvider((seasonId: seasonId, dayIndex: dayIndex)),
+                      ).when(
+                        data: (progress) => Text(
+                          l10n.doneCount(progress.completed, progress.total),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: scheme.onSurface.withValues(alpha: 0.75),
+                              ),
+                        ),
+                        loading: () => Text(l10n.doneCount(0, 0)),
+                        error: (_, __) => Text(l10n.doneCount(0, 0)),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
             CompactDailyQuestsStrip(seasonId: seasonId, dayIndex: dayIndex),
-            // Reflection snippet if available
-            FutureBuilder<List<Note>>(
-              future: ref.read(databaseProvider).notesDao.getDayNotes(seasonId, dayIndex),
-              builder: (context, noteSnapshot) {
-                final notes = noteSnapshot.data ?? [];
-                final note = notes.isNotEmpty ? notes.first : null;
-                if (note != null && note.body.isNotEmpty) {
-                  final preview = note.body.length > 60 ? '${note.body.substring(0, 60)}...' : note.body;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.edit_note,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              preview,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            CoachMarkTip(
+              coachKey: CoachMarkService.todayJourney,
+              message: l10n.coachMarkTodayJourney,
+            ),
+            TodayJourneyMiniStrip(),
+            const SizedBox(height: 16),
+            Text(
+              l10n.todayHomeLogPrompt,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.65),
+                  ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _openTodayChecklistScreen,
+              icon: const Icon(Icons.checklist_rounded),
+              label: Text(checklistLabel),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.center,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => EditGoalsFlow(seasonId: seasonId),
+                    ),
                   );
-                }
-                return const SizedBox.shrink();
-              },
+                },
+                child: Text(l10n.editGoals),
+              ),
             ),
           ],
         ),
@@ -1050,131 +981,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildOpenChecklistCta(
-    int seasonId,
-    int dayIndex,
-    AsyncValue<List<dynamic>> habitsAsync,
-    AsyncValue<List<dynamic>> seasonHabitsAsync,
-    AsyncValue<List<dynamic>> entriesAsync,
-    bool showItikaf,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    return AppSurface(
-      onTap: () => _openTodayChecklistSheet(
-        seasonId: seasonId,
-        dayIndex: dayIndex,
-        showItikaf: showItikaf,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Icon(
-            Icons.checklist_rounded,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.openTodayChecklist,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                Text(
-                  l10n.oneTapToday,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.chevron_right,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _openTodayChecklistSheet({
-    required int seasonId,
-    required int dayIndex,
-    required bool showItikaf,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    final habitsAsync = ref.read(habitsProvider);
-    final seasonHabitsAsync = ref.read(seasonHabitsProvider(seasonId));
-    final entriesAsync = ref.read(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.88,
-          minChildSize: 0.45,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return Material(
-              color: Theme.of(context).colorScheme.surface,
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Text(
-                              l10n.todayChecklistTitle,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(sheetContext).pop(),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      child: _buildOneTapTodayCard(
-                        seasonId,
-                        dayIndex,
-                        habitsAsync,
-                        seasonHabitsAsync,
-                        entriesAsync,
-                        showItikaf,
-                        inSheet: true,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+  void _openTodayChecklistScreen() {
+    final dayIndex = ref.read(activeDayIndexForUIProvider);
+    openDayChecklist(context, ref, dayIndex: dayIndex, switchToTodayTab: false);
   }
 
   Widget _buildOneTapTodayCard(
@@ -1184,7 +993,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     AsyncValue<List<dynamic>> seasonHabitsAsync,
     AsyncValue<List<dynamic>> entriesAsync,
     bool showItikaf, {
-    bool inSheet = false,
+    bool bareList = false,
   }) {
     final habitList = habitsAsync.when(
       data: (habits) => seasonHabitsAsync.when(
@@ -1209,12 +1018,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       error: (_, __) => Text(AppLocalizations.of(context)!.errorLoadingHabits),
     );
 
-    if (inSheet) {
+    if (bareList) {
       return habitList;
     }
 
     return Card(
-      key: _oneTapCardKey,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1499,228 +1307,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     return Column(children: sortedHabits);
   }
 
-  Widget _buildReflectionCard(int seasonId, int dayIndex) {
-    return FutureBuilder<List<Note>>(
-      future: ref.read(databaseProvider).notesDao.getDayNotes(seasonId, dayIndex),
-      builder: (context, snapshot) {
-        final notes = snapshot.data ?? [];
-        final note = notes.isNotEmpty ? notes.first : null;
-        _reflectionController.text = note?.body ?? '';
-        final currentMood = note?.mood;
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.reflection,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    if (currentMood != null)
-                      _buildMoodChip(currentMood),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _reflectionController,
-                  maxLines: 3,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.howWasToday,
-                  ),
-                  onChanged: (text) {
-                    _saveReflection(seasonId, dayIndex, text.isEmpty ? null : text, currentMood, note?.id);
-                  },
-                  onSubmitted: (_) {
-                    FocusScope.of(context).unfocus();
-                  },
-                ),
-                const SizedBox(height: 12),
-                // Mood selector
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 12,
-                  children: [
-                    _buildMoodButton('excellent', currentMood == 'excellent', () {
-                      _saveReflection(seasonId, dayIndex, _reflectionController.text.isEmpty ? null : _reflectionController.text, 'excellent', note?.id);
-                    }),
-                    _buildMoodButton('good', currentMood == 'good', () {
-                      _saveReflection(seasonId, dayIndex, _reflectionController.text.isEmpty ? null : _reflectionController.text, 'good', note?.id);
-                    }),
-                    _buildMoodButton('ok', currentMood == 'ok', () {
-                      _saveReflection(seasonId, dayIndex, _reflectionController.text.isEmpty ? null : _reflectionController.text, 'ok', note?.id);
-                    }),
-                    _buildMoodButton('difficult', currentMood == 'difficult', () {
-                      _saveReflection(seasonId, dayIndex, _reflectionController.text.isEmpty ? null : _reflectionController.text, 'difficult', note?.id);
-                    }),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMoodChip(String mood) {
-    final l10n = AppLocalizations.of(context)!;
-    final (icon, color) = _getMoodIconAndColor(mood);
-    String moodLabel;
-    switch (mood) {
-      case 'excellent':
-        moodLabel = l10n.moodExcellent;
-        break;
-      case 'good':
-        moodLabel = l10n.moodGood;
-        break;
-      case 'ok':
-        moodLabel = l10n.moodOk;
-        break;
-      case 'difficult':
-        moodLabel = l10n.moodDifficult;
-        break;
-      default:
-        moodLabel = mood[0].toUpperCase() + mood.substring(1);
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color, width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            moodLabel,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMoodButton(String mood, bool isSelected, VoidCallback onTap) {
-    final l10n = AppLocalizations.of(context)!;
-    final (icon, color) = _getMoodIconAndColor(mood);
-    String moodLabel;
-    switch (mood) {
-      case 'excellent':
-        moodLabel = l10n.moodExcellent;
-        break;
-      case 'good':
-        moodLabel = l10n.moodGood;
-        break;
-      case 'ok':
-        moodLabel = l10n.moodOk;
-        break;
-      case 'difficult':
-        moodLabel = l10n.moodDifficult;
-        break;
-      default:
-        moodLabel = mood[0].toUpperCase() + mood.substring(1);
-    }
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? color.withOpacity(0.2)
-                : Theme.of(context).colorScheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected ? color : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: isSelected ? color : Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Text(
-                moodLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? color : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  (IconData, Color) _getMoodIconAndColor(String mood) {
-    switch (mood) {
-      case 'excellent':
-        return (Icons.sentiment_very_satisfied, Colors.green);
-      case 'good':
-        return (Icons.sentiment_satisfied, Colors.blue);
-      case 'ok':
-        return (Icons.sentiment_neutral, Colors.orange);
-      case 'difficult':
-        return (Icons.sentiment_very_dissatisfied, Colors.red);
-      default:
-        return (Icons.sentiment_neutral, Colors.grey);
-    }
-  }
-
-  Future<void> _saveReflection(int seasonId, int dayIndex, String? text, String? mood, int? noteId) async {
-    final database = ref.read(databaseProvider);
-    if (text == null || text.isEmpty) {
-      if (noteId != null) {
-        await database.notesDao.deleteNote(noteId);
-      }
-    } else {
-        if (noteId != null) {
-          final existingNotes = await database.notesDao.getDayNotes(seasonId, dayIndex);
-          if (existingNotes.isNotEmpty) {
-            final note = existingNotes.first;
-            await database.notesDao.updateNote(
-              Note(
-                id: note.id,
-                seasonId: note.seasonId,
-                dayIndex: note.dayIndex,
-                title: note.title,
-                body: text,
-                mood: mood,
-                createdAt: note.createdAt,
-              ),
-            );
-          }
-        } else {
-        await database.notesDao.createNote(
-          seasonId: seasonId,
-          dayIndex: dayIndex,
-          body: text,
-          mood: mood,
-        );
-      }
-    }
-    // Invalidate to refresh UI
-    ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
-  }
-
   Future<int> _calculateStreak(int seasonId, int dayIndex) async {
     final database = ref.read(databaseProvider);
     return await CompletionService.calculateStreak(
@@ -1730,135 +1316,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Future<Map<String, int>> _calculateCompletedCount({
-    required int seasonId,
-    required int dayIndex,
-    required List enabledHabits,
-    required List entries,
-    List? allHabits,
-  }) async {
-    if (enabledHabits.isEmpty) return {'completed': 0, 'total': 0};
-
-    final database = ref.read(databaseProvider);
-    
-    // Debug: log entries received
-    debugPrint('_calculateCompletedCount: Received ${entries.length} entries for seasonId=$seasonId, dayIndex=$dayIndex');
-    for (final e in entries) {
-      debugPrint('  Entry: habitId=${e.habitId}, valueInt=${e.valueInt}, valueBool=${e.valueBool}, isCompleted=${e.isCompleted}');
-    }
-    
-    // Load plans for count-based habits
-    final quranPlan = await database.quranPlanDao.getPlan(seasonId);
-    final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
-    final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled');
-    final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
-    
-    // Load Quran daily data (Quran uses separate table)
-    final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
-    
-    // Check if we're in the last 10 days (for Itikaf)
-    final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
-    final last10Start = season != null ? season.days - 9 : 0;
-    final isInLast10Days = dayIndex >= last10Start && dayIndex > 0;
-
-    int completedCount = 0;
-    int totalRelevantHabits = 0;
-
-    for (final habit in enabledHabits) {
-      // Get habit key to identify count habits and Itikaf
-      String? habitKey;
-      if (allHabits != null) {
-        try {
-          final fullHabit = allHabits.firstWhere((h) => h.id == habit.habitId);
-          habitKey = fullHabit.key;
-        } catch (e) {
-          habitKey = null;
-        }
-      }
-      
-      // Skip Itikaf if not in last 10 days
-      if (habitKey == 'itikaf' && !isInLast10Days) {
-        continue; // Don't count Itikaf in total if not in last 10 days
-      }
-      
-      // Count this habit in total relevant habits
-      totalRelevantHabits++;
-      
-      // Find entry - ensure we're matching correctly
-      final entry = entries.where((e) => 
-        e.habitId == habit.habitId && 
-        e.seasonId == seasonId && 
-        e.dayIndex == dayIndex
-      ).firstOrNull;
-      
-      // If no entry found, create a default one
-      final finalEntry = entry ?? DailyEntryModel(
-        seasonId: seasonId,
-        dayIndex: dayIndex,
-        habitId: habit.habitId,
-        updatedAt: DateTime.now(),
-      );
-      
-      debugPrint('Checking habit: $habitKey (habitId=${habit.habitId}), entry found: ${entry != null}, valueInt: ${finalEntry.valueInt}, valueBool: ${finalEntry.valueBool}');
-
-      bool isCompleted = false;
-      
-      // Count habits (quran_pages, dhikr, sedekah) should be checked based on target
-      if (habitKey == 'quran_pages') {
-        // Quran uses QuranDaily table, not DailyEntries
-        final target = quranPlan?.dailyTargetPages ?? 20;
-        if (target > 0) {
-          final currentValue = quranDaily?.pagesRead ?? 0;
-          isCompleted = currentValue >= target;
-          debugPrint('Quran: currentValue=$currentValue, target=$target, isCompleted=$isCompleted');
-        } else {
-          final currentValue = quranDaily?.pagesRead ?? 0;
-          isCompleted = currentValue > 0;
-        }
-      } else if (habitKey == 'dhikr') {
-        // Dhikr target from DhikrPlan
-        final target = dhikrPlan?.dailyTarget ?? 100;
-        if (target > 0) {
-          final currentValue = finalEntry.valueInt ?? 0;
-          isCompleted = currentValue >= target;
-        } else {
-          isCompleted = (finalEntry.valueInt ?? 0) > 0;
-        }
-      } else if (habitKey == 'sedekah') {
-        // Sedekah target from KvSettings
-        if (sedekahGoalEnabled == 'true' && sedekahGoalAmount != null) {
-          final target = double.tryParse(sedekahGoalAmount) ?? 0;
-          if (target > 0) {
-            // Convert valueInt to double for accurate comparison
-            final currentValue = (finalEntry.valueInt ?? 0).toDouble();
-            isCompleted = currentValue >= target;
-          } else {
-            isCompleted = (finalEntry.valueInt ?? 0) > 0;
-          }
-        } else {
-          // If sedekah goal disabled, consider completed if value > 0
-          isCompleted = (finalEntry.valueInt ?? 0) > 0;
-        }
-      } else if (habitKey == 'fasting') {
-        isCompleted = FastingStatus.isCompletedForDay(finalEntry.valueInt, finalEntry.valueBool);
-      } else {
-        // Boolean habits (taraweeh, itikaf, prayers)
-        isCompleted = finalEntry.isCompleted;
-      }
-
-      if (isCompleted) {
-        completedCount++;
-        debugPrint('Habit completed: $habitKey');
-      } else {
-        // Debug: log which habit is not completed
-        debugPrint('Habit not completed: $habitKey (valueInt: ${finalEntry.valueInt}, valueBool: ${finalEntry.valueBool}, isCompleted: ${finalEntry.isCompleted})');
-      }
-    }
-
-    return {'completed': completedCount, 'total': totalRelevantHabits};
-  }
-
   Future<void> _onEngagementUpdate(int seasonId, int dayIndex) async {
+    final database = ref.read(databaseProvider);
+    await StreakShieldService.tryConsumeForExcusedDay(
+      database: database,
+      seasonId: seasonId,
+      dayIndex: dayIndex,
+    );
     await evaluateAchievements(ref, seasonId: seasonId, dayIndex: dayIndex);
     await refreshDailyQuests(ref, seasonId: seasonId, dayIndex: dayIndex);
   }
@@ -1956,10 +1420,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     String? note,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark
-        ? Colors.white.withOpacity(0.1)
-        : Colors.grey.withOpacity(0.3);
     final subtitle = status == FastingStatus.excusedOther && note != null && note.isNotEmpty
         ? '${_fastingStatusLabel(status)}: $note'
         : _fastingStatusLabel(status);
@@ -1968,10 +1428,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1),
+        decoration: AppSurface.nestedDecoration(
+          context,
+          color: AppSurface.fillColor(context),
+          borderRadius: 12,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2023,9 +1483,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 border: isCompleted
                     ? null
                     : Border.all(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.3)
-                            : Colors.grey.withOpacity(0.5),
+                        color: AppSurface.borderColor(context),
                         width: 2,
                       ),
               ),

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
+import 'package:ramadan_tracker/domain/models/achievement_model.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/achievement_share_card.dart';
+import 'package:ramadan_tracker/features/insights/screens/season_report_screen.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 /// End-of-season summary shown once when opening Month after Ramadan ends.
@@ -23,6 +27,8 @@ class SeasonTrophySheet {
     final flagKey = 'season_trophy_shown_${season.id}';
     final shown = await db.kvSettingsDao.getValue(flagKey);
     if (shown == 'true') return;
+
+    await evaluateSeasonCompleteAchievements(ref, seasonId: season.id);
     if (!context.mounted) return;
 
     await showModalBottomSheet<void>(
@@ -109,15 +115,106 @@ class _SeasonTrophyBody extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               unlockedAsync.when(
-                data: (list) => Text(
-                  l10n.achievementsUnlockedCount(list.length),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                data: (list) {
+                  final keys = list.map((u) => u.achievementKey).toSet();
+                  final scheme = Theme.of(context).colorScheme;
+                  return Column(
+                    children: [
+                      Text(
+                        l10n.achievementsUnlockedCount(list.length),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      if (keys.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.seasonReportTrophies,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: AchievementCatalog.all.map((def) {
+                            final unlocked = keys.contains(def.key);
+                            final title = CelebrationListenerHelper.titleFor(l10n, def.titleKey);
+                            return SizedBox(
+                              width: 72,
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    def.icon,
+                                    size: 26,
+                                    color: unlocked
+                                        ? scheme.primary
+                                        : scheme.onSurface.withValues(alpha: 0.2),
+                                  ),
+                                  if (unlocked)
+                                    Text(
+                                      title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context).textTheme.labelSmall,
+                                    ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
+                  );
+                },
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 24),
+              unlockedAsync.when(
+                data: (list) {
+                  final highlights = AchievementCatalog.all
+                      .where((d) => list.any((u) => u.achievementKey == d.key))
+                      .take(3)
+                      .toList();
+                  return engagementAsync.when(
+                    data: (e) => OutlinedButton.icon(
+                      onPressed: highlights.isEmpty
+                          ? null
+                          : () async {
+                              await showAchievementShareDialog(
+                                context: context,
+                                companionLevel: e.companionLevel,
+                                totalXp: e.totalXp,
+                                unlockedCount: list.length,
+                                highlights: highlights,
+                              );
+                            },
+                      icon: const Icon(Icons.share_outlined),
+                      label: Text(l10n.shareAction),
+                    ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.tonal(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SeasonReportScreen(seasonId: seasonId),
+                    ),
+                  );
+                },
+                child: Text(l10n.seasonReportViewReport),
+              ),
+              const SizedBox(height: 12),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(l10n.seasonTrophyDismiss),

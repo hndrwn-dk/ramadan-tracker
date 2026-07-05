@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/domain/services/autopilot_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/quran_icon.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class PlanBlockCard extends ConsumerWidget {
   final String label;
@@ -34,7 +35,7 @@ class PlanBlockCard extends ConsumerWidget {
         color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+          color: AppSurface.borderColor(context),
         ),
       ),
       child: Column(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/features/insights/services/season_insights_service.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 
@@ -56,7 +57,7 @@ class SeasonAuditBottomSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              color: AppSurface.borderColor(context),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -147,7 +148,7 @@ class SeasonAuditBottomSheet extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+          color: AppSurface.borderColor(context),
         ),
       ),
       child: ListTile(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/features/insights/services/weekly_insights_service.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
@@ -66,7 +67,7 @@ class WeeklyRhythmCard extends StatelessWidget {
                           color: _getDayColor(context, dayStatus.status),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                            color: AppSurface.borderColor(context),
                             width: 1,
                           ),
                         ),

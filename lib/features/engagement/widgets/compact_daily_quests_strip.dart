@@ -4,6 +4,7 @@ import 'package:ramadan_tracker/data/providers/daily_quest_provider.dart';
 import 'package:ramadan_tracker/domain/models/daily_quest.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/extensions.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 /// Inline quest progress for the Today hero card (replaces full quest card).
 class CompactDailyQuestsStrip extends ConsumerWidget {
@@ -26,20 +27,43 @@ class CompactDailyQuestsStrip extends ConsumerWidget {
         if (state.quests.isEmpty) return const SizedBox.shrink();
         final completed = state.progress.where((p) => p.completed).length;
         final scheme = Theme.of(context).colorScheme;
+        final progress = state.quests.isEmpty
+            ? 0.0
+            : completed / state.quests.length;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
-            Text(
-              l10n.dailyQuestsProgress(completed, state.quests.length),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.7),
-                  ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(Icons.flag_outlined, size: 16, color: scheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.dailyQuestsTitle,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const Spacer(),
+                Text(
+                  l10n.dailyQuestsProgress(completed, state.quests.length),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurface.withValues(alpha: 0.65),
+                      ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 5,
+                backgroundColor: scheme.surfaceContainerHighest,
+              ),
+            ),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -102,7 +126,7 @@ class _QuestChip extends StatelessWidget {
         border: Border.all(
           color: done
               ? scheme.primary.withValues(alpha: 0.4)
-              : scheme.outline.withValues(alpha: 0.2),
+              : AppSurface.borderColor(context),
         ),
       ),
       child: Row(

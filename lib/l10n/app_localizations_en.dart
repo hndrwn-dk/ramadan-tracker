@@ -778,6 +778,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String sahurTomorrowIn(String time) {
+    return 'Sahur tomorrow in $time';
+  }
+
+  @override
+  String get todayFastingCountdownLabel => 'Next';
+
+  @override
+  String get todayFastingCountdownHint =>
+      'Enable location for live Sahur and Iftar times';
+
+  @override
   String sahurPassed(String time) {
     return 'Sahur passed • $time';
   }
@@ -1704,6 +1716,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayChecklistTitle => 'Today\'s checklist';
 
   @override
+  String dayChecklistTitle(int day) {
+    return 'Day $day checklist';
+  }
+
+  @override
+  String checklistProgressDone(int completed, int total) {
+    return '$completed of $total done';
+  }
+
+  @override
+  String get checklistNudgeStart => 'Let\'s begin today\'s ibadah';
+
+  @override
+  String get checklistNudgePartial => 'Keep going, you\'re doing well';
+
+  @override
+  String get checklistNudgeAlmost => 'Alhamdulillah, almost there';
+
+  @override
+  String get checklistNudgeDone => 'Alhamdulillah, all done for today';
+
+  @override
+  String get checklistNotDoneYet => 'Not done yet';
+
+  @override
+  String checklistPagesOf(int current, int target) {
+    return '$current of $target pages';
+  }
+
+  @override
+  String checklistCountOf(int current, int target) {
+    return '$current of $target';
+  }
+
+  @override
+  String checklistPrayersOf(int current, int target) {
+    return '$current of $target';
+  }
+
+  @override
+  String get checklistEnterAmount => 'Enter amount';
+
+  @override
+  String get checklistEnterPages => 'Enter pages read';
+
+  @override
+  String get checklistEnterDhikr => 'Enter dhikr count';
+
+  @override
   String weeklyAchievementsTitle(int count) {
     return '$count new achievements this week';
   }
@@ -1803,6 +1864,153 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewAchievements => 'View achievements';
+
+  @override
+  String get companionTierMubtadi => 'Mubtadi — Beginner';
+
+  @override
+  String get companionTierMumayyiz => 'Mumayyiz — Steady';
+
+  @override
+  String get companionTierMujahid => 'Mujahid — Committed';
+
+  @override
+  String streakShieldsRemaining(int count) {
+    return '$count mercy shields left this season';
+  }
+
+  @override
+  String get coachMarkDismiss => 'Got it';
+
+  @override
+  String get coachMarkTodayQuests =>
+      'Complete up to 3 small goals each day for bonus XP.';
+
+  @override
+  String get coachMarkTodayJourney =>
+      'Tap your level to view achievements and companion progress.';
+
+  @override
+  String get coachMarkMonthCalendar =>
+      'Tap a day to log habits or review your month at a glance.';
+
+  @override
+  String get preRamadanQuestsTitle => 'Prep quests';
+
+  @override
+  String get preRamadanQuestReviewPlan =>
+      'Review or create your Ramadan season';
+
+  @override
+  String get preRamadanQuestLogSunnah => 'Log a sunnah fast today';
+
+  @override
+  String get preRamadanQuestReminders => 'Turn on Sahur or Iftar reminders';
+
+  @override
+  String get preRamadanQuestCreateSeason => 'Set up your Ramadan season';
+
+  @override
+  String weeklyQuestSummary(int completed, int total) {
+    return '$completed of $total daily quests completed this week';
+  }
+
+  @override
+  String get weeklyReviewAudit => 'Audit';
+
+  @override
+  String weeklyReviewDayLabel(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String get sunnahMonthlyChallengeTitle => 'Monthly challenge';
+
+  @override
+  String sunnahMonthlySeninKamisProgress(int done, int target) {
+    return 'Mon/Thu fasts: $done / $target';
+  }
+
+  @override
+  String sunnahMonthlyShawwalProgress(int done, int target) {
+    return 'Shawwal days: $done / $target';
+  }
+
+  @override
+  String get todayQadhaSubtitle => 'Zakat, Fidyah, and missed fast obligations';
+
+  @override
+  String get shareAction => 'Share';
+
+  @override
+  String get achievementShareTagline =>
+      'Ramadan Tracker — offline worship companion';
+
+  @override
+  String get reflectionPromptGratitude => 'What are you grateful for today?';
+
+  @override
+  String get reflectionPromptChallenge =>
+      'What was hardest today, and how did you respond?';
+
+  @override
+  String get reflectionPromptDua => 'Is there a dua on your heart tonight?';
+
+  @override
+  String get reflectionPromptQuran =>
+      'What verse or lesson stayed with you today?';
+
+  @override
+  String get reflectionPromptCommunity =>
+      'Who did you support or check on today?';
+
+  @override
+  String get reflectionPromptPatience => 'Where did you practice sabr today?';
+
+  @override
+  String get reflectionPromptTomorrow => 'What is one intention for tomorrow?';
+
+  @override
+  String get seasonReportTitle => 'Season Report';
+
+  @override
+  String get seasonReportSummary => 'Season Summary';
+
+  @override
+  String get seasonReportHabits => 'Habit Summary';
+
+  @override
+  String get seasonReportComparison => 'Season Comparison';
+
+  @override
+  String seasonReportAvgScore(String score) {
+    return 'Average score: $score';
+  }
+
+  @override
+  String seasonReportPerfectDays(int done, int total) {
+    return 'Strong days: $done / $total';
+  }
+
+  @override
+  String seasonReportLongestStreak(int days) {
+    return 'Longest streak: $days days';
+  }
+
+  @override
+  String get seasonReportTrophies => 'Achievement trophies';
+
+  @override
+  String get habitMasteryBronze => 'Bronze';
+
+  @override
+  String get habitMasterySilver => 'Silver';
+
+  @override
+  String get habitMasteryGold => 'Gold';
+
+  @override
+  String get widgetLogSunnah => 'Log fast';
 
   @override
   String get weeklyReviewTitle => 'Review Missed Days';
@@ -1932,4 +2140,168 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get questScore60 => 'Reach 60% daily score';
+
+  @override
+  String get todayGreetingMorning => 'Good morning';
+
+  @override
+  String get todayGreetingAfternoon => 'Good afternoon';
+
+  @override
+  String get todayGreetingEvening => 'Good evening';
+
+  @override
+  String get todayNudgeDayOne =>
+      'Day one — small steps count. Start with what you can today.';
+
+  @override
+  String get todayNudgeEarly =>
+      'Build your rhythm — each day strengthens the next.';
+
+  @override
+  String get todayNudgeMid =>
+      'You are in the flow. Stay consistent with what matters most.';
+
+  @override
+  String get todayNudgeLastTen =>
+      'The blessed final stretch — make these nights count.';
+
+  @override
+  String get todayHomeLogPrompt =>
+      'Track fasting, prayer, Quran, dhikr, and sedekah in one checklist.';
+
+  @override
+  String todayHomeCompanionLine(int level, int xp) {
+    return 'Level $level · $xp XP';
+  }
+
+  @override
+  String todayHomeXpToNext(int xp, int level) {
+    return '$xp XP to level $level';
+  }
+
+  @override
+  String get onboardingLanguageStep => 'Step 1 · Language';
+
+  @override
+  String get onboardingLanguageWelcome =>
+      'Welcome — let\'s personalize your Ramadan journey';
+
+  @override
+  String get onboardingLanguageNudge =>
+      'You can change this anytime in Settings.';
+
+  @override
+  String get languageOptionEnHint => 'Default · International';
+
+  @override
+  String get languageOptionIdHint => 'Local language · Indonesia';
+
+  @override
+  String get onboardingValueOffline =>
+      'Works fully offline — no account needed';
+
+  @override
+  String get onboardingValuePrivate => 'Your data stays private on this device';
+
+  @override
+  String get onboardingValueRamadan =>
+      'Built for fasting, prayer, Quran, and daily worship';
+
+  @override
+  String onboardingStepProgress(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get onboardingWelcomeNudge =>
+      'A calm companion for your Ramadan — setup takes about one minute.';
+
+  @override
+  String get onboardingSkipForNow => 'Skip for now';
+
+  @override
+  String get onboardingLocationTitle => 'Enable location';
+
+  @override
+  String get onboardingLocationSubtitle =>
+      'For automatic imsak, sahur, and iftar times';
+
+  @override
+  String get onboardingAllowLocation => 'Allow location';
+
+  @override
+  String get onboardingGoalsQuranDhikrTitle => 'Daily Goals — Quran & Dhikr';
+
+  @override
+  String get onboardingGoalsSedekahTitle => 'Sedekah Goal';
+
+  @override
+  String get onboardingReadyTitle => 'You\'re ready!';
+
+  @override
+  String get onboardingRemindersFastingSection => 'Fasting times';
+
+  @override
+  String get onboardingRemindersGoalsSection => 'Daily goals';
+
+  @override
+  String get onboardingRemindersGoalsMaster => 'Goal reminders';
+
+  @override
+  String get onboardingRemindersGoalsMasterHint =>
+      'Gentle nudges if today\'s target is not done yet';
+
+  @override
+  String get onboardingRemindersCustomizeGoals => 'Customize per goal';
+
+  @override
+  String get onboardingRemindersAdjustTiming => 'Adjust timing';
+
+  @override
+  String get todayTrendsTitle => 'Trends';
+
+  @override
+  String get todayTrendsSubtitle => 'Last 7 days';
+
+  @override
+  String todayTrendQuranPerDay(int count) {
+    return '$count PG/DAY';
+  }
+
+  @override
+  String todayTrendCountPerDay(int count) {
+    return '$count/DAY';
+  }
+
+  @override
+  String todayTrendPrayersPerDay(String avg) {
+    return '$avg/5 AVG';
+  }
+
+  @override
+  String todayTrendSedekahPerDay(String amount) {
+    return '$amount/DAY';
+  }
+
+  @override
+  String todayTrendDaysDone(int done, int total) {
+    return '$done/$total DAYS';
+  }
+
+  @override
+  String get seasonShareTitle => 'My Ramadan season';
+
+  @override
+  String get seasonShareTagline =>
+      'Ramadan Tracker — offline worship companion';
+
+  @override
+  String get seasonReportViewReport => 'View season report';
+
+  @override
+  String get seasonComparisonAvgScore => 'Avg score';
+
+  @override
+  String get seasonComparisonStrongDays => 'Strong days';
 }

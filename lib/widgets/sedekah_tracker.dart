@@ -8,6 +8,7 @@ import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 final _sedekahCurrencyProvider = FutureProvider.autoDispose<String>((ref) async {
   final database = ref.watch(databaseProvider);
@@ -28,12 +29,14 @@ class SedekahTracker extends ConsumerStatefulWidget {
   final int seasonId;
   final int dayIndex;
   final int habitId;
+  final bool controlsOnly;
 
   const SedekahTracker({
     super.key,
     required this.seasonId,
     required this.dayIndex,
     required this.habitId,
+    this.controlsOnly = false,
   });
 
   @override
@@ -64,17 +67,19 @@ class _SedekahTrackerState extends ConsumerState<SedekahTracker> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const SedekahIcon(size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  getHabitDisplayName(context, 'sedekah'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            if (!widget.controlsOnly) ...[
+              Row(
+                children: [
+                  const SedekahIcon(size: 20),
+                  const SizedBox(width: 12),
+                  Text(
+                    getHabitDisplayName(context, 'sedekah'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
             // Today amount display with progress
             if (goalEnabled && goalAmount > 0) ...[
               Row(
@@ -177,12 +182,12 @@ class _SedekahTrackerState extends ConsumerState<SedekahTracker> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                              : Theme.of(context).cardColor,
+                              : AppSurface.fillColor(context),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                : AppSurface.borderColor(context),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -220,13 +225,10 @@ class _SedekahTrackerState extends ConsumerState<SedekahTracker> {
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                          width: 1,
-                        ),
+                      decoration: AppSurface.nestedDecoration(
+                        context,
+                        color: AppSurface.fillColor(context),
+                        borderRadius: 20,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

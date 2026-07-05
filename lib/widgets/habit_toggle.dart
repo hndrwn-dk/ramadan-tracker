@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class HabitToggle extends StatelessWidget {
   final String label;
@@ -18,19 +19,15 @@ class HabitToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark
-        ? Colors.white.withOpacity(0.1)
-        : Colors.grey.withOpacity(0.3);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1),
+        decoration: AppSurface.nestedDecoration(
+          context,
+          color: AppSurface.fillColor(context),
+          borderRadius: 12,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -70,9 +67,7 @@ class HabitToggle extends StatelessWidget {
                 border: value
                     ? null
                     : Border.all(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.3)
-                            : Colors.grey.withOpacity(0.5),
+                        color: AppSurface.borderColor(context),
                         width: 2,
                       ),
               ),
@@ -90,4 +85,3 @@ class HabitToggle extends StatelessWidget {
     );
   }
 }
-

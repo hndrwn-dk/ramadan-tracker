@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
+import 'package:ramadan_tracker/data/providers/engagement_providers.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
@@ -21,6 +22,7 @@ import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/quran_icon.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:intl/intl.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
@@ -38,6 +40,18 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   int _customPages = 604;
   int _dhikrTarget = 100;
   int _catchupCap = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ackPlanReview());
+  }
+
+  Future<void> _ackPlanReview() async {
+    final db = ref.read(databaseProvider);
+    await db.kvSettingsDao.setValue('plan_review_ack', 'true');
+    ref.invalidate(preRamadanQuestProgressProvider);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -398,6 +412,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
               ],
             ),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppSurface.borderColor(context)),
             boxShadow: [
               BoxShadow(
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
@@ -541,7 +556,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
         border: Border.all(
           color: isCompleted
               ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              : AppSurface.borderColor(context),
           width: isCompleted ? 2 : 1,
         ),
       ),
@@ -597,68 +612,55 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 
 
   Widget _buildTodaysPlanCard(BuildContext context, AutopilotPlan plan, Map<String, String?> timeWindows, int seasonId, int dayIndex) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return AppSurface(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                AppLocalizations.of(context)!.todaysPlan,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          PlanBlockCard(
+            label: AppLocalizations.of(context)!.planMorning,
+            block: plan.morning,
+            icon: Icons.no_meals,
+            timeWindow: timeWindows['morning'],
+            seasonId: seasonId,
+            dayIndex: dayIndex,
+          ),
+          const SizedBox(height: 16),
+          PlanBlockCard(
+            label: AppLocalizations.of(context)!.planDay,
+            block: plan.day,
+            icon: Icons.light_mode,
+            timeWindow: timeWindows['day'],
+            seasonId: seasonId,
+            dayIndex: dayIndex,
+          ),
+          const SizedBox(height: 16),
+          PlanBlockCard(
+            label: AppLocalizations.of(context)!.planNight,
+            block: plan.night,
+            icon: Icons.dark_mode,
+            timeWindow: timeWindows['night'],
+            seasonId: seasonId,
+            dayIndex: dayIndex,
           ),
         ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.todaysPlan,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            PlanBlockCard(
-              label: AppLocalizations.of(context)!.planMorning,
-              block: plan.morning,
-              icon: Icons.no_meals,
-              timeWindow: timeWindows['morning'],
-              seasonId: seasonId,
-              dayIndex: dayIndex,
-            ),
-            const SizedBox(height: 16),
-            PlanBlockCard(
-              label: AppLocalizations.of(context)!.planDay,
-              block: plan.day,
-              icon: Icons.light_mode,
-              timeWindow: timeWindows['day'],
-              seasonId: seasonId,
-              dayIndex: dayIndex,
-            ),
-            const SizedBox(height: 16),
-            PlanBlockCard(
-              label: AppLocalizations.of(context)!.planNight,
-              block: plan.night,
-              icon: Icons.dark_mode,
-              timeWindow: timeWindows['night'],
-              seasonId: seasonId,
-              dayIndex: dayIndex,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -669,121 +671,109 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.trending_up,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.progress,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // Always show the 3 progress items
-            Column(
-              children: [
-                _buildProgressItem(
-                  context,
-                  icon: Icons.menu_book,
-                  iconWidget: QuranIcon(size: 20, color: Theme.of(context).colorScheme.primary),
-                  label: getHabitDisplayName(context, 'quran_pages'),
-                  value: AppLocalizations.of(context)!.pagesRemaining(plan.quranRemainingPages),
-                  subtitle: AppLocalizations.of(context)!.pagesPerDay(plan.quranDailyTarget),
-                ),
-                const SizedBox(height: 16),
-                _buildProgressItem(
-                  context,
-                  icon: Icons.calendar_today,
-                  label: AppLocalizations.of(context)!.daysLeft,
-                  value: AppLocalizations.of(context)!.days(plan.quranRemainingDays),
-                  subtitle: null,
-                ),
-                const SizedBox(height: 16),
-                _buildProgressItem(
-                  context,
-                  icon: Icons.favorite,
-                  iconWidget: DhikrIcon(size: 20, color: Theme.of(context).colorScheme.primary),
-                  label: AppLocalizations.of(context)!.dhikrTargetLabel,
-                  value: '${plan.dhikrTarget} ${AppLocalizations.of(context)!.daily}',
-                  subtitle: null,
-                ),
-                // Show gentle catch-up as additional info if needed
-                if (plan.quranRemainingPages > 0 && plan.quranRemainingDays > 0 && plan.quranDailyTarget > 20) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.secondaryContainer,
-                          Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.7),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
+    return AppSurface(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.trending_up,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                AppLocalizations.of(context)!.progress,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.tips_and_updates,
-                          color: Theme.of(context).colorScheme.onSecondaryContainer,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.gentleCatchup,
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                AppLocalizations.of(context)!.gentleCatchupMessage(
-                                  (plan.quranDailyTarget - 20).clamp(0, 5),
-                                  plan.quranRemainingDays,
-                                ),
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.8),
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Always show the 3 progress items
+          Column(
+            children: [
+              _buildProgressItem(
+                context,
+                icon: Icons.menu_book,
+                iconWidget: QuranIcon(size: 20, color: Theme.of(context).colorScheme.primary),
+                label: getHabitDisplayName(context, 'quran_pages'),
+                value: AppLocalizations.of(context)!.pagesRemaining(plan.quranRemainingPages),
+                subtitle: AppLocalizations.of(context)!.pagesPerDay(plan.quranDailyTarget),
+              ),
+              const SizedBox(height: 16),
+              _buildProgressItem(
+                context,
+                icon: Icons.calendar_today,
+                label: AppLocalizations.of(context)!.daysLeft,
+                value: AppLocalizations.of(context)!.days(plan.quranRemainingDays),
+                subtitle: null,
+              ),
+              const SizedBox(height: 16),
+              _buildProgressItem(
+                context,
+                icon: Icons.favorite,
+                iconWidget: DhikrIcon(size: 20, color: Theme.of(context).colorScheme.primary),
+                label: AppLocalizations.of(context)!.dhikrTargetLabel,
+                value: '${plan.dhikrTarget} ${AppLocalizations.of(context)!.daily}',
+                subtitle: null,
+              ),
+              // Show gentle catch-up as additional info if needed
+              if (plan.quranRemainingPages > 0 && plan.quranRemainingDays > 0 && plan.quranDailyTarget > 20) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).colorScheme.secondaryContainer,
+                        Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.7),
                       ],
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppSurface.borderColor(context)),
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.tips_and_updates,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.gentleCatchup,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              AppLocalizations.of(context)!.gentleCatchupMessage(
+                                (plan.quranDailyTarget - 20).clamp(0, 5),
+                                plan.quranRemainingDays,
+                              ),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.8),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

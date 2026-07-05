@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ramadan_tracker/data/providers/database_provider.dart';
+import 'package:ramadan_tracker/domain/services/daily_quest_service.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/features/insights/services/weekly_insights_service.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/utils/habit_helpers.dart';
 
-/// Weekly Review Bottom Sheet for missed days
-class WeeklyReviewBottomSheet extends StatelessWidget {
+/// Weekly Review Bottom Sheet for missed days + quest summary.
+class WeeklyReviewBottomSheet extends ConsumerWidget {
   final List<WeeklyDayStatus> dayStatuses;
   final SeasonModel season;
+  final int endDayIndex;
   final Function(int dayIndex) onAuditDay;
 
   const WeeklyReviewBottomSheet({
     super.key,
     required this.dayStatuses,
     required this.season,
+    required this.endDayIndex,
     required this.onAuditDay,
   });
 
@@ -21,6 +28,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
     BuildContext context, {
     required List<WeeklyDayStatus> dayStatuses,
     required SeasonModel season,
+    required int endDayIndex,
     required Function(int dayIndex) onAuditDay,
   }) {
     showModalBottomSheet(
@@ -30,15 +38,18 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
       builder: (context) => WeeklyReviewBottomSheet(
         dayStatuses: dayStatuses,
         season: season,
+        endDayIndex: endDayIndex,
         onAuditDay: onAuditDay,
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final missedDays = dayStatuses.where((d) => d.status != 'Done' || d.missedTasks.isNotEmpty).toList();
+    final missedDays = dayStatuses
+        .where((d) => d.status != 'Done' || d.missedTasks.isNotEmpty)
+        .toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -48,13 +59,12 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle
           Container(
             margin: const EdgeInsets.only(top: 12),
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              color: AppSurface.borderColor(context),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -69,7 +79,30 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                FutureBuilder<WeeklyQuestSummary>(
+                  future: DailyQuestService.weeklySummary(
+                    database: ref.read(databaseProvider),
+                    seasonId: season.id,
+                    endDayIndex: endDayIndex,
+                  ),
+                  builder: (context, snap) {
+                    if (!snap.hasData || snap.data!.total == 0) {
+                      return const SizedBox.shrink();
+                    }
+                    final s = snap.data!;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        l10n.weeklyQuestSummary(s.completed, s.total),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    );
+                  },
+                ),
                 if (missedDays.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -77,7 +110,10 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                       child: Text(
                         l10n.weeklyReviewNoMissed,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
                             ),
                       ),
                     ),
@@ -96,7 +132,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
-                            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                            color: AppSurface.borderColor(context),
                           ),
                         ),
                         child: ListTile(
@@ -107,7 +143,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                           title: Row(
                             children: [
                               Text(
-                                DateFormat('MMM d, yyyy').format(dayStatus.date),
+                                DateFormat.yMMMd().format(dayStatus.date),
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -123,7 +159,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'Day $dayNumber',
+                                  l10n.weeklyReviewDayLabel(dayNumber),
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
@@ -141,7 +177,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                                     children: dayStatus.missedTasks.map((taskKey) {
                                       return Chip(
                                         label: Text(
-                                          _getHabitDisplayName(taskKey),
+                                          _habitName(l10n, taskKey),
                                           style: const TextStyle(fontSize: 11),
                                         ),
                                         padding: EdgeInsets.zero,
@@ -163,7 +199,7 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
                                 vertical: 8,
                               ),
                             ),
-                            child: const Text('Audit'),
+                            child: Text(l10n.weeklyReviewAudit),
                           ),
                         ),
                       );
@@ -177,25 +213,26 @@ class WeeklyReviewBottomSheet extends StatelessWidget {
     );
   }
 
-  String _getHabitDisplayName(String habitKey) {
+  String _habitName(AppLocalizations l10n, String habitKey) {
     switch (habitKey) {
       case 'fasting':
-        return 'Fasting';
+        return l10n.habitFasting;
       case 'prayers':
-        return '5 Prayers';
+        return l10n.habitPrayers;
       case 'quran_pages':
-        return 'Quran';
+        return l10n.habitQuran;
       case 'dhikr':
-        return 'Dhikr';
+        return l10n.habitDhikr;
       case 'taraweeh':
-        return 'Taraweeh';
+        return l10n.habitTaraweeh;
       case 'sedekah':
-        return 'Sedekah';
+        return l10n.habitSedekah;
       case 'itikaf':
-        return "I'tikaf";
+        return l10n.habitItikaf;
+      case 'tahajud':
+        return l10n.habitTahajud;
       default:
         return habitKey;
     }
   }
 }
-

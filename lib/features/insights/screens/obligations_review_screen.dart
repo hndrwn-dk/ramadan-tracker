@@ -12,6 +12,7 @@ import 'package:ramadan_tracker/features/qadha/widgets/obligations_history_chart
 import 'package:ramadan_tracker/features/qadha/widgets/obligations_history_section.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/utils/obligations_utils.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class ObligationsReviewScreen extends ConsumerStatefulWidget {
   final InsightsRange range;
@@ -35,7 +36,10 @@ class _ObligationsReviewScreenState
     final s = SunnahStrings.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.obligationsReviewTitle)),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: Text(s.obligationsReviewTitle),
+      ),
       body: FutureBuilder<_ObligationsReviewData?>(
         future: _loadData(),
         builder: (context, snapshot) {

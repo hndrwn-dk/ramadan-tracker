@@ -8,17 +8,20 @@ import 'package:ramadan_tracker/domain/services/quran_service.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/quran_icon.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class QuranTracker extends ConsumerStatefulWidget {
   final int seasonId;
   final int dayIndex;
   final int habitId;
+  final bool controlsOnly;
 
   const QuranTracker({
     super.key,
     required this.seasonId,
     required this.dayIndex,
     required this.habitId,
+    this.controlsOnly = false,
   });
 
   @override
@@ -49,40 +52,42 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const QuranIcon(size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        getHabitDisplayName(context, 'quran_pages'),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
+              if (!widget.controlsOnly) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const QuranIcon(size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          getHabitDisplayName(context, 'quran_pages'),
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        child: Text(
-                          AppLocalizations.of(context)!.juzProgress(juzDisplay, juzTarget),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)!.juzProgress(juzDisplay, juzTarget),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 children: [
                   IconButton(
@@ -160,12 +165,12 @@ class _QuranTrackerState extends ConsumerState<QuranTracker> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                              : Theme.of(context).cardColor,
+                              : AppSurface.fillColor(context),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                : AppSurface.borderColor(context),
                             width: isSelected ? 2 : 1,
                           ),
                         ),

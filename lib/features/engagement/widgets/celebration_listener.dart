@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/achievement_share_card.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 /// Shows achievement unlock modals from [pendingCelebrationsProvider].
@@ -56,7 +57,25 @@ class CelebrationListener extends ConsumerWidget {
             ],
           ],
         ),
+        actionsAlignment: MainAxisAlignment.center,
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         actions: [
+          TextButton(
+            onPressed: () async {
+              final engagement = ref.read(userEngagementProvider).valueOrNull;
+              final unlocked = ref.read(unlockedAchievementsProvider).valueOrNull ?? [];
+              if (engagement != null) {
+                await showAchievementShareDialog(
+                  context: ctx,
+                  companionLevel: engagement.companionLevel,
+                  totalXp: engagement.totalXp,
+                  unlockedCount: unlocked.length,
+                  highlights: [definition],
+                );
+              }
+            },
+            child: Text(l10n.shareAction),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
@@ -131,6 +150,48 @@ class CelebrationListener extends ConsumerWidget {
         return l10n.achievementLevel5Title;
       case 'achievementLevel5Desc':
         return l10n.achievementLevel5Desc;
+      default:
+        return key;
+    }
+  }
+}
+
+/// Shared title lookup for celebration + gallery + share cards.
+class CelebrationListenerHelper {
+  CelebrationListenerHelper._();
+
+  static String titleFor(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'achievementFirstLogTitle':
+        return l10n.achievementFirstLogTitle;
+      case 'achievementFirstFullDayTitle':
+        return l10n.achievementFirstFullDayTitle;
+      case 'achievementStreak3Title':
+        return l10n.achievementStreak3Title;
+      case 'achievementStreak7Title':
+        return l10n.achievementStreak7Title;
+      case 'achievementStreak14Title':
+        return l10n.achievementStreak14Title;
+      case 'achievementQuranHalfTitle':
+        return l10n.achievementQuranHalfTitle;
+      case 'achievementQuranCompleteTitle':
+        return l10n.achievementQuranCompleteTitle;
+      case 'achievementSeasonCompleteTitle':
+        return l10n.achievementSeasonCompleteTitle;
+      case 'achievementFirstSunnahTitle':
+        return l10n.achievementFirstSunnahTitle;
+      case 'achievementSeninKamis4Title':
+        return l10n.achievementSeninKamis4Title;
+      case 'achievementShawwalCompleteTitle':
+        return l10n.achievementShawwalCompleteTitle;
+      case 'achievementReflectionFirstTitle':
+        return l10n.achievementReflectionFirstTitle;
+      case 'achievementLast10Title':
+        return l10n.achievementLast10Title;
+      case 'achievementWeeklyPerfectTitle':
+        return l10n.achievementWeeklyPerfectTitle;
+      case 'achievementLevel5Title':
+        return l10n.achievementLevel5Title;
       default:
         return key;
     }

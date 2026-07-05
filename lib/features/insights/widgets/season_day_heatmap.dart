@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/features/insights/services/season_insights_service.dart';
 
@@ -65,7 +66,7 @@ class SeasonDayHeatmap extends StatelessWidget {
                       color: _getStatusColor(dayStatus.status),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                        color: AppSurface.borderColor(context),
                         width: 1,
                       ),
                     ),

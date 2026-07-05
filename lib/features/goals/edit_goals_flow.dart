@@ -4,8 +4,10 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/habit_provider.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step3_habits.dart';
-import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step4_goals.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step5_goals_quran_dhikr.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step6_goals_sedekah.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class EditGoalsFlow extends ConsumerStatefulWidget {
   final int seasonId;
@@ -101,8 +103,15 @@ class _EditGoalsFlowState extends ConsumerState<EditGoalsFlow> {
           onPrevious: () => Navigator.pop(context),
         );
       case 1:
-        return OnboardingStep4Goals(
+        return OnboardingStep5GoalsQuranDhikr(
           key: const ValueKey(1),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 2:
+        return OnboardingStep6GoalsSedekah(
+          key: const ValueKey(2),
           data: _data,
           onNext: () async {
             await _saveGoals();
@@ -123,7 +132,7 @@ class _EditGoalsFlowState extends ConsumerState<EditGoalsFlow> {
   }
 
   void _nextStep() {
-    if (_currentStep < 1) {
+    if (_currentStep < 2) {
       setState(() {
         _lastStep = _currentStep;
         _currentStep = _currentStep + 1;
@@ -232,6 +241,7 @@ class _EditGoalsFlowState extends ConsumerState<EditGoalsFlow> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
+          leading: const AppBackButton(),
           title: const Text('Edit Goals'),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -240,6 +250,7 @@ class _EditGoalsFlowState extends ConsumerState<EditGoalsFlow> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Edit Goals'),
       ),
       body: ClipRect(

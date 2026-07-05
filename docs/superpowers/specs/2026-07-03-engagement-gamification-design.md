@@ -1,86 +1,55 @@
-# Engagement & Gamification Design
+# Engagement & Gamification Design Spec
 
-**Date:** 2026-07-03  
-**Status:** Approved for implementation
+**Status:** Approved — aligned with shipped code (July 2026)  
+**Principle:** Ibadah encouragement, not fitness competition. Private by default. Excused days (haid, nifas, sick) never punish streaks or achievements.
 
-## Goal
+## Already shipped (do not replace)
 
-Add worship-appropriate gamification (achievements, XP, companion level, daily quests, celebrations) to increase daily engagement across Ramadan, year-round sunnah, and insights — without accounts, leaderboards, or shame mechanics.
+| Area | Implementation |
+|------|----------------|
+| Schema v7 | `user_achievements`, `user_engagement` — `app_database.dart` |
+| Achievements | 15 keys in `AchievementCatalog`, `AchievementService`, celebration modal |
+| XP / levels | `CompanionLevel`, `userEngagementDao.addXp`, Today journey strip, Month journey card |
+| Daily quests | `DailyQuestService` + `CompactDailyQuestsStrip` on Today hero (3/day, 15 XP) |
+| Gallery | `AchievementsScreen`, achievement dots on Month calendar |
+| Navigation | 5 tabs; Settings via app bar; Sunnah label localized |
+| Widget | Android read-only Hijri + sunnah status |
+| Weekly | `WeeklyAchievementsCard`, localized `WeeklyReviewBottomSheet` |
+| Post-season | `SeasonTrophySheet` on Month tab |
+| **Today checklist (Jul 2026 UX)** | `TodayChecklistBody` + `ChecklistHabitCard` — progress header, typed habits, uzur fasting, accordion numeric chips — see [UX roadmap status](2026-07-05-engagement-ux-roadmap-status.md) |
+| **Today trends** | `TodayHabitTrendsCard` on home hero area |
 
-## Principles
+## Mercy rules
 
-1. **Private by default** — all progress stays on device; sharing is opt-in via image cards.
-2. **Mercy rules** — excused fasting (sick, haid, nifas) never breaks streaks or blocks achievements tied to consistency.
-3. **Gentle tone** — celebrate milestones; never punish missed days with negative copy.
-4. **Offline-first** — no network required; engagement data in Drift alongside habit data.
+- Streak achievements use score ≥ 60 on non-excused days (fasting excused still counts other habits).
+- Streak shields: 2 per season, auto-applied on excused fasting days (see `StreakShieldService`).
+- No shame notifications; celebrations are opt-in dismiss.
 
-## Data model (schema v7)
+## Companion tiers (localized)
 
-### `user_achievements`
+| Level | EN | ID |
+|-------|----|----|
+| 1–3 | Mubtadi | Mubtadi |
+| 4–6 | Mumayyiz | Mumayyiz |
+| 7–10 | Mujahid | Mujahid |
 
-| Column | Type | Notes |
-|--------|------|-------|
-| achievement_key | TEXT PK | Stable id e.g. `first_log`, `streak_7` |
-| unlocked_at | INT | Epoch ms |
-| season_id | INT nullable | Null = global / year-round |
+XP thresholds: 0, 100, 250, 500, 900, 1400, 2000, 2800, 3800, 5000.
 
-### `user_engagement`
+## Phase 2 extensions (additive)
 
-Single-row table (id=1):
+- Pre-Ramadan prep quests (KV, no season required)
+- Sunnah monthly challenge progress (Senin-Kamis count, Shawwal)
+- Weekly review quest completion summary
 
-| Column | Type | Notes |
-|--------|------|-------|
-| total_xp | INT | Cumulative XP |
-| companion_level | INT | Derived from XP tiers |
-| updated_at | INT | Epoch ms |
+## Phase 3–5 extensions (additive)
 
-Achievement **definitions** live in Dart (`AchievementDefinitions`) — not DB — for easy localization and versioning.
+- Streak shields UI on Today journey strip
+- Widget quick-log sunnah fast (Android intent)
+- Achievement share card (extends sunnah share pattern)
+- Season report trophy grid
+- Habit mastery tiers (Bronze/Silver/Gold by season consistency)
+- Rotating reflection prompts on Today
 
-## Launch achievements (~15)
+## Out of scope
 
-| Key | Trigger | XP |
-|-----|---------|-----|
-| `first_log` | Any habit logged | 10 |
-| `first_full_day` | Score >= 80% on any day | 25 |
-| `streak_3` | 3-day habit streak | 30 |
-| `streak_7` | 7-day streak | 50 |
-| `streak_14` | 14-day streak | 75 |
-| `quran_half` | Quran plan 50% season progress | 40 |
-| `quran_complete` | Quran plan 100% | 100 |
-| `season_complete` | Active season ended with >= 1 log | 150 |
-| `first_sunnah` | First sunnah fast logged | 20 |
-| `senin_kamis_4` | 4 Mon/Thu fasts in one month | 40 |
-| `shawwal_complete` | Shawwal 6 fasts in one season window | 60 |
-| `reflection_first` | First mood/reflection saved | 15 |
-| `last_10_hero` | Log on any last-10 night | 35 |
-| `weekly_perfect` | 7 consecutive days score >= 60 | 80 |
-| `companion_level_5` | Reach companion level 5 | 0 (meta) |
-
-## Companion levels
-
-XP thresholds: L1=0, L2=100, L3=250, L4=500, L5=900, L6=1400, L7=2000, L8=2800, L9=3800, L10=5000.
-
-Localized tier names: Mubtadi (Beginner) through Mujahid (Striving).
-
-## UI surfaces (Phase 1)
-
-- **Today hero** — compact badge strip (3 recent + count)
-- **Celebration modal** — on unlock (icon, title, XP gained)
-- **Achievements screen** — grid from Settings or Insights entry; locked/unlocked states
-- **ScoreRing** — localize "Score" label
-
-## Phase 2+ (deferred in Phase 1 code)
-
-- Daily quests card on Today
-- Monthly sunnah challenges
-- Month journey map
-- Widget quick-log
-- Season trophy case in season report
-
-## Notifications
-
-Achievement unlocks show in-app modal only in Phase 1. Optional local notification in Phase 2 (rate-limited).
-
-## l10n
-
-All new strings in `app_en.arb` and `app_id.arb`.
+Accounts, cloud sync, leaderboards, iOS widget parity, paid economy.

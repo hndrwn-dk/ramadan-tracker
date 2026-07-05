@@ -9,6 +9,7 @@ import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/features/insights/models/insights_range.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class SedekahReviewScreen extends ConsumerStatefulWidget {
   final InsightsRange range;
@@ -29,6 +30,7 @@ class _SedekahReviewScreenState extends ConsumerState<SedekahReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Sedekah Financial Review'),
       ),
       body: FutureBuilder<Map<String, dynamic>>(

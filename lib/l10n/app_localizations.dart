@@ -1496,6 +1496,24 @@ abstract class AppLocalizations {
   /// **'Sahur in {time}'**
   String sahurIn(String time);
 
+  /// Countdown to next day's sahur
+  ///
+  /// In en, this message translates to:
+  /// **'Sahur tomorrow in {time}'**
+  String sahurTomorrowIn(String time);
+
+  /// No description provided for @todayFastingCountdownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get todayFastingCountdownLabel;
+
+  /// No description provided for @todayFastingCountdownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable location for live Sahur and Iftar times'**
+  String get todayFastingCountdownHint;
+
   /// Sahur time passed
   ///
   /// In en, this message translates to:
@@ -3062,6 +3080,84 @@ abstract class AppLocalizations {
   /// **'Today\'s checklist'**
   String get todayChecklistTitle;
 
+  /// Checklist title when viewing a non-today season day
+  ///
+  /// In en, this message translates to:
+  /// **'Day {day} checklist'**
+  String dayChecklistTitle(int day);
+
+  /// No description provided for @checklistProgressDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total} done'**
+  String checklistProgressDone(int completed, int total);
+
+  /// No description provided for @checklistNudgeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s begin today\'s ibadah'**
+  String get checklistNudgeStart;
+
+  /// No description provided for @checklistNudgePartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going, you\'re doing well'**
+  String get checklistNudgePartial;
+
+  /// No description provided for @checklistNudgeAlmost.
+  ///
+  /// In en, this message translates to:
+  /// **'Alhamdulillah, almost there'**
+  String get checklistNudgeAlmost;
+
+  /// No description provided for @checklistNudgeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Alhamdulillah, all done for today'**
+  String get checklistNudgeDone;
+
+  /// No description provided for @checklistNotDoneYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not done yet'**
+  String get checklistNotDoneYet;
+
+  /// No description provided for @checklistPagesOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {target} pages'**
+  String checklistPagesOf(int current, int target);
+
+  /// No description provided for @checklistCountOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {target}'**
+  String checklistCountOf(int current, int target);
+
+  /// No description provided for @checklistPrayersOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {target}'**
+  String checklistPrayersOf(int current, int target);
+
+  /// No description provided for @checklistEnterAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter amount'**
+  String get checklistEnterAmount;
+
+  /// No description provided for @checklistEnterPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter pages read'**
+  String get checklistEnterPages;
+
+  /// No description provided for @checklistEnterDhikr.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter dhikr count'**
+  String get checklistEnterDhikr;
+
   /// No description provided for @weeklyAchievementsTitle.
   ///
   /// In en, this message translates to:
@@ -3241,6 +3337,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View achievements'**
   String get viewAchievements;
+
+  /// No description provided for @companionTierMubtadi.
+  ///
+  /// In en, this message translates to:
+  /// **'Mubtadi — Beginner'**
+  String get companionTierMubtadi;
+
+  /// No description provided for @companionTierMumayyiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Mumayyiz — Steady'**
+  String get companionTierMumayyiz;
+
+  /// No description provided for @companionTierMujahid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mujahid — Committed'**
+  String get companionTierMujahid;
+
+  /// No description provided for @streakShieldsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} mercy shields left this season'**
+  String streakShieldsRemaining(int count);
+
+  /// No description provided for @coachMarkDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get coachMarkDismiss;
+
+  /// No description provided for @coachMarkTodayQuests.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete up to 3 small goals each day for bonus XP.'**
+  String get coachMarkTodayQuests;
+
+  /// No description provided for @coachMarkTodayJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap your level to view achievements and companion progress.'**
+  String get coachMarkTodayJourney;
+
+  /// No description provided for @coachMarkMonthCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day to log habits or review your month at a glance.'**
+  String get coachMarkMonthCalendar;
+
+  /// No description provided for @preRamadanQuestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prep quests'**
+  String get preRamadanQuestsTitle;
+
+  /// No description provided for @preRamadanQuestReviewPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Review or create your Ramadan season'**
+  String get preRamadanQuestReviewPlan;
+
+  /// No description provided for @preRamadanQuestLogSunnah.
+  ///
+  /// In en, this message translates to:
+  /// **'Log a sunnah fast today'**
+  String get preRamadanQuestLogSunnah;
+
+  /// No description provided for @preRamadanQuestReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on Sahur or Iftar reminders'**
+  String get preRamadanQuestReminders;
+
+  /// No description provided for @preRamadanQuestCreateSeason.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your Ramadan season'**
+  String get preRamadanQuestCreateSeason;
+
+  /// No description provided for @weeklyQuestSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total} daily quests completed this week'**
+  String weeklyQuestSummary(int completed, int total);
+
+  /// No description provided for @weeklyReviewAudit.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit'**
+  String get weeklyReviewAudit;
+
+  /// No description provided for @weeklyReviewDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day {day}'**
+  String weeklyReviewDayLabel(int day);
+
+  /// No description provided for @sunnahMonthlyChallengeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly challenge'**
+  String get sunnahMonthlyChallengeTitle;
+
+  /// No description provided for @sunnahMonthlySeninKamisProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon/Thu fasts: {done} / {target}'**
+  String sunnahMonthlySeninKamisProgress(int done, int target);
+
+  /// No description provided for @sunnahMonthlyShawwalProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Shawwal days: {done} / {target}'**
+  String sunnahMonthlyShawwalProgress(int done, int target);
+
+  /// No description provided for @todayQadhaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Zakat, Fidyah, and missed fast obligations'**
+  String get todayQadhaSubtitle;
+
+  /// No description provided for @shareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareAction;
+
+  /// No description provided for @achievementShareTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan Tracker — offline worship companion'**
+  String get achievementShareTagline;
+
+  /// No description provided for @reflectionPromptGratitude.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you grateful for today?'**
+  String get reflectionPromptGratitude;
+
+  /// No description provided for @reflectionPromptChallenge.
+  ///
+  /// In en, this message translates to:
+  /// **'What was hardest today, and how did you respond?'**
+  String get reflectionPromptChallenge;
+
+  /// No description provided for @reflectionPromptDua.
+  ///
+  /// In en, this message translates to:
+  /// **'Is there a dua on your heart tonight?'**
+  String get reflectionPromptDua;
+
+  /// No description provided for @reflectionPromptQuran.
+  ///
+  /// In en, this message translates to:
+  /// **'What verse or lesson stayed with you today?'**
+  String get reflectionPromptQuran;
+
+  /// No description provided for @reflectionPromptCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Who did you support or check on today?'**
+  String get reflectionPromptCommunity;
+
+  /// No description provided for @reflectionPromptPatience.
+  ///
+  /// In en, this message translates to:
+  /// **'Where did you practice sabr today?'**
+  String get reflectionPromptPatience;
+
+  /// No description provided for @reflectionPromptTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'What is one intention for tomorrow?'**
+  String get reflectionPromptTomorrow;
+
+  /// No description provided for @seasonReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Season Report'**
+  String get seasonReportTitle;
+
+  /// No description provided for @seasonReportSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Season Summary'**
+  String get seasonReportSummary;
+
+  /// No description provided for @seasonReportHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit Summary'**
+  String get seasonReportHabits;
+
+  /// No description provided for @seasonReportComparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Season Comparison'**
+  String get seasonReportComparison;
+
+  /// No description provided for @seasonReportAvgScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Average score: {score}'**
+  String seasonReportAvgScore(String score);
+
+  /// No description provided for @seasonReportPerfectDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong days: {done} / {total}'**
+  String seasonReportPerfectDays(int done, int total);
+
+  /// No description provided for @seasonReportLongestStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest streak: {days} days'**
+  String seasonReportLongestStreak(int days);
+
+  /// No description provided for @seasonReportTrophies.
+  ///
+  /// In en, this message translates to:
+  /// **'Achievement trophies'**
+  String get seasonReportTrophies;
+
+  /// No description provided for @habitMasteryBronze.
+  ///
+  /// In en, this message translates to:
+  /// **'Bronze'**
+  String get habitMasteryBronze;
+
+  /// No description provided for @habitMasterySilver.
+  ///
+  /// In en, this message translates to:
+  /// **'Silver'**
+  String get habitMasterySilver;
+
+  /// No description provided for @habitMasteryGold.
+  ///
+  /// In en, this message translates to:
+  /// **'Gold'**
+  String get habitMasteryGold;
+
+  /// No description provided for @widgetLogSunnah.
+  ///
+  /// In en, this message translates to:
+  /// **'Log fast'**
+  String get widgetLogSunnah;
 
   /// Weekly review bottom sheet title
   ///
@@ -3481,6 +3823,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reach 60% daily score'**
   String get questScore60;
+
+  /// No description provided for @todayGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get todayGreetingMorning;
+
+  /// No description provided for @todayGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get todayGreetingAfternoon;
+
+  /// No description provided for @todayGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get todayGreetingEvening;
+
+  /// No description provided for @todayNudgeDayOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Day one — small steps count. Start with what you can today.'**
+  String get todayNudgeDayOne;
+
+  /// No description provided for @todayNudgeEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Build your rhythm — each day strengthens the next.'**
+  String get todayNudgeEarly;
+
+  /// No description provided for @todayNudgeMid.
+  ///
+  /// In en, this message translates to:
+  /// **'You are in the flow. Stay consistent with what matters most.'**
+  String get todayNudgeMid;
+
+  /// No description provided for @todayNudgeLastTen.
+  ///
+  /// In en, this message translates to:
+  /// **'The blessed final stretch — make these nights count.'**
+  String get todayNudgeLastTen;
+
+  /// No description provided for @todayHomeLogPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Track fasting, prayer, Quran, dhikr, and sedekah in one checklist.'**
+  String get todayHomeLogPrompt;
+
+  /// No description provided for @todayHomeCompanionLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level} · {xp} XP'**
+  String todayHomeCompanionLine(int level, int xp);
+
+  /// No description provided for @todayHomeXpToNext.
+  ///
+  /// In en, this message translates to:
+  /// **'{xp} XP to level {level}'**
+  String todayHomeXpToNext(int xp, int level);
+
+  /// No description provided for @onboardingLanguageStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 1 · Language'**
+  String get onboardingLanguageStep;
+
+  /// No description provided for @onboardingLanguageWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome — let\'s personalize your Ramadan journey'**
+  String get onboardingLanguageWelcome;
+
+  /// No description provided for @onboardingLanguageNudge.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change this anytime in Settings.'**
+  String get onboardingLanguageNudge;
+
+  /// No description provided for @languageOptionEnHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Default · International'**
+  String get languageOptionEnHint;
+
+  /// No description provided for @languageOptionIdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Local language · Indonesia'**
+  String get languageOptionIdHint;
+
+  /// No description provided for @onboardingValueOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Works fully offline — no account needed'**
+  String get onboardingValueOffline;
+
+  /// No description provided for @onboardingValuePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data stays private on this device'**
+  String get onboardingValuePrivate;
+
+  /// No description provided for @onboardingValueRamadan.
+  ///
+  /// In en, this message translates to:
+  /// **'Built for fasting, prayer, Quran, and daily worship'**
+  String get onboardingValueRamadan;
+
+  /// No description provided for @onboardingStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String onboardingStepProgress(int current, int total);
+
+  /// No description provided for @onboardingWelcomeNudge.
+  ///
+  /// In en, this message translates to:
+  /// **'A calm companion for your Ramadan — setup takes about one minute.'**
+  String get onboardingWelcomeNudge;
+
+  /// No description provided for @onboardingSkipForNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get onboardingSkipForNow;
+
+  /// No description provided for @onboardingLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable location'**
+  String get onboardingLocationTitle;
+
+  /// No description provided for @onboardingLocationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For automatic imsak, sahur, and iftar times'**
+  String get onboardingLocationSubtitle;
+
+  /// No description provided for @onboardingAllowLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location'**
+  String get onboardingAllowLocation;
+
+  /// No description provided for @onboardingGoalsQuranDhikrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Goals — Quran & Dhikr'**
+  String get onboardingGoalsQuranDhikrTitle;
+
+  /// No description provided for @onboardingGoalsSedekahTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sedekah Goal'**
+  String get onboardingGoalsSedekahTitle;
+
+  /// No description provided for @onboardingReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re ready!'**
+  String get onboardingReadyTitle;
+
+  /// No description provided for @onboardingRemindersFastingSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Fasting times'**
+  String get onboardingRemindersFastingSection;
+
+  /// No description provided for @onboardingRemindersGoalsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily goals'**
+  String get onboardingRemindersGoalsSection;
+
+  /// No description provided for @onboardingRemindersGoalsMaster.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal reminders'**
+  String get onboardingRemindersGoalsMaster;
+
+  /// No description provided for @onboardingRemindersGoalsMasterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle nudges if today\'s target is not done yet'**
+  String get onboardingRemindersGoalsMasterHint;
+
+  /// No description provided for @onboardingRemindersCustomizeGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize per goal'**
+  String get onboardingRemindersCustomizeGoals;
+
+  /// No description provided for @onboardingRemindersAdjustTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust timing'**
+  String get onboardingRemindersAdjustTiming;
+
+  /// No description provided for @todayTrendsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trends'**
+  String get todayTrendsTitle;
+
+  /// No description provided for @todayTrendsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get todayTrendsSubtitle;
+
+  /// No description provided for @todayTrendQuranPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} PG/DAY'**
+  String todayTrendQuranPerDay(int count);
+
+  /// No description provided for @todayTrendCountPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/DAY'**
+  String todayTrendCountPerDay(int count);
+
+  /// No description provided for @todayTrendPrayersPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{avg}/5 AVG'**
+  String todayTrendPrayersPerDay(String avg);
+
+  /// No description provided for @todayTrendSedekahPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount}/DAY'**
+  String todayTrendSedekahPerDay(String amount);
+
+  /// No description provided for @todayTrendDaysDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total} DAYS'**
+  String todayTrendDaysDone(int done, int total);
+
+  /// No description provided for @seasonShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Ramadan season'**
+  String get seasonShareTitle;
+
+  /// No description provided for @seasonShareTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan Tracker — offline worship companion'**
+  String get seasonShareTagline;
+
+  /// No description provided for @seasonReportViewReport.
+  ///
+  /// In en, this message translates to:
+  /// **'View season report'**
+  String get seasonReportViewReport;
+
+  /// No description provided for @seasonComparisonAvgScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg score'**
+  String get seasonComparisonAvgScore;
+
+  /// No description provided for @seasonComparisonStrongDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong days'**
+  String get seasonComparisonStrongDays;
 }
 
 class _AppLocalizationsDelegate

@@ -16,6 +16,7 @@ import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
+import 'package:ramadan_tracker/domain/services/widget_launch_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ramadan_tracker/app/platform_adaptive.dart';
@@ -97,14 +98,15 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Reschedule notifications on app startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _rescheduleNotifications();
+      WidgetLaunchService.initialize(ref);
     });
   }
 
   @override
   void dispose() {
+    WidgetLaunchService.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class FastingSummarySheet extends ConsumerWidget {
   final int seasonId;
@@ -32,7 +33,7 @@ class FastingSummarySheet extends ConsumerWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              color: AppSurface.borderColor(context),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

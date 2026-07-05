@@ -7,7 +7,9 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class SunnahInsightsHeroCard extends StatelessWidget {
   final SunnahInsightsData data;
@@ -22,6 +24,7 @@ class SunnahInsightsHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final year = DateTime.now().year;
 
     return PremiumCard(
@@ -69,7 +72,7 @@ class SunnahInsightsHeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              ScoreRing(score: data.yearProgressPercent.toDouble()),
+              ScoreRing(score: data.yearProgressPercent.toDouble(), label: l10n.scoreLabel),
             ],
           ),
           const SizedBox(height: 16),
@@ -415,7 +418,7 @@ class SunnahRecentHeatmapCard extends StatelessWidget {
                   border: isToday
                       ? Border.all(color: scheme.primary, width: 2)
                       : Border.all(
-                          color: scheme.outline.withValues(alpha: 0.15),
+                          color: AppSurface.borderColor(context),
                         ),
                 ),
                 alignment: Alignment.center,

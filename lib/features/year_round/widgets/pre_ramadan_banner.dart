@@ -4,6 +4,7 @@ import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_dates.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/pre_ramadan_quests_strip.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 
 /// Where the pre-Ramadan countdown banner is shown — copy and CTA differ.
@@ -81,6 +82,7 @@ class PreRamadanBanner extends ConsumerWidget {
               ),
               if (showButton &&
                   target == PreRamadanBannerTarget.today) ...[
+                const PreRamadanQuestsStrip(),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,

@@ -6,7 +6,8 @@ import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step2_season.dart';
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step3_habits.dart';
-import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step4_goals.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step5_goals_quran_dhikr.dart';
+import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step6_goals_sedekah.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 class CreateSeasonFlow extends ConsumerStatefulWidget {
@@ -39,8 +40,15 @@ class _CreateSeasonFlowState extends ConsumerState<CreateSeasonFlow> {
           onPrevious: _previousStep,
         );
       case 2:
-        return OnboardingStep4Goals(
+        return OnboardingStep5GoalsQuranDhikr(
           key: const ValueKey(2),
+          data: _data,
+          onNext: _nextStep,
+          onPrevious: _previousStep,
+        );
+      case 3:
+        return OnboardingStep6GoalsSedekah(
+          key: const ValueKey(3),
           data: _data,
           onNext: _finish,
           onPrevious: _previousStep,
@@ -56,7 +64,7 @@ class _CreateSeasonFlowState extends ConsumerState<CreateSeasonFlow> {
   }
 
   void _nextStep() {
-    if (_currentStep < 2) {
+    if (_currentStep < 3) {
       setState(() {
         _lastStep = _currentStep;
         _currentStep = _currentStep + 1;
@@ -136,7 +144,9 @@ class _CreateSeasonFlowState extends ConsumerState<CreateSeasonFlow> {
                     _buildProgressLine(_currentStep > 0),
                     _buildProgressStep(1, AppLocalizations.of(context)!.habits),
                     _buildProgressLine(_currentStep > 1),
-                    _buildProgressStep(2, AppLocalizations.of(context)!.goals),
+                    _buildProgressStep(2, AppLocalizations.of(context)!.quranGoal),
+                    _buildProgressLine(_currentStep > 2),
+                    _buildProgressStep(3, AppLocalizations.of(context)!.onboardingGoalsSedekahTitle),
                   ],
                 ),
               ),

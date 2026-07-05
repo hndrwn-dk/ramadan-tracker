@@ -4,6 +4,7 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
 import 'package:ramadan_tracker/utils/ramadan_dates.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 /// Shared CTAs for no-season and post-Ramadan flows.
 class YearRoundActions extends ConsumerWidget {
@@ -82,6 +83,7 @@ class _RamadanNearCard extends ConsumerWidget {
           colors: [scheme.primary, scheme.primaryContainer],
         ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppSurface.borderColor(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

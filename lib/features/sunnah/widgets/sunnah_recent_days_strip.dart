@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_month_calendar.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 /// Compact rolling window for the Sunnah tab — not a full month calendar.
 class SunnahRecentDaysStrip extends ConsumerWidget {
@@ -141,7 +142,7 @@ class SunnahRecentDaysStrip extends ConsumerWidget {
                       border: isToday
                           ? Border.all(color: scheme.primary, width: 2)
                           : Border.all(
-                              color: scheme.outline.withValues(alpha: 0.12),
+                              color: AppSurface.borderColor(context),
                             ),
                     ),
                     child: Column(

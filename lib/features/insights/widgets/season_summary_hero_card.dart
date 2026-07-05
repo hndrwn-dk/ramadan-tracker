@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/score_ring.dart';
 
 /// Season Summary Hero Card for Season tab
@@ -27,6 +28,7 @@ class SeasonSummaryHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +70,7 @@ class SeasonSummaryHeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              ScoreRing(score: seasonScore.toDouble()),
+              ScoreRing(score: seasonScore.toDouble(), label: l10n.scoreLabel),
             ],
           ),
           const SizedBox(height: 16),

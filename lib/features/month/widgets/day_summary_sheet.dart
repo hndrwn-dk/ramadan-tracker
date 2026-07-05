@@ -6,8 +6,6 @@ import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_entry_provider.dart';
 import 'package:ramadan_tracker/data/providers/habit_provider.dart';
-import 'package:ramadan_tracker/data/providers/tab_provider.dart';
-import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/domain/services/completion_service.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
@@ -17,6 +15,8 @@ import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/widgets/prayers_icon.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
+import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
 
 class DaySummarySheet extends ConsumerWidget {
   final int seasonId;
@@ -51,7 +51,7 @@ class DaySummarySheet extends ConsumerWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              color: AppSurface.borderColor(context),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -133,7 +133,7 @@ class DaySummarySheet extends ConsumerWidget {
                                     final score = snapshot.data ?? 0.0;
                                     return Column(
                                       children: [
-                                        ScoreRing(score: score),
+                                        ScoreRing(score: score, label: l10n.scoreLabel),
                                         const SizedBox(height: 12),
                                         Text(
                                           l10n.percentComplete(int.parse(score.toStringAsFixed(0))),
@@ -194,8 +194,7 @@ class DaySummarySheet extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      ref.read(selectedDayIndexProvider.notifier).state = dayIndex;
-                      ref.read(tabIndexProvider.notifier).state = 0;
+                      openDayChecklist(context, ref, dayIndex: dayIndex);
                     },
                     child: Text(l10n.viewDayButton),
                   ),
@@ -312,12 +311,10 @@ class DaySummarySheet extends ConsumerWidget {
 
         return Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-            ),
+          decoration: AppSurface.nestedDecoration(
+            context,
+            color: AppSurface.fillColor(context),
+            borderRadius: 12,
           ),
           child: Row(
             children: [
@@ -542,12 +539,10 @@ class DaySummarySheet extends ConsumerWidget {
         
         return Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-            ),
+          decoration: AppSurface.nestedDecoration(
+            context,
+            color: AppSurface.fillColor(context),
+            borderRadius: 12,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,7 +613,7 @@ class DaySummarySheet extends ConsumerWidget {
             border: Border.all(
               color: completed
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  : AppSurface.borderColor(context),
               width: completed ? 2 : 1,
             ),
           ),

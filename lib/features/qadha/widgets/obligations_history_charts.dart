@@ -8,6 +8,7 @@ import 'package:ramadan_tracker/features/qadha/services/obligations_history_anal
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class ObligationsHistoryCharts extends StatelessWidget {
   final List<QadhaLedgerData> entries;
@@ -596,7 +597,7 @@ class ObligationsHistoryCharts extends StatelessWidget {
               BarChartRodData(
                 toY: 0,
                 width: barWidth,
-                color: scheme.outline.withValues(alpha: 0.08),
+                color: AppSurface.borderColor(context),
               ),
           ],
         );

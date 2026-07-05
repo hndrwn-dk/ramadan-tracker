@@ -216,4 +216,32 @@ class DailyQuestService {
       allHabits: habits,
     );
   }
+
+  /// Quest completion totals for the last 7 season days ending at [endDayIndex].
+  static Future<WeeklyQuestSummary> weeklySummary({
+    required AppDatabase database,
+    required int seasonId,
+    required int endDayIndex,
+  }) async {
+    var completed = 0;
+    var total = 0;
+    final start = (endDayIndex - 6).clamp(1, endDayIndex);
+    for (var day = start; day <= endDayIndex; day++) {
+      final progress = await evaluateProgress(
+        database: database,
+        seasonId: seasonId,
+        dayIndex: day,
+      );
+      total += progress.length;
+      completed += progress.where((p) => p.completed).length;
+    }
+    return WeeklyQuestSummary(completed: completed, total: total);
+  }
+}
+
+class WeeklyQuestSummary {
+  final int completed;
+  final int total;
+
+  const WeeklyQuestSummary({required this.completed, required this.total});
 }

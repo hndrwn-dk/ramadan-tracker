@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 /// Shown when a Ramadan season has ended (Plan tab, reusable elsewhere).
 class SeasonCompletedCard extends ConsumerWidget {
@@ -12,10 +13,9 @@ class SeasonCompletedCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+    return AppSurface(
+      padding: const EdgeInsets.all(24),
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -68,7 +68,6 @@ class SeasonCompletedCard extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

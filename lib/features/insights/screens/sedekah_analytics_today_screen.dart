@@ -9,6 +9,7 @@ import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 /// Today-only financial review screen for Sedekah.
 class SedekahAnalyticsTodayScreen extends ConsumerStatefulWidget {
@@ -32,6 +33,7 @@ class _SedekahAnalyticsTodayScreenState extends ConsumerState<SedekahAnalyticsTo
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Sedekah Today'),
       ),
       body: seasonAsync.when(

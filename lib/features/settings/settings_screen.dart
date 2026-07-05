@@ -24,6 +24,7 @@ import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -80,19 +81,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
+        leading: AppBackButton(
           onPressed: () {
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();

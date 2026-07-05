@@ -9,7 +9,9 @@ import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dar
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_recent_days_strip.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_ramadan_focus_card.dart';
+import 'package:ramadan_tracker/data/providers/widget_launch_provider.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_share_card.dart';
+import 'package:ramadan_tracker/features/engagement/widgets/sunnah_monthly_challenge_card.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/hijri_calendar.dart';
@@ -18,11 +20,33 @@ import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
-class SunnahScreen extends ConsumerWidget {
+class SunnahScreen extends ConsumerStatefulWidget {
   const SunnahScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SunnahScreen> createState() => _SunnahScreenState();
+}
+
+class _SunnahScreenState extends ConsumerState<SunnahScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _consumeQuickLogRequest());
+  }
+
+  void _consumeQuickLogRequest() {
+    if (ref.read(widgetQuickLogSunnahProvider)) {
+      ref.read(widgetQuickLogSunnahProvider.notifier).state = false;
+      showSunnahStatusSheet(context, ref, DateTime.now());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<bool>(widgetQuickLogSunnahProvider, (prev, next) {
+      if (next) _consumeQuickLogRequest();
+    });
+
     final l10n = AppLocalizations.of(context)!;
     final s = SunnahStrings.of(context);
     final seasonState = ref.watch(seasonStateProvider);
@@ -65,15 +89,8 @@ class _RamadanModeBody extends ConsumerWidget {
         const SunnahRamadanFocusCard(),
         const SizedBox(height: 16),
         _QadhaEntryTile(s: s, yearRound: false),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         _UpcomingEvents(s: s, date: today),
-        const SizedBox(height: 24),
-        Text(
-          s.approxNote,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-        ),
       ],
     );
   }
@@ -100,6 +117,8 @@ class _YearRoundBody extends ConsumerWidget {
         _HijriHeader(s: s, date: today),
         const SizedBox(height: 16),
         _TodayCard(s: s, date: today),
+        const SizedBox(height: 16),
+        const SunnahMonthlyChallengeCard(),
         const SizedBox(height: 16),
         if (SunnahFastingRules.typesFor(today).contains(SunnahType.syawal) ||
             HijriCalendar.fromGregorian(today).month == 10)
@@ -159,15 +178,8 @@ class _YearRoundBody extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         _UpcomingEvents(s: s, date: today),
-        const SizedBox(height: 24),
-        Text(
-          s.approxNote,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-        ),
       ],
     );
   }
@@ -384,7 +396,8 @@ class _QadhaEntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return PremiumCard(
+      padding: EdgeInsets.zero,
       child: ListTile(
         leading: const Icon(Icons.volunteer_activism),
         title: Text(s.obligationsTitle),
@@ -470,31 +483,59 @@ class _UpcomingEvents extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final events = IslamicEvents.upcoming(date, limit: 6);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(s.upcomingEvents,
-            style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        ...events.map((e) {
-          final label = s.id ? e.event.nameId : e.event.nameEn;
-          final when = e.daysUntil == 0
-              ? s.today
-              : e.daysUntil == 1
-                  ? s.tomorrow
-                  : '${e.daysUntil} ${s.inDays}';
-          return ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.event),
-            title: Text(label),
-            trailing: Text(when,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    )),
-          );
-        }),
-      ],
+    final scheme = Theme.of(context).colorScheme;
+
+    return PremiumCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            s.upcomingEvents,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          ...events.map((e) {
+            final label = s.id ? e.event.nameId : e.event.nameEn;
+            final when = e.daysUntil == 0
+                ? s.today
+                : e.daysUntil == 1
+                    ? s.tomorrow
+                    : '${e.daysUntil} ${s.inDays}';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.event, size: 20, color: scheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    when,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          Text(
+            s.approxNote,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.outline,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

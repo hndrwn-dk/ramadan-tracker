@@ -141,5 +141,86 @@ class CompletionService {
     }
     return streak;
   }
+
+  /// Same completion rules as Today home "Done X/Y" — single source for checklist header.
+  static Future<({int completed, int total})> calculateCompletedCount({
+    required int seasonId,
+    required int dayIndex,
+    required List enabledHabits,
+    required List entries,
+    required AppDatabase database,
+    List? allHabits,
+  }) async {
+    if (enabledHabits.isEmpty) return (completed: 0, total: 0);
+
+    final quranPlan = await database.quranPlanDao.getPlan(seasonId);
+    final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
+    final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled');
+    final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
+    final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
+
+    final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    final last10Start = season != null ? season.days - 9 : 0;
+    final isInLast10Days = dayIndex >= last10Start && dayIndex > 0;
+
+    var completedCount = 0;
+    var totalRelevantHabits = 0;
+
+    for (final habit in enabledHabits) {
+      String? habitKey;
+      if (allHabits != null) {
+        try {
+          final fullHabit = allHabits.firstWhere((h) => h.id == habit.habitId);
+          habitKey = fullHabit.key;
+        } catch (_) {
+          habitKey = null;
+        }
+      }
+
+      if (habitKey == 'itikaf' && !isInLast10Days) continue;
+
+      totalRelevantHabits++;
+
+      final entry = entries
+          .where((e) => e.habitId == habit.habitId && e.seasonId == seasonId && e.dayIndex == dayIndex)
+          .firstOrNull;
+
+      final finalEntry = entry ??
+          DailyEntryModel(
+            seasonId: seasonId,
+            dayIndex: dayIndex,
+            habitId: habit.habitId,
+            updatedAt: DateTime.now(),
+          );
+
+      final isCompleted = switch (habitKey) {
+        'quran_pages' => () {
+          final target = quranPlan?.dailyTargetPages ?? 20;
+          final current = quranDaily?.pagesRead ?? 0;
+          return target > 0 ? current >= target : current > 0;
+        }(),
+        'dhikr' => () {
+          final target = dhikrPlan?.dailyTarget ?? 100;
+          final current = finalEntry.valueInt ?? 0;
+          return target > 0 ? current >= target : current > 0;
+        }(),
+        'sedekah' => () {
+          if (sedekahGoalEnabled == 'true' && sedekahGoalAmount != null) {
+            final target = double.tryParse(sedekahGoalAmount) ?? 0;
+            if (target > 0) {
+              return (finalEntry.valueInt ?? 0).toDouble() >= target;
+            }
+          }
+          return (finalEntry.valueInt ?? 0) > 0;
+        }(),
+        'fasting' => FastingStatus.isCompletedForDay(finalEntry.valueInt, finalEntry.valueBool),
+        _ => finalEntry.isCompleted,
+      };
+
+      if (isCompleted) completedCount++;
+    }
+
+    return (completed: completedCount, total: totalRelevantHabits);
+  }
 }
 

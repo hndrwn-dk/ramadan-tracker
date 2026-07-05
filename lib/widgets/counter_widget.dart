@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ramadan_tracker/widgets/app_surface.dart';
 
 class CounterWidget extends StatefulWidget {
   final String label;
@@ -12,6 +13,7 @@ class CounterWidget extends StatefulWidget {
   final Widget? iconWidget;
   final int? target;
   final String? targetLabel;
+  final bool controlsOnly;
 
   const CounterWidget({
     super.key,
@@ -25,6 +27,7 @@ class CounterWidget extends StatefulWidget {
     this.iconWidget,
     this.target,
     this.targetLabel,
+    this.controlsOnly = false,
   });
 
   @override
@@ -39,19 +42,21 @@ class _CounterWidgetState extends State<CounterWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            if (widget.iconWidget != null || widget.icon != null) ...[
-              widget.iconWidget ?? Icon(widget.icon, size: 20),
-              const SizedBox(width: 12),
+        if (!widget.controlsOnly) ...[
+          Row(
+            children: [
+              if (widget.iconWidget != null || widget.icon != null) ...[
+                widget.iconWidget ?? Icon(widget.icon, size: 20),
+                const SizedBox(width: 12),
+              ],
+              Text(
+                widget.label,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ],
-            Text(
-              widget.label,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 8),
+        ],
         Row(
           children: [
             IconButton(
@@ -132,12 +137,12 @@ class _CounterWidgetState extends State<CounterWidget> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                          : Theme.of(context).cardColor,
+                          : AppSurface.fillColor(context),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isSelected
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                            : AppSurface.borderColor(context),
                         width: isSelected ? 2 : 1,
                       ),
                     ),

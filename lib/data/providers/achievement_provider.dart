@@ -43,3 +43,20 @@ void dismissCelebration(WidgetRef ref) {
   pending.removeAt(0);
   ref.read(pendingCelebrationsProvider.notifier).state = pending;
 }
+
+/// Evaluate end-of-season achievements and enqueue celebrations.
+Future<void> evaluateSeasonCompleteAchievements(
+  WidgetRef ref, {
+  required int seasonId,
+}) async {
+  final db = ref.read(databaseProvider);
+  final unlocks = await AchievementService.evaluateSeasonComplete(
+    database: db,
+    seasonId: seasonId,
+  );
+  if (unlocks.isEmpty) return;
+  ref.invalidate(unlockedAchievementsProvider);
+  ref.invalidate(userEngagementProvider);
+  final pending = [...ref.read(pendingCelebrationsProvider), ...unlocks];
+  ref.read(pendingCelebrationsProvider.notifier).state = pending;
+}

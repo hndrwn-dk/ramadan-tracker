@@ -18,6 +18,7 @@ import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/features/insights/services/insights_scoring_service.dart';
+import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 /// Task Detail analytics screen for a specific habit and date.
 class HabitAnalyticsTodayScreen extends ConsumerStatefulWidget {
@@ -52,6 +53,7 @@ class _HabitAnalyticsTodayScreenState extends ConsumerState<HabitAnalyticsTodayS
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: Text(_getHabitDisplayName(widget.habitKey)),
       ),
       body: seasonAsync.when(
