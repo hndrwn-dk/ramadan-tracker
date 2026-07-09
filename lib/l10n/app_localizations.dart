@@ -269,13 +269,13 @@ abstract class AppLocalizations {
   /// No description provided for @prayerOffsetTipBody.
   ///
   /// In en, this message translates to:
-  /// **'If prayer times look off by about 1 hour, you can set an Offset in Settings.'**
+  /// **'If prayer times look off, try a different calculation method in Settings.'**
   String get prayerOffsetTipBody;
 
   /// No description provided for @prayerOffsetTipCta.
   ///
   /// In en, this message translates to:
-  /// **'Set Offset'**
+  /// **'Open Settings'**
   String get prayerOffsetTipCta;
 
   /// Backup & Restore section title
@@ -830,6 +830,18 @@ abstract class AppLocalizations {
   /// **'Remind me 15 minutes after Isha if Taraweeh not done'**
   String get goalReminderTaraweehDesc;
 
+  /// No description provided for @goalReminderDigest.
+  ///
+  /// In en, this message translates to:
+  /// **'Worship target reminder'**
+  String get goalReminderDigest;
+
+  /// No description provided for @goalReminderDigestDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'After Iftar confirmation, remind me if daily worship targets are not yet met'**
+  String get goalReminderDigestDesc;
+
   /// No description provided for @quranGoalReminderTitle.
   ///
   /// In en, this message translates to:
@@ -1087,6 +1099,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Iftar reminder'**
   String get iftarReminder;
+
+  /// Toggle for evening-before sunnah fasting reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Sunnah fast reminders'**
+  String get sunnahReminderEnabled;
+
+  /// Subtitle for sunnah reminder toggle in Times & Reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Evening reminder the night before a recommended sunnah fast (Monday/Thursday, white days, etc.)'**
+  String get sunnahReminderEnabledSubtitle;
+
+  /// Clarifies habit Puasa toggle is for tracking, not notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Track fasting in your daily checklist — not a notification reminder'**
+  String get habitFastingSubtitle;
 
   /// Iftar reminder offset text
   ///
@@ -4014,7 +4044,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingRemindersGoalsMasterHint.
   ///
   /// In en, this message translates to:
-  /// **'Gentle nudges if today\'s target is not done yet'**
+  /// **'After Iftar confirmation, remind me if daily targets are not yet met'**
   String get onboardingRemindersGoalsMasterHint;
 
   /// No description provided for @onboardingRemindersCustomizeGoals.
@@ -4100,6 +4130,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Strong days'**
   String get seasonComparisonStrongDays;
+
+  /// No description provided for @imsakIntentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Imsak time'**
+  String get imsakIntentionTitle;
+
+  /// No description provided for @imsakIntentionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Will you fast today?'**
+  String get imsakIntentionHint;
+
+  /// No description provided for @imsakIntentionFastSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Intend to fast — confirm fully at iftar'**
+  String get imsakIntentionFastSubtitle;
+
+  /// No description provided for @imsakConfirmAtIftarHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your full fast when you break fast'**
+  String get imsakConfirmAtIftarHint;
+
+  /// No description provided for @sahurIntentionYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I\'m fasting'**
+  String get sahurIntentionYes;
+
+  /// No description provided for @sahurIntentionExcused.
+  ///
+  /// In en, this message translates to:
+  /// **'Not fasting (excused)'**
+  String get sahurIntentionExcused;
+
+  /// No description provided for @sahurIntentionLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get sahurIntentionLater;
+
+  /// No description provided for @sahurIntentionExcusedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not fasting'**
+  String get sahurIntentionExcusedTitle;
+
+  /// No description provided for @sahurIntentionExcusedFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Qadha is tracked in the Sunnah tab.'**
+  String get sahurIntentionExcusedFootnote;
+
+  /// No description provided for @sahurIntentionBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get sahurIntentionBack;
+
+  /// No description provided for @fastingIntentPendingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Fasting intention saved — confirm at iftar'**
+  String get fastingIntentPendingSaved;
+
+  /// No description provided for @iftarConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm today\'s fast'**
+  String get iftarConfirmTitle;
+
+  /// No description provided for @iftarConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you complete a full fast today?'**
+  String get iftarConfirmBody;
+
+  /// No description provided for @iftarConfirmYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, full fast'**
+  String get iftarConfirmYes;
+
+  /// No description provided for @iftarConfirmNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No, not completed'**
+  String get iftarConfirmNo;
+
+  /// No description provided for @iftarSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s fasting status'**
+  String get iftarSummaryTitle;
+
+  /// No description provided for @iftarSummaryStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged: {status}'**
+  String iftarSummaryStatus(String status);
+
+  /// No description provided for @imsakReminderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Imsak fasting intention'**
+  String get imsakReminderLabel;
+
+  /// No description provided for @iftarConfirmReminderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Iftar fast confirmation'**
+  String get iftarConfirmReminderLabel;
+
+  /// No description provided for @imsakOffsetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes before Fajr (imsak)'**
+  String get imsakOffsetLabel;
+
+  /// No description provided for @imsakReminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Imsak time'**
+  String get imsakReminderNotificationTitle;
+
+  /// No description provided for @imsakReminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to set your fasting intention for today'**
+  String get imsakReminderNotificationBody;
+
+  /// No description provided for @iftarConfirmNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Iftar time'**
+  String get iftarConfirmNotificationTitle;
+
+  /// No description provided for @iftarConfirmNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to confirm today\'s fast'**
+  String get iftarConfirmNotificationBody;
+
+  /// No description provided for @iftarFastRecordedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast recorded'**
+  String get iftarFastRecordedTitle;
+
+  /// No description provided for @iftarFastRecordedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Alhamdulillah, today\'s fast has been recorded.'**
+  String get iftarFastRecordedBody;
+
+  /// No description provided for @fastingIntentRemindersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sahur: set intention. Iftar: confirm full fast — like starting and ending a workout.'**
+  String get fastingIntentRemindersHint;
+
+  /// No description provided for @sahurReminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to set your fasting intention for today'**
+  String get sahurReminderNotificationBody;
+
+  /// No description provided for @remindersTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s fasting reminders'**
+  String get remindersTodayTitle;
+
+  /// No description provided for @reminderStatusPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Passed'**
+  String get reminderStatusPassed;
+
+  /// No description provided for @reminderStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Next up'**
+  String get reminderStatusUpcoming;
+
+  /// No description provided for @reminderStatusOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get reminderStatusOff;
+
+  /// No description provided for @refreshRemindersNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh reminders now'**
+  String get refreshRemindersNow;
+
+  /// No description provided for @remindersExactAlarmHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Alarms & reminders in Android app settings for on-time Sahur.'**
+  String get remindersExactAlarmHint;
+
+  /// No description provided for @remindersMorningPassedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sahur for today has passed. Iftar is still scheduled if enabled.'**
+  String get remindersMorningPassedHint;
+
+  /// No description provided for @remindersPermissionOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are disabled. Enable them in system settings.'**
+  String get remindersPermissionOff;
+
+  /// No description provided for @reminderQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get reminderQueued;
+
+  /// No description provided for @reminderNotQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Not queued'**
+  String get reminderNotQueued;
+
+  /// No description provided for @reminderMissedNotQueuedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sahur passed without a notification. Open the app before Sahur tomorrow so it can be scheduled, and allow Alarms & reminders below.'**
+  String get reminderMissedNotQueuedHint;
+
+  /// No description provided for @openExactAlarmSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Alarms & reminders'**
+  String get openExactAlarmSettings;
 }
 
 class _AppLocalizationsDelegate

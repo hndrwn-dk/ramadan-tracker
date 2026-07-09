@@ -36,15 +36,22 @@ void main() async {
     
     if (!regressionSeed) {
       try {
-        debugPrint('=== STARTING NotificationService.initialize() ===');
+        if (kDebugMode) {
+          debugPrint('=== STARTING NotificationService.initialize() ===');
+        }
         await NotificationService.initialize();
-        debugPrint('=== NotificationService.initialize() COMPLETED ===');
+        if (kDebugMode) {
+          debugPrint('=== NotificationService.initialize() COMPLETED ===');
+        }
       } catch (e, stackTrace) {
-        debugPrint('=== NotificationService initialization FAILED ===');
-        debugPrint('Error: $e');
-        debugPrint('Stack trace: $stackTrace');
+        LogService.log('[NOTIF] NotificationService initialization failed: $e');
+        if (kDebugMode) {
+          debugPrint('=== NotificationService initialization FAILED ===');
+          debugPrint('Error: $e');
+          debugPrint('Stack trace: $stackTrace');
+        }
       }
-    } else {
+    } else if (kDebugMode) {
       debugPrint('=== REGRESSION_SEED: skipping NotificationService.initialize() ===');
     }
     

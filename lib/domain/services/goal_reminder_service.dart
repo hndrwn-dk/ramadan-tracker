@@ -6,6 +6,30 @@ import 'package:ramadan_tracker/utils/extensions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+class _GoalProgress {
+  const _GoalProgress({
+    required this.quranProgress,
+    required this.quranTarget,
+    required this.quranHabitEnabled,
+    required this.dhikrProgress,
+    required this.dhikrTarget,
+    required this.dhikrHabitEnabled,
+    required this.sedekahProgress,
+    required this.sedekahTarget,
+    required this.sedekahHabitEnabled,
+  });
+
+  final int quranProgress;
+  final int quranTarget;
+  final bool quranHabitEnabled;
+  final int dhikrProgress;
+  final int dhikrTarget;
+  final bool dhikrHabitEnabled;
+  final double sedekahProgress;
+  final double sedekahTarget;
+  final bool sedekahHabitEnabled;
+}
+
 class GoalReminderService {
   /// Goal reminders only apply on days inside an active Ramadan season window.
   static bool isActiveSeasonDay(RamadanSeason season, DateTime date) {
@@ -23,7 +47,159 @@ class GoalReminderService {
     return habitEnabled && target > 0 && progress < target;
   }
 
-  /// Schedule goal tracking reminders for today
+  /// Digest reminders enabled (new key with legacy OR fallback).
+  static Future<bool> isDigestReminderEnabled(AppDatabase database) async {
+    final digest =
+        await database.kvSettingsDao.getValue('goal_reminder_digest_enabled');
+    if (digest != null) return _parseBoolSetting(digest);
+
+    final quran =
+        await database.kvSettingsDao.getValue('goal_reminder_quran_enabled') ??
+            'true';
+    final dhikr =
+        await database.kvSettingsDao.getValue('goal_reminder_dhikr_enabled') ??
+            'true';
+    final sedekah = await database.kvSettingsDao.getValue(
+          'goal_reminder_sedekah_enabled',
+        ) ??
+        'true';
+    return _parseBoolSetting(quran) ||
+        _parseBoolSetting(dhikr) ||
+        _parseBoolSetting(sedekah);
+  }
+
+  static Future<bool> isIftarReminderEnabled(AppDatabase database) async {
+    final value =
+        await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true';
+    return _parseBoolSetting(value);
+  }
+
+  /// Pending numeric goal habit keys for a season day (quran, dhikr, sedekah).
+  static Future<List<String>> getPendingGoalTypesForDate({
+    required AppDatabase database,
+    required int seasonId,
+    required DateTime date,
+  }) async {
+    final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    if (season == null) return [];
+
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    if (!isActiveSeasonDay(season, dateOnly)) return [];
+
+    final seasonStart = DateTime.parse(season.startDate);
+    final dayIndex = dateOnly.difference(seasonStart).inDays + 1;
+    final progress = await _loadGoalProgress(database, seasonId, dayIndex);
+    return _pendingTypesFromProgress(progress);
+  }
+
+  static List<String> _pendingTypesFromProgress(_GoalProgress progress) {
+    final pending = <String>[];
+    if (shouldScheduleNumericGoal(
+      habitEnabled: progress.quranHabitEnabled,
+      target: progress.quranTarget,
+      progress: progress.quranProgress,
+    )) {
+      pending.add('quran');
+    }
+    if (shouldScheduleNumericGoal(
+      habitEnabled: progress.dhikrHabitEnabled,
+      target: progress.dhikrTarget,
+      progress: progress.dhikrProgress,
+    )) {
+      pending.add('dhikr');
+    }
+    if (shouldScheduleNumericGoal(
+      habitEnabled: progress.sedekahHabitEnabled,
+      target: progress.sedekahTarget,
+      progress: progress.sedekahProgress,
+    )) {
+      pending.add('sedekah');
+    }
+    return pending;
+  }
+
+  static Future<_GoalProgress> _loadGoalProgress(
+    AppDatabase database,
+    int seasonId,
+    int dayIndex,
+  ) async {
+    final allHabits = await database.habitsDao.getAllHabits();
+    final seasonHabits = await database.seasonHabitsDao.getSeasonHabits(seasonId);
+    final quranPlan = await database.quranPlanDao.getPlan(seasonId);
+    final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
+    final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
+    final dailyEntries =
+        await database.dailyEntriesDao.getDayEntries(seasonId, dayIndex);
+
+    int quranProgress = 0;
+    int quranTarget = 0;
+    bool quranHabitEnabled = false;
+    try {
+      final quranHabitDb = allHabits.firstWhere((h) => h.key == 'quran_pages');
+      final quranSeasonHabit =
+          seasonHabits.firstWhere((sh) => sh.habitId == quranHabitDb.id);
+      if (quranPlan != null) {
+        quranProgress = quranDaily?.pagesRead ?? 0;
+        quranTarget = quranPlan.dailyTargetPages;
+        quranHabitEnabled = quranSeasonHabit.isEnabled;
+      }
+    } catch (_) {}
+
+    int dhikrProgress = 0;
+    int dhikrTarget = 0;
+    bool dhikrHabitEnabled = false;
+    try {
+      final dhikrHabitDb = allHabits.firstWhere((h) => h.key == 'dhikr');
+      final dhikrSeasonHabit =
+          seasonHabits.firstWhere((sh) => sh.habitId == dhikrHabitDb.id);
+      if (dhikrPlan != null) {
+        final dhikrEntry = dailyEntries
+            .where((e) => e.habitId == dhikrHabitDb.id)
+            .toList()
+            .firstOrNull;
+        dhikrProgress = dhikrEntry?.valueInt ?? 0;
+        dhikrTarget = dhikrPlan.dailyTarget;
+        dhikrHabitEnabled = dhikrSeasonHabit.isEnabled;
+      }
+    } catch (_) {}
+
+    double sedekahProgress = 0;
+    double sedekahTarget = 0;
+    bool sedekahHabitEnabled = false;
+    try {
+      final sedekahHabitDb = allHabits.firstWhere((h) => h.key == 'sedekah');
+      final sedekahSeasonHabit =
+          seasonHabits.firstWhere((sh) => sh.habitId == sedekahHabitDb.id);
+      final sedekahEntry = dailyEntries
+          .where((e) => e.habitId == sedekahHabitDb.id)
+          .toList()
+          .firstOrNull;
+      sedekahProgress = sedekahEntry?.valueInt?.toDouble() ?? 0;
+      final sedekahGoalAmount =
+          await database.kvSettingsDao.getValue('sedekah_goal_amount');
+      final sedekahGoalEnabled =
+          await database.kvSettingsDao.getValue('sedekah_goal_enabled') ??
+              'false';
+      sedekahTarget = sedekahGoalEnabled == 'true' && sedekahGoalAmount != null
+          ? double.tryParse(sedekahGoalAmount) ?? 0
+          : 0;
+      sedekahHabitEnabled = sedekahSeasonHabit.isEnabled;
+    } catch (_) {}
+
+    return _GoalProgress(
+      quranProgress: quranProgress,
+      quranTarget: quranTarget,
+      quranHabitEnabled: quranHabitEnabled,
+      dhikrProgress: dhikrProgress,
+      dhikrTarget: dhikrTarget,
+      dhikrHabitEnabled: dhikrHabitEnabled,
+      sedekahProgress: sedekahProgress,
+      sedekahTarget: sedekahTarget,
+      sedekahHabitEnabled: sedekahHabitEnabled,
+    );
+  }
+
+  /// Schedule goal tracking reminders for today.
   static Future<void> scheduleGoalReminders({
     required AppDatabase database,
     required int seasonId,
@@ -36,359 +212,24 @@ class GoalReminderService {
     int fajrAdjust = 0,
     int maghribAdjust = 0,
   }) async {
-    debugPrint('=== scheduleGoalReminders called ===');
-    try {
-      // Get settings
-      final quranReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_quran_enabled') ?? 'true';
-      final dhikrReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_dhikr_enabled') ?? 'true';
-      final sedekahReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_sedekah_enabled') ?? 'true';
-      final taraweehReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_taraweeh_enabled') ?? 'true';
-      
-      debugPrint('Goal reminder settings:');
-      debugPrint('  Quran: $quranReminderEnabled');
-      debugPrint('  Dhikr: $dhikrReminderEnabled');
-      debugPrint('  Sedekah: $sedekahReminderEnabled');
-      debugPrint('  Taraweeh: $taraweehReminderEnabled');
-
-      final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
-
-      // Get today's date and day index
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      
-      // Get current season to find day index
-      final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
-      if (season == null) return;
-
-      if (!isActiveSeasonDay(season, today)) {
-        return;
-      }
-
-      // Parse startDate from ISO string format (YYYY-MM-DD)
-      final seasonStart = DateTime.parse(season.startDate);
-      final dayIndex = today.difference(seasonStart).inDays + 1;
-
-      // Get prayer times for today
-      final times = await PrayerTimeService.getCachedOrCalculate(
-        database: database,
-        seasonId: seasonId,
-        date: today,
-        latitude: latitude,
-        longitude: longitude,
-        timezone: timezone,
-        method: method,
-        highLatRule: highLatRule,
-        fajrAdjust: fajrAdjust,
-        maghribAdjust: maghribAdjust,
-      );
-
-      // Get habits and plans
-      final allHabits = await database.habitsDao.getAllHabits();
-      final seasonHabits = await database.seasonHabitsDao.getSeasonHabits(seasonId);
-      final quranPlan = await database.quranPlanDao.getPlan(seasonId);
-      final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
-      final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
-      final dailyEntries = await database.dailyEntriesDao.getDayEntries(seasonId, dayIndex);
-
-      // Check current progress - handle missing habits gracefully
-      // Need to get habit keys from Habits table
-      int quranProgress = 0;
-      int quranTarget = 0;
-      bool quranHabitEnabled = false;
-      try {
-        final quranHabitDb = allHabits.firstWhere((h) => h.key == 'quran_pages');
-        final quranSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == quranHabitDb.id);
-        if (quranPlan != null) {
-          quranProgress = quranDaily?.pagesRead ?? 0;
-          quranTarget = quranPlan.dailyTargetPages;
-          quranHabitEnabled = quranSeasonHabit.isEnabled;
-        }
-      } catch (e) {
-        // Quran habit not found or not enabled
-      }
-
-      int dhikrProgress = 0;
-      int dhikrTarget = 0;
-      bool dhikrHabitEnabled = false;
-      try {
-        final dhikrHabitDb = allHabits.firstWhere((h) => h.key == 'dhikr');
-        final dhikrSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == dhikrHabitDb.id);
-        if (dhikrPlan != null) {
-          final dhikrEntry = dailyEntries.where((e) => e.habitId == dhikrHabitDb.id).toList().firstOrNull;
-          dhikrProgress = dhikrEntry?.valueInt ?? 0;
-          dhikrTarget = dhikrPlan.dailyTarget;
-          dhikrHabitEnabled = dhikrSeasonHabit.isEnabled;
-        }
-      } catch (e) {
-        // Dhikr habit not found or not enabled
-      }
-
-      double sedekahProgress = 0;
-      double sedekahTarget = 0;
-      bool sedekahHabitEnabled = false;
-      try {
-        final sedekahHabitDb = allHabits.firstWhere((h) => h.key == 'sedekah');
-        final sedekahSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == sedekahHabitDb.id);
-        final sedekahEntry = dailyEntries.where((e) => e.habitId == sedekahHabitDb.id).toList().firstOrNull;
-        sedekahProgress = (sedekahEntry?.valueInt ?? 0).toDouble();
-        final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
-        final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled') ?? 'false';
-        sedekahTarget = sedekahGoalEnabled == 'true' && sedekahGoalAmount != null
-            ? double.tryParse(sedekahGoalAmount) ?? 0
-            : 0;
-        sedekahHabitEnabled = sedekahSeasonHabit.isEnabled;
-      } catch (e) {
-        // Sedekah habit not found or not enabled
-      }
-
-      bool isTaraweehDone = false;
-      bool taraweehHabitEnabled = false;
-      try {
-        final taraweehHabitDb = allHabits.firstWhere((h) => h.key == 'taraweeh');
-        final taraweehSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == taraweehHabitDb.id);
-        final taraweehEntry = dailyEntries.where((e) => e.habitId == taraweehHabitDb.id).toList().firstOrNull;
-        isTaraweehDone = taraweehEntry?.valueBool ?? false;
-        taraweehHabitEnabled = taraweehSeasonHabit.isEnabled;
-      } catch (e) {
-        // Taraweeh habit not found or not enabled
-      }
-
-      // Schedule Quran reminder if enabled, habit enabled, has target, and not completed
-      // Parse reminder enabled setting robustly (treat "true", "1", true as enabled)
-      final quranReminderEnabledParsed = _parseBoolSetting(quranReminderEnabled);
-      
-      if (kDebugMode) {
-        debugPrint('=== Checking Quran Reminder Conditions ===');
-        debugPrint('  quranReminderEnabled: $quranReminderEnabled (parsed: $quranReminderEnabledParsed)');
-        debugPrint('  quranHabitEnabled: $quranHabitEnabled');
-        debugPrint('  quranTarget: $quranTarget');
-        debugPrint('  quranProgress: $quranProgress');
-      }
-      
-      if (quranReminderEnabledParsed &&
-          shouldScheduleNumericGoal(
-            habitEnabled: quranHabitEnabled,
-            target: quranTarget,
-            progress: quranProgress,
-          )) {
-        if (kDebugMode) {
-          debugPrint('  All conditions met, scheduling Quran reminders');
-        }
-        await _scheduleQuranReminders(now, quranProgress, quranTarget, location, locale);
-      } else {
-        if (kDebugMode) {
-          debugPrint('  ✗ Conditions not met, skipping Quran reminders');
-          if (!quranReminderEnabledParsed) debugPrint('    - Reminder disabled');
-          if (!quranHabitEnabled) debugPrint('    - Habit disabled');
-          if (quranTarget <= 0) debugPrint('    - No target set');
-          if (quranProgress >= quranTarget) debugPrint('    - Already completed');
-        }
-      }
-
-      // Schedule Dhikr reminder if enabled, habit enabled, has target, and not completed
-      final dhikrReminderEnabledParsed = _parseBoolSetting(dhikrReminderEnabled);
-      
-      if (kDebugMode) {
-        debugPrint('=== Checking Dhikr Reminder Conditions ===');
-        debugPrint('  dhikrReminderEnabled: $dhikrReminderEnabled (parsed: $dhikrReminderEnabledParsed)');
-        debugPrint('  dhikrHabitEnabled: $dhikrHabitEnabled');
-        debugPrint('  dhikrTarget: $dhikrTarget');
-        debugPrint('  dhikrProgress: $dhikrProgress');
-      }
-      
-      if (dhikrReminderEnabledParsed &&
-          shouldScheduleNumericGoal(
-            habitEnabled: dhikrHabitEnabled,
-            target: dhikrTarget,
-            progress: dhikrProgress,
-          )) {
-        if (kDebugMode) {
-          debugPrint('  All conditions met, scheduling Dhikr reminders');
-        }
-        await _scheduleDhikrReminders(now, dhikrProgress, dhikrTarget, location, locale);
-      } else {
-        if (kDebugMode) {
-          debugPrint('  ✗ Conditions not met, skipping Dhikr reminders');
-          if (!dhikrReminderEnabledParsed) debugPrint('    - Reminder disabled');
-          if (!dhikrHabitEnabled) debugPrint('    - Habit disabled');
-          if (dhikrTarget <= 0) debugPrint('    - No target set');
-          if (dhikrProgress >= dhikrTarget) debugPrint('    - Already completed');
-        }
-      }
-
-      // Schedule Sedekah reminder if enabled, habit enabled, has target, and not completed
-      final sedekahReminderEnabledParsed = _parseBoolSetting(sedekahReminderEnabled);
-      if (sedekahReminderEnabledParsed &&
-          shouldScheduleNumericGoal(
-            habitEnabled: sedekahHabitEnabled,
-            target: sedekahTarget,
-            progress: sedekahProgress,
-          )) {
-        await _scheduleSedekahReminder(now, sedekahProgress, sedekahTarget, location, locale);
-      }
-
-      // Schedule Taraweeh reminder if enabled, habit enabled, and not done
-      final taraweehReminderEnabledParsed = _parseBoolSetting(taraweehReminderEnabled);
-      if (taraweehReminderEnabledParsed && 
-          taraweehHabitEnabled && 
-          !isTaraweehDone &&
-          times['isha'] != null) {
-        await _scheduleTaraweehReminder(times['isha']!, location, locale);
-      }
-    } catch (e) {
-      debugPrint('Error scheduling goal reminders: $e');
-    }
-  }
-
-  static Future<void> _scheduleQuranReminders(
-    DateTime now,
-    int current,
-    int target,
-    tz.Location location,
-    String locale,
-  ) async {
-    // Schedule reminders at 2 PM, 6 PM, and 8 PM if not completed
-    final reminderTimes = [
-      DateTime(now.year, now.month, now.day, 14, 0), // 2 PM
-      DateTime(now.year, now.month, now.day, 18, 0), // 6 PM
-      DateTime(now.year, now.month, now.day, 20, 0), // 8 PM
-    ];
-
-    debugPrint('=== Scheduling Quran Reminders ===');
-    debugPrint('Timezone: ${location.name}');
-    debugPrint('Current time: ${now.hour}:${now.minute.toString().padLeft(2, '0')}');
-    debugPrint('Progress: $current/$target');
-
-    for (final reminderTime in reminderTimes) {
-      final timeUntilReminder = reminderTime.difference(now);
-      final minutesPassed = timeUntilReminder.inMinutes.abs();
-      debugPrint('  Reminder time: ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-      debugPrint('  Time until reminder: ${timeUntilReminder.inMinutes} minutes');
-      
-      if (reminderTime.isAfter(now)) {
-        debugPrint('  Scheduling Quran reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-        try {
-          await NotificationService.scheduleGoalReminder(
-            reminderTime: reminderTime,
-            type: 'quran',
-            current: current,
-            target: target,
-            location: location,
-            locale: locale,
-          );
-          debugPrint('  Quran reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-        } catch (e, stackTrace) {
-          debugPrint('  ✗ Error scheduling Quran reminder: $e');
-          debugPrint('  Stack trace: $stackTrace');
-        }
-      } else {
-        debugPrint('  ✗ Skipping Quran reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')} (time passed ${minutesPassed} minutes ago)');
-      }
-    }
-  }
-
-  static Future<void> _scheduleDhikrReminders(
-    DateTime now,
-    int current,
-    int target,
-    tz.Location location,
-    String locale,
-  ) async {
-    // Schedule reminders at 2 PM, 6 PM, and 8 PM if not completed
-    final reminderTimes = [
-      DateTime(now.year, now.month, now.day, 14, 0), // 2 PM
-      DateTime(now.year, now.month, now.day, 18, 0), // 6 PM
-      DateTime(now.year, now.month, now.day, 20, 0), // 8 PM
-    ];
-
-    debugPrint('=== Scheduling Dhikr Reminders ===');
-    debugPrint('Timezone: ${location.name}');
-    debugPrint('Current time: ${now.hour}:${now.minute.toString().padLeft(2, '0')}');
-    debugPrint('Progress: $current/$target');
-
-    for (final reminderTime in reminderTimes) {
-      final timeUntilReminder = reminderTime.difference(now);
-      final minutesPassed = timeUntilReminder.inMinutes.abs();
-      debugPrint('  Reminder time: ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-      debugPrint('  Time until reminder: ${timeUntilReminder.inMinutes} minutes');
-      
-      if (reminderTime.isAfter(now)) {
-        debugPrint('  Scheduling Dhikr reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-        try {
-          await NotificationService.scheduleGoalReminder(
-            reminderTime: reminderTime,
-            type: 'dhikr',
-            current: current,
-            target: target,
-            location: location,
-            locale: locale,
-          );
-          debugPrint('  Dhikr reminder scheduled successfully for ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-        } catch (e, stackTrace) {
-          debugPrint('  ✗ Error scheduling Dhikr reminder: $e');
-          debugPrint('  Stack trace: $stackTrace');
-        }
-      } else {
-        debugPrint('  ✗ Skipping Dhikr reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')} (time passed ${minutesPassed} minutes ago)');
-      }
-    }
-  }
-
-  static Future<void> _scheduleSedekahReminder(
-    DateTime now,
-    double current,
-    double target,
-    tz.Location location,
-    String locale,
-  ) async {
-    // Schedule reminder at 4 PM if not completed
-    final reminderTime = DateTime(now.year, now.month, now.day, 16, 0); // 4 PM
-
-    if (reminderTime.isAfter(now)) {
-      debugPrint('  Scheduling Sedekah reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-      await NotificationService.scheduleGoalReminder(
-        reminderTime: reminderTime,
-        type: 'sedekah',
-        current: current.toInt(),
-        target: target.toInt(),
-        location: location,
-        locale: locale,
-      );
-    } else {
-      debugPrint('  Skipping Sedekah reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')} (time passed)');
-    }
-  }
-
-  static Future<void> _scheduleTaraweehReminder(
-    DateTime ishaTime,
-    tz.Location location,
-    String locale,
-  ) async {
-    // Schedule reminder 15 minutes after Isha
-    final reminderTime = ishaTime.add(const Duration(minutes: 15));
     final now = DateTime.now();
-
-    debugPrint('  Isha time: ${ishaTime.hour}:${ishaTime.minute.toString().padLeft(2, '0')}');
-    debugPrint('  Taraweeh reminder time: ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-    
-    if (reminderTime.isAfter(now)) {
-      debugPrint('  Scheduling Taraweeh reminder at ${reminderTime.hour}:${reminderTime.minute.toString().padLeft(2, '0')}');
-      await NotificationService.scheduleGoalReminder(
-        reminderTime: reminderTime,
-        type: 'taraweeh',
-        current: 0,
-        target: 0,
-        location: location,
-        locale: locale,
-      );
-    } else {
-      if (kDebugMode) {
-        debugPrint('  Skipping Taraweeh reminder (time passed)');
-      }
-    }
+    final today = DateTime(now.year, now.month, now.day);
+    await scheduleGoalRemindersForDate(
+      database: database,
+      seasonId: seasonId,
+      date: today,
+      latitude: latitude,
+      longitude: longitude,
+      timezone: timezone,
+      method: method,
+      highLatRule: highLatRule,
+      location: location,
+      fajrAdjust: fajrAdjust,
+      maghribAdjust: maghribAdjust,
+    );
   }
-  
-  /// Schedule goal reminders for a specific date (season-wide scheduling)
+
+  /// Schedule goal reminders for a specific date (season-wide scheduling).
   static Future<void> scheduleGoalRemindersForDate({
     required AppDatabase database,
     required int seasonId,
@@ -403,27 +244,20 @@ class GoalReminderService {
     int maghribAdjust = 0,
   }) async {
     try {
-      // Get settings
-      final quranReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_quran_enabled') ?? 'true';
-      final dhikrReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_dhikr_enabled') ?? 'true';
-      final sedekahReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_sedekah_enabled') ?? 'true';
-      final taraweehReminderEnabled = await database.kvSettingsDao.getValue('goal_reminder_taraweeh_enabled') ?? 'true';
-      
-      final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
-      
-      // Get season info
+      final digestEnabled = await isDigestReminderEnabled(database);
+      final iftarReminderEnabled = await isIftarReminderEnabled(database);
+      final locale =
+          await database.kvSettingsDao.getValue('app_language') ?? 'en';
+
       final season = await database.ramadanSeasonsDao.getSeasonById(seasonId);
       if (season == null) return;
 
       final dateOnly = DateTime(date.year, date.month, date.day);
-      if (!isActiveSeasonDay(season, dateOnly)) {
-        return;
-      }
-      
+      if (!isActiveSeasonDay(season, dateOnly)) return;
+
       final seasonStart = DateTime.parse(season.startDate);
       final dayIndex = dateOnly.difference(seasonStart).inDays + 1;
-      
-      // Get prayer times for this date
+
       final times = await PrayerTimeService.getCachedOrCalculate(
         database: database,
         seasonId: seasonId,
@@ -436,257 +270,31 @@ class GoalReminderService {
         fajrAdjust: fajrAdjust,
         maghribAdjust: maghribAdjust,
       );
-      
-      // Get habits and plans
-      final allHabits = await database.habitsDao.getAllHabits();
-      final seasonHabits = await database.seasonHabitsDao.getSeasonHabits(seasonId);
-      final quranPlan = await database.quranPlanDao.getPlan(seasonId);
-      final dhikrPlan = await database.dhikrPlanDao.getPlan(seasonId);
-      final quranDaily = await database.quranDailyDao.getDaily(seasonId, dayIndex);
-      final dailyEntries = await database.dailyEntriesDao.getDayEntries(seasonId, dayIndex);
-      
-      // Check current progress
-      int quranProgress = 0;
-      int quranTarget = 0;
-      bool quranHabitEnabled = false;
-      try {
-        final quranHabitDb = allHabits.firstWhere((h) => h.key == 'quran_pages');
-        final quranSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == quranHabitDb.id);
-        if (quranPlan != null) {
-          quranProgress = quranDaily?.pagesRead ?? 0;
-          quranTarget = quranPlan.dailyTargetPages;
-          quranHabitEnabled = quranSeasonHabit.isEnabled;
-        }
-      } catch (e) {
-        // Quran habit not found
-      }
-      
-      int dhikrProgress = 0;
-      int dhikrTarget = 0;
-      bool dhikrHabitEnabled = false;
-      try {
-        final dhikrHabitDb = allHabits.firstWhere((h) => h.key == 'dhikr');
-        final dhikrSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == dhikrHabitDb.id);
-        if (dhikrPlan != null) {
-          final dhikrEntry = dailyEntries.where((e) => e.habitId == dhikrHabitDb.id).toList().firstOrNull;
-          if (dhikrEntry != null) {
-            dhikrProgress = dhikrEntry.valueInt ?? 0;
-          }
-          dhikrTarget = dhikrPlan.dailyTarget;
-          dhikrHabitEnabled = dhikrSeasonHabit.isEnabled;
-        }
-      } catch (e) {
-        // Dhikr habit not found
-      }
-      
-      double sedekahProgress = 0;
-      double sedekahTarget = 0;
-      bool sedekahHabitEnabled = false;
-      try {
-        final sedekahHabitDb = allHabits.firstWhere((h) => h.key == 'sedekah');
-        final sedekahSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == sedekahHabitDb.id);
-        final sedekahEntry = dailyEntries.where((e) => e.habitId == sedekahHabitDb.id).toList().firstOrNull;
-        sedekahProgress = sedekahEntry?.valueInt?.toDouble() ?? 0;
-        final sedekahGoalAmount = await database.kvSettingsDao.getValue('sedekah_goal_amount');
-        final sedekahGoalEnabled = await database.kvSettingsDao.getValue('sedekah_goal_enabled') ?? 'false';
-        sedekahTarget = sedekahGoalEnabled == 'true' && sedekahGoalAmount != null
-            ? double.tryParse(sedekahGoalAmount) ?? 0
-            : 0;
-        sedekahHabitEnabled = sedekahSeasonHabit.isEnabled;
-      } catch (e) {
-        // Sedekah habit not found
-      }
-      
-      bool isTaraweehDone = false;
-      bool taraweehHabitEnabled = false;
-      try {
-        final taraweehHabitDb = allHabits.firstWhere((h) => h.key == 'taraweeh');
-        final taraweehSeasonHabit = seasonHabits.firstWhere((sh) => sh.habitId == taraweehHabitDb.id);
-        final taraweehEntry = dailyEntries.where((e) => e.habitId == taraweehHabitDb.id).toList().firstOrNull;
-        isTaraweehDone = taraweehEntry?.valueBool ?? false;
-        taraweehHabitEnabled = taraweehSeasonHabit.isEnabled;
-      } catch (e) {
-        // Taraweeh habit not found
-      }
-      
-      // Schedule reminders based on conditions
-      final quranReminderEnabledParsed = _parseBoolSetting(quranReminderEnabled);
-      if (quranReminderEnabledParsed &&
-          shouldScheduleNumericGoal(
-            habitEnabled: quranHabitEnabled,
-            target: quranTarget,
-            progress: quranProgress,
-          )) {
-        await _scheduleQuranRemindersForDate(date, quranProgress, quranTarget, location, locale);
-      }
-      
-      final dhikrReminderEnabledParsed = _parseBoolSetting(dhikrReminderEnabled);
-      if (dhikrReminderEnabledParsed &&
-          shouldScheduleNumericGoal(
-            habitEnabled: dhikrHabitEnabled,
-            target: dhikrTarget,
-            progress: dhikrProgress,
-          )) {
-        await _scheduleDhikrRemindersForDate(date, dhikrProgress, dhikrTarget, location, locale);
-      }
-      
-      final sedekahReminderEnabledParsed = _parseBoolSetting(sedekahReminderEnabled);
-      if (sedekahReminderEnabledParsed &&
-          shouldScheduleNumericGoal(
-            habitEnabled: sedekahHabitEnabled,
-            target: sedekahTarget,
-            progress: sedekahProgress,
-          )) {
-        await _scheduleSedekahReminderForDate(date, sedekahProgress, sedekahTarget, location, locale);
-      }
-      
-      final taraweehReminderEnabledParsed = _parseBoolSetting(taraweehReminderEnabled);
-      if (taraweehReminderEnabledParsed && taraweehHabitEnabled && !isTaraweehDone && times['isha'] != null) {
-        await _scheduleTaraweehReminderForDate(date, times['isha']!, location, locale);
+
+      final progress = await _loadGoalProgress(database, seasonId, dayIndex);
+      final pending = digestEnabled ? _pendingTypesFromProgress(progress) : <String>[];
+
+      if (digestEnabled &&
+          !iftarReminderEnabled &&
+          pending.isNotEmpty &&
+          times['maghrib'] != null) {
+        await NotificationService.scheduleDigestGoalReminder(
+          date: dateOnly,
+          maghribTime: times['maghrib']!,
+          pendingTypes: pending,
+          location: location,
+          locale: locale,
+        );
       }
     } catch (e) {
       debugPrint('Error scheduling goal reminders for date $date: $e');
     }
   }
-  
-  static Future<void> _scheduleQuranRemindersForDate(
-    DateTime date,
-    int current,
-    int target,
-    tz.Location location,
-    String locale,
-  ) async {
-    final reminderTimes = [
-      DateTime(date.year, date.month, date.day, 14, 0),
-      DateTime(date.year, date.month, date.day, 18, 0),
-      DateTime(date.year, date.month, date.day, 20, 0),
-    ];
-    
-    for (final reminderTime in reminderTimes) {
-      final tzNow = tz.TZDateTime.now(location);
-      final scheduledTime = tz.TZDateTime(
-        location,
-        reminderTime.year,
-        reminderTime.month,
-        reminderTime.day,
-        reminderTime.hour,
-        reminderTime.minute,
-      );
-      
-      if (scheduledTime.isAfter(tzNow.add(const Duration(seconds: 1)))) {
-        await NotificationService.scheduleGoalReminder(
-          reminderTime: reminderTime,
-          type: 'quran',
-          current: current,
-          target: target,
-          location: location,
-          locale: locale,
-        );
-      }
-    }
-  }
-  
-  static Future<void> _scheduleDhikrRemindersForDate(
-    DateTime date,
-    int current,
-    int target,
-    tz.Location location,
-    String locale,
-  ) async {
-    final reminderTimes = [
-      DateTime(date.year, date.month, date.day, 14, 0),
-      DateTime(date.year, date.month, date.day, 18, 0),
-      DateTime(date.year, date.month, date.day, 20, 0),
-    ];
-    
-    for (final reminderTime in reminderTimes) {
-      final tzNow = tz.TZDateTime.now(location);
-      final scheduledTime = tz.TZDateTime(
-        location,
-        reminderTime.year,
-        reminderTime.month,
-        reminderTime.day,
-        reminderTime.hour,
-        reminderTime.minute,
-      );
-      
-      if (scheduledTime.isAfter(tzNow.add(const Duration(seconds: 1)))) {
-        await NotificationService.scheduleGoalReminder(
-          reminderTime: reminderTime,
-          type: 'dhikr',
-          current: current,
-          target: target,
-          location: location,
-          locale: locale,
-        );
-      }
-    }
-  }
-  
-  static Future<void> _scheduleSedekahReminderForDate(
-    DateTime date,
-    double current,
-    double target,
-    tz.Location location,
-    String locale,
-  ) async {
-    final reminderTime = DateTime(date.year, date.month, date.day, 16, 0);
-    final tzNow = tz.TZDateTime.now(location);
-    final scheduledTime = tz.TZDateTime(
-      location,
-      reminderTime.year,
-      reminderTime.month,
-      reminderTime.day,
-      reminderTime.hour,
-      reminderTime.minute,
-    );
-    
-    if (scheduledTime.isAfter(tzNow.add(const Duration(seconds: 1)))) {
-      await NotificationService.scheduleGoalReminder(
-        reminderTime: reminderTime,
-        type: 'sedekah',
-        current: current.toInt(),
-        target: target.toInt(),
-        location: location,
-        locale: locale,
-      );
-    }
-  }
-  
-  static Future<void> _scheduleTaraweehReminderForDate(
-    DateTime date,
-    DateTime ishaTime,
-    tz.Location location,
-    String locale,
-  ) async {
-    final reminderTime = ishaTime.add(const Duration(minutes: 15));
-    final tzNow = tz.TZDateTime.now(location);
-    final scheduledTime = tz.TZDateTime(
-      location,
-      date.year,
-      date.month,
-      date.day,
-      reminderTime.hour,
-      reminderTime.minute,
-    );
-    
-    if (scheduledTime.isAfter(tzNow.add(const Duration(seconds: 1)))) {
-      await NotificationService.scheduleGoalReminder(
-        reminderTime: reminderTime,
-        type: 'taraweeh',
-        current: 0,
-        target: 0,
-        location: location,
-        locale: locale,
-      );
-    }
-  }
 
-  /// Parse boolean setting from string (treat "true", "1", true as enabled)
+  /// Parse boolean setting from string (treat "true", "1", yes as enabled).
   static bool _parseBoolSetting(String? value) {
     if (value == null) return false;
     final lower = value.toLowerCase().trim();
     return lower == 'true' || lower == '1' || lower == 'yes';
   }
 }
-

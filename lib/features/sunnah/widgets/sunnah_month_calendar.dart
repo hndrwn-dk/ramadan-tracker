@@ -12,6 +12,9 @@ enum SunnahCalendarStyle {
 
   /// Full month explorer for the Month tab.
   full,
+
+  /// Premium month explorer (cleaner cells, no tiny type text).
+  premium,
 }
 
 /// Gregorian month grid for year-round sunnah fasting log.
@@ -43,6 +46,8 @@ class SunnahMonthCalendar extends ConsumerWidget {
         DateTime(monthAnchor.year, monthAnchor.month + 1, 0).day;
     final firstWeekday = monthAnchor.weekday % 7;
     final isFull = style == SunnahCalendarStyle.full;
+    final isPremium = style == SunnahCalendarStyle.premium;
+    final showWeekdayHeader = isFull || isPremium;
     final cells = <Widget>[];
 
     for (var i = 0; i < firstWeekday; i++) {
@@ -57,6 +62,7 @@ class SunnahMonthCalendar extends ConsumerWidget {
         date: DateTime(monthAnchor.year, monthAnchor.month, d),
         todayDate: todayDate,
         isFull: isFull,
+        isPremium: isPremium,
       ));
     }
 
@@ -64,11 +70,13 @@ class SunnahMonthCalendar extends ConsumerWidget {
       crossAxisCount: 7,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: isFull ? 0.82 : 1.0,
+      childAspectRatio: showWeekdayHeader
+          ? (isPremium ? 1.0 : 0.82)
+          : 1.0,
       children: cells,
     );
 
-    if (!isFull) return grid;
+    if (!showWeekdayHeader) return grid;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -87,6 +95,7 @@ class SunnahMonthCalendar extends ConsumerWidget {
     required DateTime date,
     required DateTime todayDate,
     required bool isFull,
+    required bool isPremium,
   }) {
     final isToday = date == todayDate;
     final key = dateKey(date);
@@ -96,6 +105,9 @@ class SunnahMonthCalendar extends ConsumerWidget {
     final fasted = entry?.status == FastingStatus.fasted;
     final excused = entry != null && FastingStatus.isExcused(entry.status);
     final isFuture = date.isAfter(todayDate);
+    final showDot =
+        isPremium && isSunnah && !fasted && !excused; // premium hides type text
+    final SunnahType? dotType = showDot ? sunnahTypes.first : null;
 
     Color bg;
     Color fg = scheme.onSurface;
@@ -114,13 +126,19 @@ class SunnahMonthCalendar extends ConsumerWidget {
       bg = Colors.transparent;
     }
 
+    final double cellRadius = isPremium ? 8 : ((isFull) ? 12 : 10);
+    final double cellMargin = isPremium ? 2 : ((isFull) ? 3 : 2);
+
     final Border? cellBorder;
     if (isToday) {
-      cellBorder = Border.all(color: scheme.primary, width: 2.5);
+      cellBorder = Border.all(
+        color: scheme.primary,
+        width: isPremium ? 1.5 : 2.5,
+      );
     } else if (isSunnah && !fasted) {
       cellBorder = Border.all(
         color: scheme.primary.withValues(alpha: isFuture ? 0.2 : 0.4),
-        width: isFull ? 1.5 : 1,
+        width: isPremium ? 1.0 : ((isFull) ? 1.5 : 1),
       );
     } else {
       cellBorder = null;
@@ -129,16 +147,20 @@ class SunnahMonthCalendar extends ConsumerWidget {
     final typeHint =
         isFull && isSunnah ? _typeAbbrev(context, sunnahTypes.first) : null;
 
+    final double dotOpacity = isFuture ? 0.45 : 1.0;
+    final Color dotColor = _dotColorForType(scheme, dotType);
+
     return InkWell(
       onTap: () => showSunnahStatusSheet(context, ref, date),
-      borderRadius: BorderRadius.circular(isFull ? 12 : 10),
+      borderRadius: BorderRadius.circular(cellRadius),
       child: Container(
-        margin: EdgeInsets.all(isFull ? 3 : 2),
+        margin: EdgeInsets.all(cellMargin),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(isFull ? 12 : 10),
+          borderRadius: BorderRadius.circular(cellRadius),
           border: cellBorder,
-          boxShadow: isToday
+          // Premium removes shadow for cleaner, tappable calendar cells.
+          boxShadow: (isToday && !isPremium)
               ? [
                   BoxShadow(
                     color: scheme.primary.withValues(alpha: 0.18),
@@ -151,12 +173,13 @@ class SunnahMonthCalendar extends ConsumerWidget {
         alignment: Alignment.center,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               '${date.day}',
               style: TextStyle(
                 color: fg,
-                fontSize: isFull ? 15 : 13,
+                fontSize: isPremium ? 14 : ((isFull) ? 15 : 13),
                 fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
               ),
             ),
@@ -173,11 +196,33 @@ class SunnahMonthCalendar extends ConsumerWidget {
                   letterSpacing: 0.2,
                 ),
               ),
+            ] else if (showDot) ...[
+              const SizedBox(height: 2),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: dotColor.withValues(alpha: dotOpacity),
+                  shape: BoxShape.circle,
+                ),
+              ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Color _dotColorForType(ColorScheme scheme, SunnahType? type) {
+    if (type == null) return scheme.onSurface.withValues(alpha: 0.35);
+    switch (type) {
+      case SunnahType.seninKamis:
+        return scheme.primary;
+      case SunnahType.ayyamulBidh:
+        return scheme.onSurface.withValues(alpha: 0.55);
+      default:
+        return scheme.primary.withValues(alpha: 0.7);
+    }
   }
 
   String _typeAbbrev(BuildContext context, SunnahType type) {

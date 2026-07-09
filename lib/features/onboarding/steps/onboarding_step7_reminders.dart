@@ -22,30 +22,16 @@ class OnboardingStep7Reminders extends StatefulWidget {
 }
 
 class _OnboardingStep7RemindersState extends State<OnboardingStep7Reminders> {
-  bool _showGoalDetails = false;
-
   bool get _anyGoalReminderOn =>
       widget.data.quranReminderEnabled ||
       widget.data.dhikrReminderEnabled ||
-      widget.data.sedekahReminderEnabled ||
-      widget.data.taraweehReminderEnabled;
-
-  double get _nightPlanSliderValue {
-    final h = widget.data.nightPlanHour.clamp(2, 4);
-    final m = widget.data.nightPlanMinute;
-    return ((h - 2) * 2 + (m >= 30 ? 1 : 0)).toDouble().clamp(0, 4);
-  }
-
-  String _formatNightPlanTime(int hour, int minute) {
-    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-  }
+      widget.data.sedekahReminderEnabled;
 
   void _setAllGoalReminders(bool value) {
     setState(() {
       widget.data.quranReminderEnabled = value;
       widget.data.dhikrReminderEnabled = value;
       widget.data.sedekahReminderEnabled = value;
-      widget.data.taraweehReminderEnabled = value;
     });
   }
 
@@ -88,69 +74,6 @@ class _OnboardingStep7RemindersState extends State<OnboardingStep7Reminders> {
                         widget.data.sahurOffsetMinutes = value.round();
                       });
                     },
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(l10n.continueButton),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _showNightWorshipTimingSheet() async {
-    final l10n = AppLocalizations.of(context)!;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            final label = _formatNightPlanTime(
-              widget.data.nightPlanHour,
-              widget.data.nightPlanMinute,
-            );
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    l10n.nightPlanReminder,
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(label, style: Theme.of(ctx).textTheme.bodyMedium),
-                  Row(
-                    children: [
-                      Text('2:00', style: Theme.of(ctx).textTheme.bodySmall),
-                      Expanded(
-                        child: Slider(
-                          value: _nightPlanSliderValue,
-                          min: 0,
-                          max: 4,
-                          divisions: 4,
-                          label: label,
-                          onChanged: (value) {
-                            setSheetState(() {});
-                            setState(() {
-                              final index = value.round();
-                              widget.data.nightPlanHour = 2 + index ~/ 2;
-                              widget.data.nightPlanMinute = (index % 2) * 30;
-                            });
-                          },
-                        ),
-                      ),
-                      Text('4:00', style: Theme.of(ctx).textTheme.bodySmall),
-                    ],
                   ),
                   FilledButton(
                     onPressed: () => Navigator.pop(ctx),
@@ -282,22 +205,12 @@ class _OnboardingStep7RemindersState extends State<OnboardingStep7Reminders> {
                         _divider(),
                         _compactReminderRow(
                           title: l10n.iftarReminder,
-                          hint: l10n.atMaghrib,
+                          hint: l10n.iftarConfirmNotificationBody,
                           value: widget.data.iftarEnabled,
-                          onChanged: (v) =>
-                              setState(() => widget.data.iftarEnabled = v),
-                        ),
-                        _divider(),
-                        _compactReminderRow(
-                          title: l10n.nightPlanReminder,
-                          hint: _formatNightPlanTime(
-                            widget.data.nightPlanHour,
-                            widget.data.nightPlanMinute,
-                          ),
-                          value: widget.data.nightPlanEnabled,
-                          onChanged: (v) =>
-                              setState(() => widget.data.nightPlanEnabled = v),
-                          onAdjust: _showNightWorshipTimingSheet,
+                          onChanged: (v) => setState(() {
+                            widget.data.iftarEnabled = v;
+                            widget.data.iftarConfirmEnabled = v;
+                          }),
                         ),
                       ],
                     ),
@@ -312,59 +225,11 @@ class _OnboardingStep7RemindersState extends State<OnboardingStep7Reminders> {
                   const SizedBox(height: 8),
                   AppSurface(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    child: Column(
-                      children: [
-                        _compactReminderRow(
-                          title: l10n.onboardingRemindersGoalsMaster,
-                          hint: l10n.onboardingRemindersGoalsMasterHint,
-                          value: _anyGoalReminderOn,
-                          onChanged: _setAllGoalReminders,
-                        ),
-                        _divider(),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton(
-                            onPressed: () => setState(
-                              () => _showGoalDetails = !_showGoalDetails,
-                            ),
-                            child: Text(l10n.onboardingRemindersCustomizeGoals),
-                          ),
-                        ),
-                        if (_showGoalDetails) ...[
-                          _divider(),
-                          _goalDetailRow(
-                            l10n.goalReminderQuran,
-                            widget.data.quranReminderEnabled,
-                            (v) => setState(
-                              () => widget.data.quranReminderEnabled = v,
-                            ),
-                          ),
-                          _divider(),
-                          _goalDetailRow(
-                            l10n.goalReminderDhikr,
-                            widget.data.dhikrReminderEnabled,
-                            (v) => setState(
-                              () => widget.data.dhikrReminderEnabled = v,
-                            ),
-                          ),
-                          _divider(),
-                          _goalDetailRow(
-                            l10n.goalReminderSedekah,
-                            widget.data.sedekahReminderEnabled,
-                            (v) => setState(
-                              () => widget.data.sedekahReminderEnabled = v,
-                            ),
-                          ),
-                          _divider(),
-                          _goalDetailRow(
-                            l10n.goalReminderTaraweeh,
-                            widget.data.taraweehReminderEnabled,
-                            (v) => setState(
-                              () => widget.data.taraweehReminderEnabled = v,
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: _compactReminderRow(
+                      title: l10n.onboardingRemindersGoalsMaster,
+                      hint: l10n.onboardingRemindersGoalsMasterHint,
+                      value: _anyGoalReminderOn,
+                      onChanged: _setAllGoalReminders,
                     ),
                   ),
                 ],
@@ -387,30 +252,6 @@ class _OnboardingStep7RemindersState extends State<OnboardingStep7Reminders> {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _goalDetailRow(
-    String title,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
           ),
         ],
       ),

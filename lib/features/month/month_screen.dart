@@ -113,13 +113,9 @@ Widget buildMonthGrid(BuildContext context, WidgetRef ref, int seasonId, int day
               padding: EdgeInsets.fromLTRB(horizontalPad, 0, horizontalPad, 0),
               child: MonthJourneyCard(),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 0),
-              child: MonthLegendCompact(),
-            ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 20),
+                padding: const EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 0),
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: AppSurface(
@@ -176,6 +172,10 @@ Widget buildMonthGrid(BuildContext context, WidgetRef ref, int seasonId, int day
                   ),
                 ),
               ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 20),
+              child: MonthLegendCompact(),
             ),
           ],
         );

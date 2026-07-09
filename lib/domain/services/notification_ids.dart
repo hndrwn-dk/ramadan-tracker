@@ -1,9 +1,9 @@
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 
-/// Categories for deterministic notification IDs used by [NotificationService].
 enum NotificationCategory {
   sahur,
   iftar,
+  imsak,
   nightPlan,
   habit,
   goal,
@@ -21,11 +21,15 @@ abstract final class NotificationIds {
   static const int baseGoal = 5000000;
   static const int baseNextRamadan = 6000000;
   static const int baseSunnah = 7000000;
+  static const int baseImsak = 8000000;
+  static const int baseSunnahSahur = 9000000;
+  static const int baseSunnahIftar = 10000000;
 
-  /// Season-bound reminders (Sahur, Iftar, night plan, goals, legacy habits).
+  /// Season-bound reminders (Sahur, Imsak, Iftar, night plan, goals, legacy habits).
   static const seasonCategories = {
     NotificationCategory.sahur,
     NotificationCategory.iftar,
+    NotificationCategory.imsak,
     NotificationCategory.nightPlan,
     NotificationCategory.habit,
     NotificationCategory.goal,
@@ -41,6 +45,9 @@ abstract final class NotificationIds {
     if (id >= 22000000 && id < 23000000) {
       return NotificationCategory.iftar;
     }
+    if (id >= 28000000 && id < 29000000) {
+      return NotificationCategory.imsak;
+    }
     if (id >= 23000000 && id < 24000000) {
       return NotificationCategory.nightPlan;
     }
@@ -50,7 +57,8 @@ abstract final class NotificationIds {
     if (id >= 25000000 && id < 27000000) {
       return NotificationCategory.goal;
     }
-    if (id >= 27000000 && id < 28000000) {
+    // Sunnah family: eve (27M), sahur (29M), iftar (30M).
+    if (id >= 27000000 && id < 31000000) {
       return NotificationCategory.sunnah;
     }
     return NotificationCategory.other;
@@ -62,6 +70,8 @@ abstract final class NotificationIds {
         return 'Sahur';
       case NotificationCategory.iftar:
         return 'Iftar';
+      case NotificationCategory.imsak:
+        return 'Imsak';
       case NotificationCategory.nightPlan:
         return 'Night plan';
       case NotificationCategory.habit:

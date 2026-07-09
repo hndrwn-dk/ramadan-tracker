@@ -96,10 +96,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get prayerOffsetTipBody =>
-      'Jika waktu sholat terlihat berbeda +/- 1 jam, kamu bisa atur Offset di Pengaturan.';
+      'Jika waktu sholat terlihat tidak sesuai, coba metode perhitungan lain di Pengaturan.';
 
   @override
-  String get prayerOffsetTipCta => 'Atur Offset';
+  String get prayerOffsetTipCta => 'Buka Pengaturan';
 
   @override
   String get backupRestoreTitle => 'Cadangan & Pulihkan';
@@ -393,6 +393,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Ingatkan saya 15 menit setelah Isya jika Tarawih belum dilakukan';
 
   @override
+  String get goalReminderDigest => 'Pengingat target ibadah';
+
+  @override
+  String get goalReminderDigestDesc =>
+      'Setelah konfirmasi Iftar, ingatkan jika ada target ibadah yang belum tercapai';
+
+  @override
   String get quranGoalReminderTitle => 'Pengingat Target Quran';
 
   @override
@@ -537,6 +544,17 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get iftarReminder => 'Pengingat Iftar';
+
+  @override
+  String get sunnahReminderEnabled => 'Pengingat puasa sunnah';
+
+  @override
+  String get sunnahReminderEnabledSubtitle =>
+      'Pengingat malam sebelum hari puasa sunnah (Senin/Kamis, Ayyamul Bidh, dll.)';
+
+  @override
+  String get habitFastingSubtitle =>
+      'Untuk pelacakan checklist harian — bukan pengingat notifikasi';
 
   @override
   String minAfterMaghrib(int minutes) {
@@ -2266,7 +2284,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get onboardingRemindersGoalsMasterHint =>
-      'Pengingat lembut jika target hari ini belum tercapai';
+      'Setelah konfirmasi Iftar, ingatkan jika target harian belum tercapai';
 
   @override
   String get onboardingRemindersCustomizeGoals => 'Atur per target';
@@ -2319,4 +2337,139 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get seasonComparisonStrongDays => 'Hari kuat';
+
+  @override
+  String get imsakIntentionTitle => 'Waktu imsak';
+
+  @override
+  String get imsakIntentionHint => 'Apakah Anda berpuasa hari ini?';
+
+  @override
+  String get imsakIntentionFastSubtitle =>
+      'Niat puasa — konfirmasi lengkap saat berbuka';
+
+  @override
+  String get imsakConfirmAtIftarHint =>
+      'Konfirmasi puasa penuh saat berbuka puasa';
+
+  @override
+  String get sahurIntentionYes => 'Ya, saya berpuasa';
+
+  @override
+  String get sahurIntentionExcused => 'Tidak berpuasa (uzur)';
+
+  @override
+  String get sahurIntentionLater => 'Nanti';
+
+  @override
+  String get sahurIntentionExcusedTitle => 'Tidak berpuasa';
+
+  @override
+  String get sahurIntentionExcusedFootnote => 'Qadha dilacak di tab Sunnah.';
+
+  @override
+  String get sahurIntentionBack => 'Kembali';
+
+  @override
+  String get fastingIntentPendingSaved =>
+      'Niat puasa tersimpan — konfirmasi saat berbuka';
+
+  @override
+  String get iftarConfirmTitle => 'Konfirmasi puasa hari ini';
+
+  @override
+  String get iftarConfirmBody =>
+      'Apakah Anda menyelesaikan puasa penuh hari ini?';
+
+  @override
+  String get iftarConfirmYes => 'Ya, puasa penuh';
+
+  @override
+  String get iftarConfirmNo => 'Tidak, belum selesai';
+
+  @override
+  String get iftarSummaryTitle => 'Status puasa hari ini';
+
+  @override
+  String iftarSummaryStatus(String status) {
+    return 'Tercatat: $status';
+  }
+
+  @override
+  String get imsakReminderLabel => 'Pengingat niat puasa (imsak)';
+
+  @override
+  String get iftarConfirmReminderLabel => 'Konfirmasi puasa saat berbuka';
+
+  @override
+  String get imsakOffsetLabel => 'Menit sebelum Subuh (imsak)';
+
+  @override
+  String get imsakReminderNotificationTitle => 'Waktu imsak';
+
+  @override
+  String get imsakReminderNotificationBody =>
+      'Tap untuk konfirmasi niat puasa hari ini';
+
+  @override
+  String get iftarConfirmNotificationTitle => 'Waktu berbuka';
+
+  @override
+  String get iftarConfirmNotificationBody =>
+      'Tap untuk konfirmasi puasa hari ini';
+
+  @override
+  String get iftarFastRecordedTitle => 'Puasa tercatat';
+
+  @override
+  String get iftarFastRecordedBody =>
+      'Alhamdulillah, puasa hari ini sudah tercatat.';
+
+  @override
+  String get fastingIntentRemindersHint =>
+      'Sahur: niat puasa. Berbuka: konfirmasi puasa penuh — seperti mulai/selesai latihan.';
+
+  @override
+  String get sahurReminderNotificationBody =>
+      'Ketuk untuk menetapkan niat puasa hari ini';
+
+  @override
+  String get remindersTodayTitle => 'Pengingat puasa hari ini';
+
+  @override
+  String get reminderStatusPassed => 'Sudah lewat';
+
+  @override
+  String get reminderStatusUpcoming => 'Berikutnya';
+
+  @override
+  String get reminderStatusOff => 'Nonaktif';
+
+  @override
+  String get refreshRemindersNow => 'Segarkan pengingat';
+
+  @override
+  String get remindersExactAlarmHint =>
+      'Izinkan Alarm & pengingat di pengaturan aplikasi Android agar Sahur tepat waktu.';
+
+  @override
+  String get remindersMorningPassedHint =>
+      'Pengingat Sahur hari ini sudah lewat. Iftar masih terjadwal jika diaktifkan.';
+
+  @override
+  String get remindersPermissionOff =>
+      'Notifikasi dimatikan. Aktifkan di pengaturan sistem.';
+
+  @override
+  String get reminderQueued => 'Terjadwal';
+
+  @override
+  String get reminderNotQueued => 'Belum antri';
+
+  @override
+  String get reminderMissedNotQueuedHint =>
+      'Sahur lewat tanpa notifikasi. Buka app sebelum Sahur besok agar terjadwal, dan izinkan Alarm & pengingat di bawah.';
+
+  @override
+  String get openExactAlarmSettings => 'Izinkan Alarm & pengingat';
 }

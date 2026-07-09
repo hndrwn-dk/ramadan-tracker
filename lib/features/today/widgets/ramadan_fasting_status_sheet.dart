@@ -24,7 +24,8 @@ Future<RamadanFastingSheetResult?> showRamadanFastingStatusSheet(
   final l10n = AppLocalizations.of(context)!;
   final selected = currentStatus ?? FastingStatus.notDone;
   final hasEntry = currentStatus != null &&
-      currentStatus != FastingStatus.notDone;
+      currentStatus != FastingStatus.notDone &&
+      currentStatus != FastingStatus.intentPendingFast;
 
   return showModalBottomSheet<RamadanFastingSheetResult>(
     context: context,
@@ -69,8 +70,10 @@ Future<RamadanFastingSheetResult?> showRamadanFastingStatusSheet(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(l10n.habitFasting,
-                  style: Theme.of(ctx).textTheme.titleMedium),
+              Text(
+                l10n.habitFasting,
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
               const SizedBox(height: 4),
               Text(
                 dateLabel,

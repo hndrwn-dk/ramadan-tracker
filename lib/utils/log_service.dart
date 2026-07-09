@@ -37,6 +37,13 @@ class LogService {
     }
   }
 
+  /// Debug-only logging — skipped in release (no buffer, no console).
+  static void logVerbose(String message) {
+    if (!kDebugMode) return;
+    _addLog(message);
+    debugPrint(message);
+  }
+
   /// Log with prefix (for easier filtering)
   static void logWithPrefix(String prefix, String message) {
     log('[$prefix] $message');

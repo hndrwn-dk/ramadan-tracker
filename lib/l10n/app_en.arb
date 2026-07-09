@@ -136,8 +136,8 @@
   },
   
   "prayerOffsetTipTitle": "Prayer times off by 1 hour?",
-  "prayerOffsetTipBody": "If prayer times look off by about 1 hour, you can set an Offset in Settings.",
-  "prayerOffsetTipCta": "Set Offset",
+  "prayerOffsetTipBody": "If prayer times look off, try a different calculation method in Settings.",
+  "prayerOffsetTipCta": "Open Settings",
   
   "backupRestoreTitle": "Backup & Restore",
   "@backupRestoreTitle": {
@@ -564,6 +564,8 @@
   "goalReminderSedekahDesc": "Remind me if Sedekah target not reached (4 PM)",
   "goalReminderTaraweeh": "Taraweeh Reminder",
   "goalReminderTaraweehDesc": "Remind me 15 minutes after Isha if Taraweeh not done",
+  "goalReminderDigest": "Worship target reminder",
+  "goalReminderDigestDesc": "After Iftar confirmation, remind me if daily worship targets are not yet met",
   "quranGoalReminderTitle": "Quran Goal Reminder",
   "quranGoalReminderBody": "Haven't reached today's Quran target ({current}/{target} pages). Keep going!",
   "@quranGoalReminderBody": {
@@ -726,6 +728,21 @@
   "iftarReminder": "Iftar reminder",
   "@iftarReminder": {
     "description": "Iftar reminder label"
+  },
+
+  "sunnahReminderEnabled": "Sunnah fast reminders",
+  "@sunnahReminderEnabled": {
+    "description": "Toggle for evening-before sunnah fasting reminders"
+  },
+
+  "sunnahReminderEnabledSubtitle": "Evening reminder the night before a recommended sunnah fast (Monday/Thursday, white days, etc.)",
+  "@sunnahReminderEnabledSubtitle": {
+    "description": "Subtitle for sunnah reminder toggle in Times & Reminders"
+  },
+
+  "habitFastingSubtitle": "Track fasting in your daily checklist — not a notification reminder",
+  "@habitFastingSubtitle": {
+    "description": "Clarifies habit Puasa toggle is for tracking, not notifications"
   },
   
   "minAfterMaghrib": "{minutes} min after Maghrib",
@@ -3705,7 +3722,7 @@
   "onboardingRemindersFastingSection": "Fasting times",
   "onboardingRemindersGoalsSection": "Daily goals",
   "onboardingRemindersGoalsMaster": "Goal reminders",
-  "onboardingRemindersGoalsMasterHint": "Gentle nudges if today's target is not done yet",
+  "onboardingRemindersGoalsMasterHint": "After Iftar confirmation, remind me if daily targets are not yet met",
   "onboardingRemindersCustomizeGoals": "Customize per goal",
   "onboardingRemindersAdjustTiming": "Adjust timing",
 
@@ -3739,6 +3756,53 @@
   "seasonShareTagline": "Ramadan Tracker — offline worship companion",
   "seasonReportViewReport": "View season report",
   "seasonComparisonAvgScore": "Avg score",
-  "seasonComparisonStrongDays": "Strong days"
+  "seasonComparisonStrongDays": "Strong days",
+
+  "imsakIntentionTitle": "Imsak time",
+  "imsakIntentionHint": "Will you fast today?",
+  "imsakIntentionFastSubtitle": "Intend to fast — confirm fully at iftar",
+  "imsakConfirmAtIftarHint": "Confirm your full fast when you break fast",
+  "sahurIntentionYes": "Yes, I'm fasting",
+  "sahurIntentionExcused": "Not fasting (excused)",
+  "sahurIntentionLater": "Later",
+  "sahurIntentionExcusedTitle": "Not fasting",
+  "sahurIntentionExcusedFootnote": "Qadha is tracked in the Sunnah tab.",
+  "sahurIntentionBack": "Back",
+  "fastingIntentPendingSaved": "Fasting intention saved — confirm at iftar",
+  "iftarConfirmTitle": "Confirm today's fast",
+  "iftarConfirmBody": "Did you complete a full fast today?",
+  "iftarConfirmYes": "Yes, full fast",
+  "iftarConfirmNo": "No, not completed",
+  "iftarSummaryTitle": "Today's fasting status",
+  "iftarSummaryStatus": "Logged: {status}",
+  "@iftarSummaryStatus": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "imsakReminderLabel": "Imsak fasting intention",
+  "iftarConfirmReminderLabel": "Iftar fast confirmation",
+  "imsakOffsetLabel": "Minutes before Fajr (imsak)",
+  "imsakReminderNotificationTitle": "Imsak time",
+  "imsakReminderNotificationBody": "Tap to set your fasting intention for today",
+  "iftarConfirmNotificationTitle": "Iftar time",
+  "iftarConfirmNotificationBody": "Tap to confirm today's fast",
+  "iftarFastRecordedTitle": "Fast recorded",
+  "iftarFastRecordedBody": "Alhamdulillah, today's fast has been recorded.",
+  "fastingIntentRemindersHint": "Sahur: set intention. Iftar: confirm full fast — like starting and ending a workout.",
+  "sahurReminderNotificationBody": "Tap to set your fasting intention for today",
+
+  "remindersTodayTitle": "Today's fasting reminders",
+  "reminderStatusPassed": "Passed",
+  "reminderStatusUpcoming": "Next up",
+  "reminderStatusOff": "Off",
+  "refreshRemindersNow": "Refresh reminders now",
+  "remindersExactAlarmHint": "Enable Alarms & reminders in Android app settings for on-time Sahur.",
+  "remindersMorningPassedHint": "Sahur for today has passed. Iftar is still scheduled if enabled.",
+  "remindersPermissionOff": "Notifications are disabled. Enable them in system settings.",
+  "reminderQueued": "Queued",
+  "reminderNotQueued": "Not queued",
+  "reminderMissedNotQueuedHint": "Sahur passed without a notification. Open the app before Sahur tomorrow so it can be scheduled, and allow Alarms & reminders below.",
+  "openExactAlarmSettings": "Allow Alarms & reminders"
 }
 

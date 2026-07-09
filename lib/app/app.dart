@@ -7,7 +7,9 @@ import 'package:ramadan_tracker/features/plan/plan_screen.dart';
 import 'package:ramadan_tracker/features/insights/insights_screen.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_screen.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_wrapper.dart';
+import 'package:ramadan_tracker/features/today/widgets/fasting_notification_handler.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
+import 'package:ramadan_tracker/app/root_navigator.dart';
 import 'package:ramadan_tracker/widgets/theme.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/theme_provider.dart';
@@ -58,6 +60,7 @@ class RamadanCompanionApp extends ConsumerWidget {
         );
         
         return MaterialApp(
+          navigatorKey: rootNavigatorKey,
           title: 'Ramadan Tracker',
           theme: AppTheme.lightThemeWithDynamic(lightScheme),
           darkTheme: AppTheme.darkThemeWithDynamic(darkScheme),
@@ -66,7 +69,11 @@ class RamadanCompanionApp extends ConsumerWidget {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const OnboardingWrapper(
-            child: CelebrationListener(child: MainScreen()),
+            child: CelebrationListener(
+              child: NotificationLaunchListener(
+                child: MainScreen(),
+              ),
+            ),
           ),
           debugShowCheckedModeBanner: false,
         );
@@ -99,6 +106,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureTodayFastingReminders();
       _rescheduleNotifications();
       WidgetLaunchService.initialize(ref);
     });
@@ -114,15 +122,37 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _ensureTodayFastingReminders();
       // Reschedule notifications when app resumes, but only if enough time has passed
       _rescheduleNotifications();
+    }
+  }
+
+  Future<void> _ensureTodayFastingReminders() async {
+    try {
+      final database = ref.read(databaseProvider);
+      final count =
+          await NotificationService.ensureTodayFastingRemindersScheduled(
+        database,
+      );
+      if (count > 0 && kDebugMode) {
+        debugPrint(
+          '=== ensureTodayFastingReminders: queued $count reminder(s) ===',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ensureTodayFastingReminders failed: $e');
+      }
     }
   }
 
   Future<void> _rescheduleNotifications() async {
     const regressionSeed = bool.fromEnvironment('REGRESSION_SEED');
     if (regressionSeed) {
-      debugPrint('=== _rescheduleNotifications skipped (REGRESSION_SEED) ===');
+      if (kDebugMode) {
+        debugPrint('=== _rescheduleNotifications skipped (REGRESSION_SEED) ===');
+      }
       return;
     }
 
@@ -131,7 +161,12 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     if (_lastRescheduleTime != null) {
       final timeSinceLastReschedule = now.difference(_lastRescheduleTime!);
       if (timeSinceLastReschedule < _minRescheduleInterval) {
-        debugPrint('=== _rescheduleNotifications skipped (too soon: ${timeSinceLastReschedule.inSeconds}s) ===');
+        if (kDebugMode) {
+          debugPrint(
+            '=== _rescheduleNotifications skipped (too soon: '
+            '${timeSinceLastReschedule.inSeconds}s) ===',
+          );
+        }
         return;
       }
     }
@@ -139,44 +174,62 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     // Check if scheduling is already in progress (prevent concurrent calls)
     // This is a safety check - NotificationService also has its own lock
     _lastRescheduleTime = now;
-    debugPrint('=== _rescheduleNotifications called ===');
+    if (kDebugMode) {
+      debugPrint('=== _rescheduleNotifications called ===');
+    }
     
     try {
       final database = ref.read(databaseProvider);
       
-      // Check permission status first
-      final hasPermission = await NotificationService.checkNotificationPermission();
-      debugPrint('Notification permission status before reschedule: $hasPermission');
-      
-      // Get count before reschedule
-      try {
-        final beforePending = await NotificationService.getPendingNotifications();
-        debugPrint('Pending notifications BEFORE reschedule: ${beforePending.length}');
-      } catch (e) {
-        debugPrint('Could not get pending count before reschedule: $e');
+      if (kDebugMode) {
+        final hasPermission =
+            await NotificationService.checkNotificationPermission();
+        debugPrint(
+          'Notification permission status before reschedule: $hasPermission',
+        );
+        try {
+          final beforePending =
+              await NotificationService.getPendingNotifications();
+          debugPrint(
+            'Pending notifications BEFORE reschedule: ${beforePending.length}',
+          );
+        } catch (e) {
+          debugPrint('Could not get pending count before reschedule: $e');
+        }
       }
       
       await NotificationService.rescheduleAllNotificationTypes(database: database);
+      await NotificationService.ensureTodayFastingRemindersScheduled(database);
       await HomeWidgetService.update(database);
-      debugPrint('=== _rescheduleNotifications completed ===');
+      if (kDebugMode) {
+        debugPrint('=== _rescheduleNotifications completed ===');
+      }
       
-      // Show pending notifications count (with error handling)
-      try {
-        await Future.delayed(const Duration(milliseconds: 1000)); // Wait for scheduling to complete
-        final pending = await NotificationService.getPendingNotifications();
-        debugPrint('Total pending notifications AFTER reschedule: ${pending.length}');
-        
-        // Warn only if count suggests duplicates (~12/day * 30 days = 360 is normal; >500 likely duplicate runs)
-        if (pending.length > 500) {
-          debugPrint('WARNING: Pending notification count is very high (${pending.length}). This may indicate duplicates.');
+      if (kDebugMode) {
+        try {
+          await Future.delayed(const Duration(milliseconds: 1000));
+          final pending = await NotificationService.getPendingNotifications();
+          debugPrint(
+            'Total pending notifications AFTER reschedule: ${pending.length}',
+          );
+          if (pending.length > 500) {
+            debugPrint(
+              'WARNING: Pending notification count is very high '
+              '(${pending.length}). This may indicate duplicates.',
+            );
+          }
+        } catch (e) {
+          debugPrint('Error getting pending notifications count: $e');
+          debugPrint(
+            'Notifications may still be scheduled despite this error',
+          );
         }
-      } catch (e) {
-        debugPrint('Error getting pending notifications count: $e');
-        debugPrint('Notifications may still be scheduled despite this error');
       }
     } catch (e, stackTrace) {
-      debugPrint('Error rescheduling notifications on startup: $e');
-      debugPrint('Stack trace: $stackTrace');
+      if (kDebugMode) {
+        debugPrint('Error rescheduling notifications on startup: $e');
+        debugPrint('Stack trace: $stackTrace');
+      }
     }
   }
 

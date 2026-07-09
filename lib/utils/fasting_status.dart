@@ -11,7 +11,18 @@ class FastingStatus {
   static const int excusedHaid = 4;
   static const int excusedOther = 5;
 
-  static const List<int> all = [notDone, fasted, excusedSick, excusedNifas, excusedHaid, excusedOther];
+  /// Imsak intention only (KV); not persisted to daily_entries until iftar confirm.
+  static const int intentPendingFast = 6;
+
+  static const List<int> all = [
+    notDone,
+    fasted,
+    excusedSick,
+    excusedNifas,
+    excusedHaid,
+    excusedOther,
+    intentPendingFast,
+  ];
 
   /// Day counts as "completed" for score (fasted or excused).
   static bool isCompletedForDay(int? valueInt, bool? valueBool) {
@@ -27,6 +38,8 @@ class FastingStatus {
 
   static bool isExcused(int status) =>
       status == excusedSick || status == excusedNifas || status == excusedHaid || status == excusedOther;
+
+  static bool isPendingIntent(int status) => status == intentPendingFast;
 
   /// True when status is haid or nifas (day is excused from prayers, tahajud, quran, taraweeh).
   static bool isHaidOrNifas(int status) =>

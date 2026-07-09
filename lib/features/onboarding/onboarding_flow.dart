@@ -242,6 +242,7 @@ class OnboardingData {
   int sahurOffsetMinutes = 30;
   bool iftarEnabled = true;
   int iftarOffsetMinutes = 0;
+  bool iftarConfirmEnabled = true;
   bool nightPlanEnabled = true;
   int nightPlanHour = 2;
   int nightPlanMinute = 30;
@@ -299,14 +300,21 @@ class OnboardingData {
     await database.kvSettingsDao.setValue('sahur_offset', sahurOffsetMinutes.clamp(1, 45).toString());
     await database.kvSettingsDao.setValue('iftar_enabled', iftarEnabled.toString());
     await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
-    await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
+    await database.kvSettingsDao.setValue('iftar_confirm_enabled', iftarEnabled.toString());
+    await database.kvSettingsDao.setValue('night_plan_enabled', 'false');
     await database.kvSettingsDao.setValue('night_plan_hour', nightPlanHour.clamp(2, 4).toString());
     await database.kvSettingsDao.setValue('night_plan_minute', nightPlanMinute.clamp(0, 59).toString());
 
     await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
-    await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
+    final digestEnabled =
+        quranReminderEnabled || dhikrReminderEnabled || sedekahReminderEnabled;
+    await database.kvSettingsDao.setValue(
+      'goal_reminder_digest_enabled',
+      digestEnabled.toString(),
+    );
+    await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', 'false');
     await database.kvSettingsDao.setValue('taraweeh_rakaat_per_day', taraweehRakaatPerDay.toString());
 
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
@@ -412,14 +420,21 @@ class OnboardingData {
     await database.kvSettingsDao.setValue('sahur_offset', sahurOffsetMinutes.clamp(1, 45).toString());
     await database.kvSettingsDao.setValue('iftar_enabled', iftarEnabled.toString());
     await database.kvSettingsDao.setValue('iftar_offset', iftarOffsetMinutes.toString());
-    await database.kvSettingsDao.setValue('night_plan_enabled', nightPlanEnabled.toString());
+    await database.kvSettingsDao.setValue('iftar_confirm_enabled', iftarEnabled.toString());
+    await database.kvSettingsDao.setValue('night_plan_enabled', 'false');
     await database.kvSettingsDao.setValue('night_plan_hour', nightPlanHour.clamp(2, 4).toString());
     await database.kvSettingsDao.setValue('night_plan_minute', nightPlanMinute.clamp(0, 59).toString());
 
     await database.kvSettingsDao.setValue('goal_reminder_quran_enabled', quranReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_dhikr_enabled', dhikrReminderEnabled.toString());
     await database.kvSettingsDao.setValue('goal_reminder_sedekah_enabled', sedekahReminderEnabled.toString());
-    await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', taraweehReminderEnabled.toString());
+    final digestEnabled =
+        quranReminderEnabled || dhikrReminderEnabled || sedekahReminderEnabled;
+    await database.kvSettingsDao.setValue(
+      'goal_reminder_digest_enabled',
+      digestEnabled.toString(),
+    );
+    await database.kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', 'false');
     await database.kvSettingsDao.setValue('taraweeh_rakaat_per_day', taraweehRakaatPerDay.toString());
 
     await database.kvSettingsDao.setValue('prayers_detailed_mode', 'true');
@@ -497,6 +512,7 @@ class OnboardingData {
           sahurOffsetMinutes: sahurOffsetMinutes,
           iftarEnabled: iftarEnabled,
           iftarOffsetMinutes: iftarOffsetMinutes,
+          iftarConfirmEnabled: iftarConfirmEnabled,
           nightPlanEnabled: nightPlanEnabled,
           fajrAdjust: fajrAdjust,
           maghribAdjust: maghribAdjust,

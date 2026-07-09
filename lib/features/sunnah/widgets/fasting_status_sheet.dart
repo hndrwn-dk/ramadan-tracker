@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/data/providers/qadha_provider.dart';
 import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/engagement_providers.dart';
+import 'package:ramadan_tracker/domain/services/fasting_intent_service.dart';
 import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_option_cards.dart';
@@ -44,6 +45,7 @@ Future<void> showSunnahStatusSheet(
           if (ctx.mounted) Navigator.pop(ctx);
           return;
         }
+
         final isQadha = status == FastingStatus.fasted && qadha;
         await db.sunnahFastsDao.upsert(
           date,
@@ -66,6 +68,7 @@ Future<void> showSunnahStatusSheet(
         ref.read(sunnahRefreshProvider.notifier).state++;
         ref.invalidate(sunnahMonthlyChallengeProvider);
         ref.invalidate(preRamadanQuestProgressProvider);
+        await FastingIntentService.clearSunnahIntent(db, date: date);
         await HomeWidgetService.update(db);
         await evaluateAchievements(ref);
 
@@ -94,7 +97,10 @@ Future<void> showSunnahStatusSheet(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(s.setStatus, style: Theme.of(ctx).textTheme.titleMedium),
+              Text(
+                s.setStatus,
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
               const SizedBox(height: 4),
               Text(
                 dateLabel,

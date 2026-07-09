@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
@@ -114,7 +115,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildAppearance(),
             const SizedBox(height: 16),
             _buildLanguage(),
-            if (_debugEnabled) ...[
+            if (_debugEnabled && kDebugMode) ...[
               const SizedBox(height: 16),
               _buildDebugSection(),
             ],
@@ -666,30 +667,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final sahurOffset = (int.tryParse(settings['sahur_offset'] ?? '30') ?? 30).clamp(1, 45);
         final iftarEnabled = settings['iftar_enabled'] == 'true';
         final iftarOffset = int.tryParse(settings['iftar_offset'] ?? '0') ?? 0;
-        final nightPlanEnabled = settings['night_plan_enabled'] == 'true';
-        final nightPlanHour = int.tryParse(settings['night_plan_hour'] ?? '2') ?? 2;
-        final nightPlanMinute = int.tryParse(settings['night_plan_minute'] ?? '30') ?? 30;
-        final nightPlanTimeStr = '${nightPlanHour.toString().padLeft(2, '0')}:${nightPlanMinute.toString().padLeft(2, '0')}';
+        final sunnahReminderEnabled =
+            settings['sunnah_reminder_enabled'] == 'true';
         final method = settings['prayer_method'] ?? 'mwl';
-        final fajrAdj = int.tryParse(settings['prayer_fajr_adj'] ?? '0') ?? 0;
-        final maghribAdj = int.tryParse(settings['prayer_maghrib_adj'] ?? '0') ?? 0;
 
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.calculationMethod),
+              subtitle: Text(_getMethodLabel(method)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showMethodDialog(method),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const Divider(height: 24),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.sahurReminder),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.minBeforeFajr(sahurOffset)),
-                  Text(l10n.getNotifiedBeforeSuhoor, style: const TextStyle(fontSize: 11)),
-                ],
-              ),
               value: sahurEnabled,
               onChanged: (value) async {
                 await ref.read(databaseProvider).kvSettingsDao.setValue('sahur_enabled', value.toString());
                 setState(() {});
+                _rescheduleReminders();
               },
             ),
             if (sahurEnabled)
@@ -726,253 +729,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.iftarReminder),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.minAfterMaghrib(iftarOffset)),
-                  Text(l10n.getNotifiedWhenBreakFast, style: const TextStyle(fontSize: 11)),
-                ],
-              ),
+              subtitle: Text(l10n.minAfterMaghrib(iftarOffset)),
               value: iftarEnabled,
               onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('iftar_enabled', value.toString());
-                setState(() {});
-              },
-            ),
-            const Divider(height: 1),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.showIftarCountdown),
-              value: settings['times_show_iftar_countdown'] != 'false',
-              onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('times_show_iftar_countdown', value.toString());
-                setState(() {});
-              },
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.showSahurCountdown),
-              value: settings['times_show_sahur_countdown'] == 'true',
-              onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('times_show_sahur_countdown', value.toString());
-                setState(() {});
-              },
-            ),
-            const Divider(height: 1),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.nightPlanReminder),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(nightPlanTimeStr),
-                  Text(l10n.reminderToPlanNightActivities, style: const TextStyle(fontSize: 11)),
-                ],
-              ),
-              value: nightPlanEnabled,
-              onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('night_plan_enabled', value.toString());
-                setState(() {});
-              },
-            ),
-            const Divider(height: 24),
-            // Goal Reminders Section
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                l10n.goalRemindersTitle,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
-            Text(
-              l10n.goalRemindersSubtitle,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.goalReminderQuran),
-              subtitle: Text(l10n.goalReminderQuranDesc, style: const TextStyle(fontSize: 11)),
-              value: settings['goal_reminder_quran_enabled'] != 'false',
-              onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('goal_reminder_quran_enabled', value.toString());
-                setState(() {});
-                // Reschedule reminders when setting changes
-                _rescheduleReminders();
-              },
-            ),
-            const Divider(height: 1),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.goalReminderDhikr),
-              subtitle: Text(l10n.goalReminderDhikrDesc, style: const TextStyle(fontSize: 11)),
-              value: settings['goal_reminder_dhikr_enabled'] != 'false',
-              onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('goal_reminder_dhikr_enabled', value.toString());
-                setState(() {});
-                _rescheduleReminders();
-              },
-            ),
-            const Divider(height: 1),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.goalReminderSedekah),
-              subtitle: Text(l10n.goalReminderSedekahDesc, style: const TextStyle(fontSize: 11)),
-              value: settings['goal_reminder_sedekah_enabled'] != 'false',
-              onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('goal_reminder_sedekah_enabled', value.toString());
-                setState(() {});
-                _rescheduleReminders();
-              },
-            ),
-            const Divider(height: 1),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.goalReminderTaraweeh),
-              subtitle: Text(l10n.goalReminderTaraweehDesc, style: const TextStyle(fontSize: 11)),
-              value: settings['goal_reminder_taraweeh_enabled'] != 'false',
-              onChanged: (value) async {
-                await ref.read(databaseProvider).kvSettingsDao.setValue('goal_reminder_taraweeh_enabled', value.toString());
-                setState(() {});
-                _rescheduleReminders();
-              },
-            ),
-            const Divider(height: 24),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.calculationMethod),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_getMethodLabel(method)),
-                  Text(l10n.choosePrayerTimeMethod, style: const TextStyle(fontSize: 11)),
-                ],
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showMethodDialog(method),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.fajrAdjustment),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('$fajrAdj ${l10n.minutesUnit}'),
-                  Text(l10n.adjustFajrManually, style: const TextStyle(fontSize: 11)),
-                ],
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showAdjustmentDialog('fajr', fajrAdj),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.maghribAdjustment),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('$maghribAdj ${l10n.minutesUnit}'),
-                  Text(l10n.adjustMaghribManually, style: const TextStyle(fontSize: 11)),
-                ],
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showAdjustmentDialog('maghrib', maghribAdj),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 8, left: 0, right: 0),
-              child: Text(
-                l10n.prayerTimesVaryDaily,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontStyle: FontStyle.italic,
-                    ),
-              ),
-            ),
-            const Divider(height: 24),
-            FutureBuilder<List<NotificationInfo>>(
-              future: NotificationService.getPendingNotifications(),
-              builder: (context, notifSnapshot) {
-                if (notifSnapshot.hasData && notifSnapshot.data!.isNotEmpty) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          l10n.nextReminders,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ),
-                      ...notifSnapshot.data!.take(5).map((notif) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(notif.title ?? l10n.noTitle),
-                            subtitle: Text(notif.body ?? l10n.noBody),
-                            trailing: Text('ID: ${notif.id}', style: Theme.of(context).textTheme.bodySmall),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      const Divider(height: 24),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            Builder(
-              builder: (context) {
-                final l10n = AppLocalizations.of(context)!;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.notifications_active),
-                  title: Text(l10n.testNotification),
-                  subtitle: Text(l10n.sendTestNotification, style: const TextStyle(fontSize: 12)),
-                  onTap: () async {
-                    try {
-                      // Use scheduleTestNotification which shows immediate notification first
-                      await NotificationService.scheduleTestNotification(seconds: 10);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Test notification sent! Immediate notification should appear now. Scheduled notification may fail if there are corrupt notifications in database.'),
-                            duration: Duration(seconds: 4),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      // Only show error if immediate notification also failed
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Error: Immediate notification failed. Check logs for details.'),
-                            duration: const Duration(seconds: 4),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                final database = ref.read(databaseProvider);
+                await database.kvSettingsDao.setValue('iftar_enabled', value.toString());
+                await database.kvSettingsDao.setValue(
+                  'iftar_confirm_enabled',
+                  value.toString(),
                 );
+                setState(() {});
+                _rescheduleReminders();
+              },
+            ),
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.sunnahReminderEnabled),
+              subtitle: Text(l10n.sunnahReminderEnabledSubtitle),
+              value: sunnahReminderEnabled,
+              onChanged: (value) async {
+                await ref.read(databaseProvider).kvSettingsDao.setValue(
+                      'sunnah_reminder_enabled',
+                      value.toString(),
+                    );
+                setState(() {});
+                _rescheduleReminders();
+              },
+            ),
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.goalReminderDigest),
+              value: _isDigestReminderEnabled(settings),
+              onChanged: (value) async {
+                final database = ref.read(databaseProvider);
+                await database.kvSettingsDao.setValue(
+                  'goal_reminder_digest_enabled',
+                  value.toString(),
+                );
+                await database.kvSettingsDao.setValue(
+                  'goal_reminder_quran_enabled',
+                  value.toString(),
+                );
+                await database.kvSettingsDao.setValue(
+                  'goal_reminder_dhikr_enabled',
+                  value.toString(),
+                );
+                await database.kvSettingsDao.setValue(
+                  'goal_reminder_sedekah_enabled',
+                  value.toString(),
+                );
+                setState(() {});
+                _rescheduleReminders();
               },
             ),
           ],
@@ -1002,6 +811,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  bool _isDigestReminderEnabled(Map<String, dynamic> settings) {
+    final digest = settings['goal_reminder_digest_enabled'];
+    if (digest != null) return digest != 'false';
+    return settings['goal_reminder_quran_enabled'] != 'false' ||
+        settings['goal_reminder_dhikr_enabled'] != 'false' ||
+        settings['goal_reminder_sedekah_enabled'] != 'false';
+  }
+
   Future<Map<String, dynamic>> _loadReminderSettings() async {
     final database = ref.read(databaseProvider);
     return {
@@ -1009,18 +826,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'sahur_offset': await database.kvSettingsDao.getValue('sahur_offset') ?? '30',
       'iftar_enabled': await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true',
       'iftar_offset': await database.kvSettingsDao.getValue('iftar_offset') ?? '0',
+      'sunnah_reminder_enabled':
+          await database.kvSettingsDao.getValue('sunnah_reminder_enabled') ??
+              'true',
       'night_plan_enabled': await database.kvSettingsDao.getValue('night_plan_enabled') ?? 'true',
       'night_plan_hour': await database.kvSettingsDao.getValue('night_plan_hour') ?? '2',
       'night_plan_minute': await database.kvSettingsDao.getValue('night_plan_minute') ?? '30',
       'prayer_method': await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl',
-      'prayer_fajr_adj': await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0',
-      'prayer_maghrib_adj': await database.kvSettingsDao.getValue('prayer_maghrib_adj') ?? '0',
+      'goal_reminder_digest_enabled':
+          await database.kvSettingsDao.getValue('goal_reminder_digest_enabled'),
       'goal_reminder_quran_enabled': await database.kvSettingsDao.getValue('goal_reminder_quran_enabled') ?? 'true',
       'goal_reminder_dhikr_enabled': await database.kvSettingsDao.getValue('goal_reminder_dhikr_enabled') ?? 'true',
       'goal_reminder_sedekah_enabled': await database.kvSettingsDao.getValue('goal_reminder_sedekah_enabled') ?? 'true',
-      'goal_reminder_taraweeh_enabled': await database.kvSettingsDao.getValue('goal_reminder_taraweeh_enabled') ?? 'true',
-      'times_show_iftar_countdown': await database.kvSettingsDao.getValue('times_show_iftar_countdown') ?? 'true',
-      'times_show_sahur_countdown': await database.kvSettingsDao.getValue('times_show_sahur_countdown') ?? 'false',
     };
   }
 
@@ -1028,12 +845,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final database = ref.read(databaseProvider);
       final l10n = AppLocalizations.of(context)!;
+      await NotificationService.requestPermissions();
       await NotificationService.rescheduleAllNotificationTypes(
         database: database,
         sahurTitle: l10n.sahurReminder,
-        sahurBody: l10n.getNotifiedBeforeSuhoor,
+        sahurBody: l10n.sahurReminderNotificationBody,
         iftarTitle: l10n.iftarReminder,
         iftarBody: l10n.getNotifiedWhenBreakFast,
+        iftarConfirmTitle: l10n.iftarConfirmNotificationTitle,
+        iftarConfirmBody: l10n.iftarConfirmNotificationBody,
         nightPlanTitle: l10n.nightPlanReminder,
         nightPlanBody: l10n.reminderToPlanNightActivities,
       );
@@ -1083,38 +903,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             );
           }).toList(),
         ),
-      ),
-    );
-  }
-
-  void _showAdjustmentDialog(String type, int currentValue) {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: currentValue.toString());
-    final title = type == 'fajr' ? l10n.fajrAdjustmentTitle : l10n.maghribAdjustmentTitle;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(labelText: 'Minutes'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              final value = int.tryParse(controller.text) ?? 0;
-              await ref.read(databaseProvider).kvSettingsDao.setValue('prayer_${type}_adj', value.toString());
-              Navigator.pop(context);
-              setState(() {});
-            },
-            child: Text(l10n.save),
-          ),
-        ],
       ),
     );
   }
@@ -1208,6 +996,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             return SwitchListTile(
                               contentPadding: EdgeInsets.zero,
                               title: Text(_getHabitDisplayName(l10n, habit.key)),
+                              subtitle: habit.key == 'fasting'
+                                  ? Text(l10n.habitFastingSubtitle)
+                                  : null,
                               value: isEnabled,
                               onChanged: (value) async {
                                 await _toggleHabit(season.id, habit.id, value);
@@ -1302,6 +1093,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
+                _TodayFastingRemindersCard(
+                  onRefresh: () async {
+                    await NotificationService.requestPermissions();
+                    _rescheduleReminders();
+                    _pendingCountKey.currentState?.refresh();
+                  },
+                ),
+                const SizedBox(height: 8),
+                _PendingNotificationCount(key: _pendingCountKey),
+                const Divider(height: 24),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.file_download),
@@ -1375,8 +1176,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                const Divider(height: 1),
-                _PendingNotificationCount(key: _pendingCountKey),
                 const Divider(height: 1),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -1762,6 +1561,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
             ),
             onTap: () {
+              if (!kDebugMode) return;
               _versionTapCount++;
               if (_versionTapCount >= 7 && !_debugEnabled) {
                 setState(() {
@@ -2024,6 +1824,260 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return habitKey;
     }
   }
+}
+
+class _TodayFastingRemindersCard extends ConsumerStatefulWidget {
+  final Future<void> Function() onRefresh;
+
+  const _TodayFastingRemindersCard({required this.onRefresh});
+
+  @override
+  ConsumerState<_TodayFastingRemindersCard> createState() =>
+      _TodayFastingRemindersCardState();
+}
+
+class _TodayFastingRemindersCardState
+    extends ConsumerState<_TodayFastingRemindersCard> {
+  late Future<_TodayRemindersSnapshot> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() {
+    setState(() {
+      _future = _load();
+    });
+  }
+
+  Future<void> _handleRefresh() async {
+    await widget.onRefresh();
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (mounted) _reload();
+  }
+
+  Future<_TodayRemindersSnapshot> _load() async {
+    final database = ref.read(databaseProvider);
+    final items = await NotificationService.getTodayFastingReminderPreview(database);
+    final hasPermission = await NotificationService.checkNotificationPermission();
+    final hasExactAlarm = await NotificationService.hasExactAlarmPermission();
+    return _TodayRemindersSnapshot(
+      items: items,
+      hasPermission: hasPermission,
+      hasExactAlarm: hasExactAlarm,
+    );
+  }
+
+  String _labelFor(AppLocalizations l10n, FastingReminderLabelKey key) {
+    switch (key) {
+      case FastingReminderLabelKey.sahur:
+        return l10n.sahurReminder;
+      case FastingReminderLabelKey.iftar:
+        return l10n.iftarReminder;
+      case FastingReminderLabelKey.iftarConfirm:
+        return l10n.iftarReminder;
+    }
+  }
+
+  String _statusFor(AppLocalizations l10n, FastingReminderPreviewStatus status) {
+    switch (status) {
+      case FastingReminderPreviewStatus.upcoming:
+        return l10n.reminderStatusUpcoming;
+      case FastingReminderPreviewStatus.passed:
+        return l10n.reminderStatusPassed;
+      case FastingReminderPreviewStatus.disabled:
+        return l10n.reminderStatusOff;
+    }
+  }
+
+  Color _statusColor(BuildContext context, FastingReminderPreviewStatus status) {
+    final scheme = Theme.of(context).colorScheme;
+    switch (status) {
+      case FastingReminderPreviewStatus.upcoming:
+        return scheme.primary;
+      case FastingReminderPreviewStatus.passed:
+        return scheme.onSurface.withValues(alpha: 0.5);
+      case FastingReminderPreviewStatus.disabled:
+        return scheme.onSurface.withValues(alpha: 0.38);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final timeFmt = DateFormat.Hm();
+
+    return FutureBuilder<_TodayRemindersSnapshot>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox(
+            height: 48,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+
+        final data = snapshot.data!;
+        final morningPassed = data.items.any(
+          (i) =>
+              i.labelKey == FastingReminderLabelKey.sahur &&
+              i.status == FastingReminderPreviewStatus.passed,
+        );
+        final sahurMissedWithoutQueue = data.items.any(
+          (i) =>
+              i.labelKey == FastingReminderLabelKey.sahur &&
+              i.status == FastingReminderPreviewStatus.passed &&
+              !i.isQueued,
+        );
+        final iftarStillUpcoming = data.items.any(
+          (i) =>
+              (i.labelKey == FastingReminderLabelKey.iftar ||
+                  i.labelKey == FastingReminderLabelKey.iftarConfirm) &&
+              i.status == FastingReminderPreviewStatus.upcoming,
+        );
+
+        return Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.remindersTodayTitle,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                if (data.items.isEmpty)
+                  Text(
+                    l10n.error,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  )
+                else
+                  ...data.items.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _labelFor(l10n, item.labelKey),
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                          Text(
+                            timeFmt.format(item.localTime),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                _statusFor(l10n, item.status),
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: _statusColor(context, item.status),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              if (item.status != FastingReminderPreviewStatus.disabled)
+                                Text(
+                                  item.isQueued
+                                      ? l10n.reminderQueued
+                                      : l10n.reminderNotQueued,
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: item.isQueued
+                                            ? Theme.of(context).colorScheme.primary
+                                            : Theme.of(context).colorScheme.error,
+                                        fontSize: 10,
+                                      ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                if (sahurMissedWithoutQueue) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.reminderMissedNotQueuedHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                  ),
+                ] else if (morningPassed && iftarStillUpcoming) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.remindersMorningPassedHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                        ),
+                  ),
+                ],
+                if (!data.hasPermission) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.remindersPermissionOff,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                  ),
+                ] else if (!data.hasExactAlarm) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.remindersExactAlarmHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.tertiary,
+                        ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () async {
+                        await NotificationService.openExactAlarmSettings();
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        if (mounted) _reload();
+                      },
+                      child: Text(l10n.openExactAlarmSettings),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _handleRefresh,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: Text(l10n.refreshRemindersNow),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TodayRemindersSnapshot {
+  final List<FastingReminderPreviewItem> items;
+  final bool hasPermission;
+  final bool hasExactAlarm;
+
+  const _TodayRemindersSnapshot({
+    required this.items,
+    required this.hasPermission,
+    required this.hasExactAlarm,
+  });
 }
 
 class _PendingNotificationCount extends ConsumerStatefulWidget {

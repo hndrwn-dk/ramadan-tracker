@@ -96,10 +96,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get prayerOffsetTipBody =>
-      'If prayer times look off by about 1 hour, you can set an Offset in Settings.';
+      'If prayer times look off, try a different calculation method in Settings.';
 
   @override
-  String get prayerOffsetTipCta => 'Set Offset';
+  String get prayerOffsetTipCta => 'Open Settings';
 
   @override
   String get backupRestoreTitle => 'Backup & Restore';
@@ -393,6 +393,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remind me 15 minutes after Isha if Taraweeh not done';
 
   @override
+  String get goalReminderDigest => 'Worship target reminder';
+
+  @override
+  String get goalReminderDigestDesc =>
+      'After Iftar confirmation, remind me if daily worship targets are not yet met';
+
+  @override
   String get quranGoalReminderTitle => 'Quran Goal Reminder';
 
   @override
@@ -535,6 +542,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iftarReminder => 'Iftar reminder';
+
+  @override
+  String get sunnahReminderEnabled => 'Sunnah fast reminders';
+
+  @override
+  String get sunnahReminderEnabledSubtitle =>
+      'Evening reminder the night before a recommended sunnah fast (Monday/Thursday, white days, etc.)';
+
+  @override
+  String get habitFastingSubtitle =>
+      'Track fasting in your daily checklist — not a notification reminder';
 
   @override
   String minAfterMaghrib(int minutes) {
@@ -2256,7 +2274,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingRemindersGoalsMasterHint =>
-      'Gentle nudges if today\'s target is not done yet';
+      'After Iftar confirmation, remind me if daily targets are not yet met';
 
   @override
   String get onboardingRemindersCustomizeGoals => 'Customize per goal';
@@ -2310,4 +2328,138 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get seasonComparisonStrongDays => 'Strong days';
+
+  @override
+  String get imsakIntentionTitle => 'Imsak time';
+
+  @override
+  String get imsakIntentionHint => 'Will you fast today?';
+
+  @override
+  String get imsakIntentionFastSubtitle =>
+      'Intend to fast — confirm fully at iftar';
+
+  @override
+  String get imsakConfirmAtIftarHint =>
+      'Confirm your full fast when you break fast';
+
+  @override
+  String get sahurIntentionYes => 'Yes, I\'m fasting';
+
+  @override
+  String get sahurIntentionExcused => 'Not fasting (excused)';
+
+  @override
+  String get sahurIntentionLater => 'Later';
+
+  @override
+  String get sahurIntentionExcusedTitle => 'Not fasting';
+
+  @override
+  String get sahurIntentionExcusedFootnote =>
+      'Qadha is tracked in the Sunnah tab.';
+
+  @override
+  String get sahurIntentionBack => 'Back';
+
+  @override
+  String get fastingIntentPendingSaved =>
+      'Fasting intention saved — confirm at iftar';
+
+  @override
+  String get iftarConfirmTitle => 'Confirm today\'s fast';
+
+  @override
+  String get iftarConfirmBody => 'Did you complete a full fast today?';
+
+  @override
+  String get iftarConfirmYes => 'Yes, full fast';
+
+  @override
+  String get iftarConfirmNo => 'No, not completed';
+
+  @override
+  String get iftarSummaryTitle => 'Today\'s fasting status';
+
+  @override
+  String iftarSummaryStatus(String status) {
+    return 'Logged: $status';
+  }
+
+  @override
+  String get imsakReminderLabel => 'Imsak fasting intention';
+
+  @override
+  String get iftarConfirmReminderLabel => 'Iftar fast confirmation';
+
+  @override
+  String get imsakOffsetLabel => 'Minutes before Fajr (imsak)';
+
+  @override
+  String get imsakReminderNotificationTitle => 'Imsak time';
+
+  @override
+  String get imsakReminderNotificationBody =>
+      'Tap to set your fasting intention for today';
+
+  @override
+  String get iftarConfirmNotificationTitle => 'Iftar time';
+
+  @override
+  String get iftarConfirmNotificationBody => 'Tap to confirm today\'s fast';
+
+  @override
+  String get iftarFastRecordedTitle => 'Fast recorded';
+
+  @override
+  String get iftarFastRecordedBody =>
+      'Alhamdulillah, today\'s fast has been recorded.';
+
+  @override
+  String get fastingIntentRemindersHint =>
+      'Sahur: set intention. Iftar: confirm full fast — like starting and ending a workout.';
+
+  @override
+  String get sahurReminderNotificationBody =>
+      'Tap to set your fasting intention for today';
+
+  @override
+  String get remindersTodayTitle => 'Today\'s fasting reminders';
+
+  @override
+  String get reminderStatusPassed => 'Passed';
+
+  @override
+  String get reminderStatusUpcoming => 'Next up';
+
+  @override
+  String get reminderStatusOff => 'Off';
+
+  @override
+  String get refreshRemindersNow => 'Refresh reminders now';
+
+  @override
+  String get remindersExactAlarmHint =>
+      'Enable Alarms & reminders in Android app settings for on-time Sahur.';
+
+  @override
+  String get remindersMorningPassedHint =>
+      'Sahur for today has passed. Iftar is still scheduled if enabled.';
+
+  @override
+  String get remindersPermissionOff =>
+      'Notifications are disabled. Enable them in system settings.';
+
+  @override
+  String get reminderQueued => 'Queued';
+
+  @override
+  String get reminderNotQueued => 'Not queued';
+
+  @override
+  String get reminderMissedNotQueuedHint =>
+      'Sahur passed without a notification. Open the app before Sahur tomorrow so it can be scheduled, and allow Alarms & reminders below.';
+
+  @override
+  String get openExactAlarmSettings => 'Allow Alarms & reminders';
 }

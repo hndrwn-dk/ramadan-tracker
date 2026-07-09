@@ -48,8 +48,6 @@ import 'package:ramadan_tracker/features/today/widgets/today_fasting_times_card.
 import 'package:ramadan_tracker/features/today/widgets/today_habit_trends_card.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_home_engagement.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_qadha_entry_tile.dart';
-import 'package:ramadan_tracker/features/engagement/widgets/coach_mark_tip.dart';
-import 'package:ramadan_tracker/domain/services/coach_mark_service.dart';
 import 'package:ramadan_tracker/app/settings_navigation.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 import 'package:ramadan_tracker/widgets/donation_icon_button.dart';
@@ -522,8 +520,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           builder: (context, settingsSnapshot) {
             final sahurOffset = settingsSnapshot.data?['sahur_offset'] ?? 30;
             final iftarOffset = settingsSnapshot.data?['iftar_offset'] ?? 0;
-            final showIftarCountdown = settingsSnapshot.data?['show_iftar_countdown'] ?? true;
-            final showSahurCountdown = settingsSnapshot.data?['show_sahur_countdown'] ?? false;
             
             if (fajrUtc == null || maghribUtc == null) {
               if (slim) {
@@ -678,8 +674,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                         _TimesCountdownLine(
                           iftarTime: iftarTime,
                           sahurTime: sahurTime,
-                          showIftar: showIftarCountdown,
-                          showSahur: showSahurCountdown,
+                          showIftar: true,
+                          showSahur: false,
                         ),
                       ],
                     ),
@@ -930,10 +926,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   ),
                 ),
               ],
-            ),
-            CoachMarkTip(
-              coachKey: CoachMarkService.todayJourney,
-              message: l10n.coachMarkTodayJourney,
             ),
             TodayJourneyMiniStrip(seasonId: seasonId, dayIndex: dayIndex),
             const SizedBox(height: 16),

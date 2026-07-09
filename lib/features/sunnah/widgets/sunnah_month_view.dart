@@ -199,53 +199,30 @@ class _SunnahMonthViewState extends ConsumerState<SunnahMonthView> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 PremiumCard(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  child: Row(
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _summaryChip(
-                        context,
-                        label: s.monthSummaryFasted,
-                        value: '${summary.fasted}',
-                        color: Theme.of(context).colorScheme.primary,
+                      _SunnahUsageHeader(
+                        fasted: summary.fasted,
+                        excused: summary.excused,
+                        sunnahDays: summary.sunnahDays,
                       ),
-                      const SizedBox(width: 12),
-                      _summaryChip(
-                        context,
-                        label: s.monthSummaryExcused,
-                        value: '${summary.excused}',
-                        color: Theme.of(context)
-                            .colorScheme
-                            .tertiary
-                            .withValues(alpha: 0.7),
-                      ),
-                      const SizedBox(width: 12),
-                      _summaryChip(
-                        context,
-                        label: s.monthSummarySunnahDays,
-                        value: '${summary.sunnahDays}',
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.35),
+                      const SizedBox(height: 12),
+                      SunnahMonthCalendar(
+                        monthAnchor: _monthAnchor,
+                        data: map,
+                        style: SunnahCalendarStyle.premium,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
-                PremiumCard(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: const SunnahMonthLegend(),
-                ),
-                const SizedBox(height: 12),
-                PremiumCard(
-                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-                  child: SunnahMonthCalendar(
-                    monthAnchor: _monthAnchor,
-                    data: map,
-                    style: SunnahCalendarStyle.full,
+                const PremiumCard(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: SunnahMonthLegend(
+                    defaultExpanded: false,
+                    showTypeCodes: true,
                   ),
                 ),
               ],
@@ -256,47 +233,7 @@ class _SunnahMonthViewState extends ConsumerState<SunnahMonthView> {
     );
   }
 
-  Widget _summaryChip(
-    BuildContext context, {
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelSmall,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Usage header extracted below to keep the build method readable.
 
   _MonthSummary _monthSummary(
     DateTime monthAnchor,
@@ -327,6 +264,114 @@ class _SunnahMonthViewState extends ConsumerState<SunnahMonthView> {
       fasted: fasted,
       excused: excused,
       sunnahDays: sunnahDays,
+    );
+  }
+}
+
+class _SunnahUsageHeader extends StatelessWidget {
+  final int fasted;
+  final int excused;
+  final int sunnahDays;
+
+  const _SunnahUsageHeader({
+    required this.fasted,
+    required this.excused,
+    required this.sunnahDays,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = SunnahStrings.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    final total = sunnahDays;
+    final logged = fasted + excused;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                s.monthSummarySunnahDays,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface.withValues(alpha: 0.65),
+                    ),
+              ),
+            ),
+            Text(
+              '$logged / $total',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 12,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: scheme.surfaceContainerHighest,
+            border: Border.all(
+              color: scheme.outline.withValues(alpha: 0.22),
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: total > 0
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (fasted > 0)
+                      Expanded(
+                        flex: fasted,
+                        child: ColoredBox(color: scheme.primary),
+                      ),
+                    if (excused > 0)
+                      Expanded(
+                        flex: excused,
+                        child: ColoredBox(
+                          color: scheme.tertiary.withValues(alpha: 0.75),
+                        ),
+                      ),
+                    if (logged < total)
+                      Expanded(
+                        flex: total - logged,
+                        child: const SizedBox.expand(),
+                      ),
+                  ],
+                )
+              : null,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${s.monthSummaryFasted}: $fasted',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primary,
+                    ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                '${s.monthSummaryExcused}: $excused',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

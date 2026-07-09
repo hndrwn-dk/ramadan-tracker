@@ -3,6 +3,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
+import 'package:ramadan_tracker/domain/services/notification_launch_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_season_resolver.dart';
 import 'package:ramadan_tracker/domain/services/notification_ids.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
@@ -35,12 +36,20 @@ class NotificationService {
   static const int _baseIdGoal = 5000000;
   static const int _baseIdNextRamadan = 6000000;
   static const int _baseIdSunnah = 7000000;
+  static const int _baseIdImsak = 8000000;
+  static const int _baseIdSunnahSahur = 9000000;
+  static const int _baseIdSunnahIftar = 10000000;
+  static const String _notifAntispamMigratedKey = 'notif_antispam_v1_migrated';
+
+  // 14-day rolling horizon for sunnah eve reminders; refill on app-open.
+  static const int _sunnahEveHorizonDays = 14;
 
   // Goal type indices
   static const int _goalTypeQuran = 0;
   static const int _goalTypeDhikr = 1;
   static const int _goalTypeSedekah = 2;
   static const int _goalTypeTaraweeh = 3;
+  static const int _goalTypeDigest = 4;
   
   // Helper: Convert DateTime to YYYYMMDD integer
   static int _yyyymmdd(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
@@ -49,6 +58,31 @@ class NotificationService {
   static int _getNotificationId(int baseId, DateTime scheduledDate) {
     final ymd = _yyyymmdd(scheduledDate);
     return baseId + ymd;
+  }
+
+  static DateTime? _dateFromYmd(int ymd) {
+    if (ymd < 19000101 || ymd > 29991231) return null;
+    final year = ymd ~/ 10000;
+    final month = (ymd % 10000) ~/ 100;
+    final day = ymd % 100;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return DateTime(year, month, day);
+  }
+
+  /// Whether to schedule a sunnah eve reminder for [fastDay] (bulk scheduler).
+  @visibleForTesting
+  static bool shouldScheduleSunnahEveForFastDay(DateTime fastDay) {
+    if (SunnahFastingRules.typesFor(fastDay).isEmpty) return false;
+    if (SunnahFastingRules.isRamadan(fastDay)) return false;
+    return true;
+  }
+
+  static Future<List<PendingNotificationRequest>> _fetchPendingRaw() async {
+    try {
+      return await _notifications.pendingNotificationRequests();
+    } catch (_) {
+      return [];
+    }
   }
   
   // Deterministic ID generation for Goal Reminders
@@ -139,6 +173,7 @@ class NotificationService {
     UILocalNotificationDateInterpretation uiLocalNotificationDateInterpretation = UILocalNotificationDateInterpretation.absoluteTime,
     int batchIndex = 0,
     int batchSize = 10,
+    String? payload,
   }) async {
     if (batchIndex > 0 && batchIndex % batchSize == 0) {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -152,6 +187,7 @@ class NotificationService {
       notificationDetails: notificationDetails,
       androidScheduleMode: androidScheduleMode,
       uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
+      payload: payload,
     );
   }
 
@@ -165,54 +201,14 @@ class NotificationService {
     required NotificationDetails notificationDetails,
     AndroidScheduleMode androidScheduleMode = AndroidScheduleMode.exactAllowWhileIdle,
     UILocalNotificationDateInterpretation uiLocalNotificationDateInterpretation = UILocalNotificationDateInterpretation.absoluteTime,
+    String? payload,
+    bool allowInexactFallback = true,
   }) async {
-    // Check exact alarm permission only for exactAllowWhileIdle (alarmClock has its own requirements)
-    final isExactMode = androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle;
-    if (isExactMode && Platform.isAndroid) {
-      final androidImpl = _notifications.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      if (androidImpl != null) {
-        try {
-          final canExact = await androidImpl.canScheduleExactNotifications();
-          if (canExact != true) {
-            LogService.log('[NOTIF] WARN: Exact alarm permission not granted for notification ID $id');
-            final tzNow = tz.TZDateTime.now(tz.local);
-            final timeUntil = scheduledDate.difference(tzNow);
-            final isTimeSensitive = timeUntil.inMinutes <= 60;
-            
-            if (isTimeSensitive) {
-              LogService.log('[NOTIF] Time-sensitive notification (${timeUntil.inMinutes} min). Requesting exact alarm permission...');
-              try {
-                await androidImpl.requestExactAlarmsPermission();
-                await Future.delayed(const Duration(milliseconds: 500));
-                final canExactAfter = await androidImpl.canScheduleExactNotifications();
-                if (canExactAfter != true) {
-                  LogService.log('[NOTIF] ERROR: Cannot schedule time-sensitive notification without exact alarms. User must grant Alarms & reminders.');
-                  return false;
-                }
-                LogService.log('[NOTIF] Exact alarm permission granted after request');
-              } catch (e) {
-                LogService.log('[NOTIF] ERROR: Could not request exact alarm permission: $e');
-                return false;
-              }
-            } else {
-              LogService.log('[NOTIF] Far-future notification (${timeUntil.inHours}h). Using INEXACT mode.');
-              androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
-            }
-          } else {
-            LogService.log('[NOTIF] Exact alarm permission is granted');
-          }
-        } catch (e) {
-          LogService.log('[NOTIF] Error checking exact alarm permission: $e');
-          final tzNow = tz.TZDateTime.now(tz.local);
-          final timeUntil = scheduledDate.difference(tzNow);
-          if (timeUntil.inMinutes <= 60) {
-            LogService.log('[NOTIF] ERROR: Time-sensitive notification and permission check failed. Aborting.');
-            return false;
-          }
-          androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
-        }
-      }
+    if (Platform.isAndroid) {
+      androidScheduleMode = await _resolveAndroidScheduleMode(
+        preferred: androidScheduleMode,
+        scheduledDate: scheduledDate,
+      );
     }
     
     try {
@@ -254,8 +250,8 @@ class NotificationService {
       final timeUntilStr = timeUntil.inSeconds < 60
           ? 'in ${timeUntil.inSeconds} seconds'
           : 'in ${timeUntil.inMinutes} minutes';
-      LogService.log('[NOTIF] Scheduling notification ID $id: "$title" at $scheduledDate ($timeUntilStr) [Mode: $scheduleModeStr]');
-      LogService.log('[NOTIF] Current time (tz.local): $tzNow, Timezone: ${tz.local.name}');
+      LogService.logVerbose('[NOTIF] Scheduling notification ID $id: "$title" at $scheduledDate ($timeUntilStr) [Mode: $scheduleModeStr]');
+      LogService.logVerbose('[NOTIF] Current time (tz.local): $tzNow, Timezone: ${tz.local.name}');
       
       // Add small delay between individual notifications to prevent Android rate limiting
       // This helps when scheduling many notifications at once (e.g., 64 notifications)
@@ -269,9 +265,10 @@ class NotificationService {
         notificationDetails,
         androidScheduleMode: androidScheduleMode,
         uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
+        payload: payload,
       );
       
-      LogService.log('[NOTIF] Notification ID $id scheduled successfully [Mode: $scheduleModeStr]');
+      LogService.logVerbose('[NOTIF] Notification ID $id scheduled successfully [Mode: $scheduleModeStr]');
       return true;
     } catch (e) {
       final errorStr = e.toString();
@@ -357,9 +354,84 @@ class NotificationService {
         if (kDebugMode) {
           debugPrint('[NOTIF] ✗ Error scheduling notification ID $id: $e');
         }
+        if (allowInexactFallback &&
+            androidScheduleMode != AndroidScheduleMode.inexactAllowWhileIdle) {
+          LogService.log('[NOTIF] Retrying notification ID $id with INEXACT mode...');
+          return _safeZonedSchedule(
+            id: id,
+            title: title,
+            body: body,
+            scheduledDate: scheduledDate,
+            notificationDetails: notificationDetails,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
+            payload: payload,
+            allowInexactFallback: false,
+          );
+        }
         return false;
       }
     }
+  }
+
+  /// Picks alarmClock/exact when permitted; falls back to inexact so Sahur still queues.
+  static Future<AndroidScheduleMode> _resolveAndroidScheduleMode({
+    required AndroidScheduleMode preferred,
+    required tz.TZDateTime scheduledDate,
+  }) async {
+    if (preferred == AndroidScheduleMode.inexactAllowWhileIdle) {
+      return preferred;
+    }
+
+    final androidImpl = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImpl == null) return preferred;
+
+    try {
+      var canExact = await androidImpl.canScheduleExactNotifications();
+      if (canExact != true) {
+        LogService.log('[NOTIF] Exact alarm not granted; opening settings prompt...');
+        try {
+          await androidImpl.requestExactAlarmsPermission();
+          await Future.delayed(const Duration(milliseconds: 500));
+          canExact = await androidImpl.canScheduleExactNotifications();
+        } catch (e) {
+          LogService.log('[NOTIF] requestExactAlarmsPermission failed: $e');
+        }
+      }
+
+      if (canExact == true) {
+        return preferred;
+      }
+
+      final tzNow = tz.TZDateTime.now(tz.local);
+      final timeUntil = scheduledDate.difference(tzNow);
+      LogService.log(
+        '[NOTIF] Exact alarm denied — using INEXACT for notification '
+        '(${timeUntil.inMinutes} min away)',
+      );
+      return AndroidScheduleMode.inexactAllowWhileIdle;
+    } catch (e) {
+      LogService.log('[NOTIF] Error resolving schedule mode: $e');
+      return AndroidScheduleMode.inexactAllowWhileIdle;
+    }
+  }
+
+  /// Opens Android Alarms & reminders settings when exact alarms are blocked.
+  static Future<void> openExactAlarmSettings() async {
+    if (!Platform.isAndroid) return;
+    final androidImpl = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidImpl?.requestExactAlarmsPermission();
+  }
+
+  static int notificationIdForDate(int baseId, DateTime localDate) {
+    return baseId + _yyyymmdd(localDate);
+  }
+
+  static Future<bool> isNotificationIdPending(int notificationId) async {
+    final pending = await getPendingNotifications();
+    return pending.any((n) => n.id == notificationId);
   }
 
   static Future<void> testNotification({
@@ -421,15 +493,15 @@ class NotificationService {
 
   static Future<List<NotificationInfo>> getPendingNotifications() async {
     try {
-      final pending = await _notifications.pendingNotificationRequests();
-      LogService.log('[NOTIF] === Pending Notifications: ${pending.length} ===');
+      final pending = await _fetchPendingRaw();
       if (kDebugMode) {
-        debugPrint('=== Pending Notifications: ${pending.length} ===');
-      }
-      for (final p in pending) {
-        LogService.log('[NOTIF]   ID: ${p.id}, Title: ${p.title}, Body: ${p.body}');
-        if (kDebugMode) {
-          debugPrint('  ID: ${p.id}, Title: ${p.title}, Body: ${p.body}');
+        LogService.logVerbose(
+          '[NOTIF] === Pending Notifications: ${pending.length} ===',
+        );
+        for (final p in pending) {
+          LogService.logVerbose(
+            '[NOTIF]   ID: ${p.id}, Title: ${p.title}, Body: ${p.body}',
+          );
         }
       }
       return pending.map((p) => NotificationInfo(
@@ -437,7 +509,7 @@ class NotificationService {
         title: p.title,
         body: p.body,
       )).toList();
-    } catch (e, stackTrace) {
+    } catch (e) {
       LogService.log('[NOTIF] Error getting pending notifications: $e');
       if (kDebugMode) {
         debugPrint('[NOTIF] Error getting pending notifications: $e');
@@ -471,28 +543,38 @@ class NotificationService {
 
   /// Cancel pending notifications in the given categories only.
   static Future<int> cancelRemindersInCategories(
-    Set<NotificationCategory> categories,
-  ) async {
+    Set<NotificationCategory> categories, {
+    Set<int> excludeIds = const {},
+  }) async {
     if (categories.isEmpty) return 0;
     final pending = await getPendingNotifications();
     var cancelled = 0;
+    var skipped = 0;
     for (final n in pending) {
       final category = NotificationIds.categoryOf(n.id);
       if (categories.contains(category)) {
+        if (excludeIds.contains(n.id)) {
+          skipped++;
+          continue;
+        }
         await cancel(n.id);
         cancelled++;
         await Future.delayed(const Duration(milliseconds: 50));
       }
     }
     LogService.log(
-      '[NOTIF] cancelRemindersInCategories($categories): cancelled $cancelled',
+      '[NOTIF] cancelRemindersInCategories($categories): cancelled $cancelled'
+      '${skipped > 0 ? ', preserved $skipped' : ''}',
     );
     return cancelled;
   }
 
   /// Sahur, Iftar, night plan, goal, and legacy habit reminders for a season.
-  static Future<int> cancelSeasonReminders() {
-    return cancelRemindersInCategories(NotificationIds.seasonCategories);
+  static Future<int> cancelSeasonReminders({Set<int> excludeIds = const {}}) {
+    return cancelRemindersInCategories(
+      NotificationIds.seasonCategories,
+      excludeIds: excludeIds,
+    );
   }
 
   static Future<int> cancelNextRamadanReminders() {
@@ -503,6 +585,52 @@ class NotificationService {
     return cancelRemindersInCategories({NotificationCategory.sunnah});
   }
 
+  /// One-time cleanup after anti-spam update: cancel bulk sunnah + legacy 21M/22M
+  /// Sahur/Iftar on sunnah days outside any active season window.
+  static Future<void> runNotifAntispamMigrationIfNeeded(
+    AppDatabase database,
+  ) async {
+    final migrated =
+        await database.kvSettingsDao.getValue(_notifAntispamMigratedKey);
+    if (migrated == 'true') return;
+
+    final sunnahCancelled = await cancelSunnahReminders();
+
+    final seasons = await database.ramadanSeasonsDao.getAllSeasons();
+    bool isInAnySeasonWindow(DateTime date) {
+      for (final row in seasons) {
+        final model = SeasonModel.fromDb(row);
+        final dayIndex = model.getRawDayIndex(date);
+        if (dayIndex >= 1 && dayIndex <= model.days) return true;
+      }
+      return false;
+    }
+
+    var legacyCancelled = 0;
+    final pending = await _fetchPendingRaw();
+    for (final p in pending) {
+      final id = p.id;
+      DateTime? fastDate;
+      if (id >= 21000000 && id < 22000000) {
+        fastDate = _dateFromYmd(id - _baseIdSahur);
+      } else if (id >= 22000000 && id < 23000000) {
+        fastDate = _dateFromYmd(id - _baseIdIftar);
+      }
+      if (fastDate == null) continue;
+      if (isInAnySeasonWindow(fastDate)) continue;
+      if (SunnahFastingRules.typesFor(fastDate).isEmpty) continue;
+      await cancel(id);
+      legacyCancelled++;
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+
+    await database.kvSettingsDao.setValue(_notifAntispamMigratedKey, 'true');
+    LogService.log(
+      '[NOTIF] legacy cleanup: cancelled $sunnahCancelled sunnah + '
+      '$legacyCancelled legacy sahur/iftar',
+    );
+  }
+
   /// Season + next-Ramadan + sunnah — use on app start and after settings changes.
   static Future<void> rescheduleAllNotificationTypes({
     required AppDatabase database,
@@ -510,15 +638,20 @@ class NotificationService {
     String? sahurBody,
     String? iftarTitle,
     String? iftarBody,
+    String? iftarConfirmTitle,
+    String? iftarConfirmBody,
     String? nightPlanTitle,
     String? nightPlanBody,
   }) async {
+    await runNotifAntispamMigrationIfNeeded(database);
     await rescheduleAllReminders(
       database: database,
       sahurTitle: sahurTitle,
       sahurBody: sahurBody,
       iftarTitle: iftarTitle,
       iftarBody: iftarBody,
+      iftarConfirmTitle: iftarConfirmTitle,
+      iftarConfirmBody: iftarConfirmBody,
       nightPlanTitle: nightPlanTitle,
       nightPlanBody: nightPlanBody,
     );
@@ -941,6 +1074,83 @@ class NotificationService {
       // Fallback scheduled (no tomorrow scheduling in fallback)
     }
   }
+
+  /// Standalone goal digest at Maghrib - 30 min (only when Iftar confirm is off).
+  static Future<void> scheduleDigestGoalReminder({
+    required DateTime date,
+    required DateTime maghribTime,
+    required List<String> pendingTypes,
+    required tz.Location location,
+    String locale = 'en',
+  }) async {
+    if (pendingTypes.isEmpty) return;
+
+    final copy = GoalReminderStrings.forDigest(pendingTypes, locale);
+    final maghribUtc = maghribTime.isUtc
+        ? maghribTime
+        : DateTime.utc(
+            maghribTime.year,
+            maghribTime.month,
+            maghribTime.day,
+            maghribTime.hour,
+            maghribTime.minute,
+            maghribTime.second,
+          );
+    final reminderUtc = maghribUtc.subtract(const Duration(minutes: 30));
+    final reminderLocal = tz.TZDateTime.from(reminderUtc, location);
+    final tzNow = tz.TZDateTime.now(location);
+    final scheduledTime = tz.TZDateTime(
+      location,
+      reminderLocal.year,
+      reminderLocal.month,
+      reminderLocal.day,
+      reminderLocal.hour,
+      reminderLocal.minute,
+    );
+
+    if (scheduledTime.isBefore(tzNow.add(const Duration(seconds: 1)))) {
+      if (kDebugMode) {
+        debugPrint('Skipping goal digest for $date: time already passed');
+      }
+      return;
+    }
+
+    final hour = scheduledTime.hour;
+    final notificationId =
+        _getNotificationIdForGoalReminder(_goalTypeDigest, hour, scheduledTime);
+
+    await _safeZonedSchedule(
+      id: notificationId,
+      title: copy.title,
+      body: copy.body,
+      scheduledDate: scheduledTime,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'ramadan_reminders',
+          'Ramadan Reminders',
+          channelDescription: 'Sahur, Iftar, and goal reminders',
+          importance: Importance.max,
+          priority: Priority.max,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          visibility: NotificationVisibility.public,
+          channelAction: AndroidNotificationChannelAction.createIfNotExists,
+          ongoing: false,
+          autoCancel: true,
+          enableLights: true,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
   
   static Future<void> scheduleTestNotification({int seconds = 10}) async {
     LogService.log('[TEST] === scheduleTestNotification: ${seconds}s ===');
@@ -1065,6 +1275,8 @@ class NotificationService {
     String? sahurBody,
     String? iftarTitle,
     String? iftarBody,
+    String? iftarConfirmTitle,
+    String? iftarConfirmBody,
     String? nightPlanTitle,
     String? nightPlanBody,
   }) async {
@@ -1079,6 +1291,18 @@ class NotificationService {
       int cancelAttempts = 0;
       const maxCancelAttempts = 3;
       bool cancelSuccess = false;
+      final preserveIds =
+          await _todayUpcomingQueuedFastingNotificationIds(database);
+      if (preserveIds.isNotEmpty) {
+        LogService.log(
+          '[NOTIF] RESCHEDULE: Preserving today fasting alarm(s): $preserveIds',
+        );
+        if (kDebugMode) {
+          debugPrint(
+            '[NOTIF] RESCHEDULE: Preserving today fasting alarm(s): $preserveIds',
+          );
+        }
+      }
 
       while (cancelAttempts < maxCancelAttempts && !cancelSuccess) {
         try {
@@ -1088,7 +1312,7 @@ class NotificationService {
           final beforeCancel = await getPendingNotifications();
           LogService.log('[NOTIF] RESCHEDULE: Notifications before cancel: ${beforeCancel.length}');
 
-          await cancelSeasonReminders();
+          await cancelSeasonReminders(excludeIds: preserveIds);
 
           await Future.delayed(const Duration(milliseconds: 500));
 
@@ -1096,7 +1320,8 @@ class NotificationService {
           final seasonAfter = afterCancel
               .where((n) =>
                   NotificationIds.seasonCategories
-                      .contains(NotificationIds.categoryOf(n.id)))
+                      .contains(NotificationIds.categoryOf(n.id)) &&
+                  !preserveIds.contains(n.id))
               .length;
           LogService.log('[NOTIF] RESCHEDULE: Season notifications after cancel: $seasonAfter');
 
@@ -1158,7 +1383,8 @@ class NotificationService {
       final sahurOffset = (int.tryParse(await database.kvSettingsDao.getValue('sahur_offset') ?? '30') ?? 30).clamp(1, 45);
       final iftarEnabled = await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true';
       final iftarOffset = int.tryParse(await database.kvSettingsDao.getValue('iftar_offset') ?? '0') ?? 0;
-      final nightPlanEnabled = await database.kvSettingsDao.getValue('night_plan_enabled') ?? 'true';
+      final iftarEnabledBool = iftarEnabled == 'true';
+      final nightPlanEnabled = false;
 
       await scheduleAllReminders(
         database: database,
@@ -1170,15 +1396,18 @@ class NotificationService {
         highLatRule: highLatRule,
         sahurEnabled: sahurEnabled == 'true',
         sahurOffsetMinutes: sahurOffset,
-        iftarEnabled: iftarEnabled == 'true',
+        iftarEnabled: iftarEnabledBool,
         iftarOffsetMinutes: iftarOffset,
-        nightPlanEnabled: nightPlanEnabled == 'true',
+        iftarConfirmEnabled: iftarEnabledBool,
+        nightPlanEnabled: false,
         fajrAdjust: fajrAdjust,
         maghribAdjust: maghribAdjust,
         sahurTitle: sahurTitle,
         sahurBody: sahurBody,
         iftarTitle: iftarTitle,
         iftarBody: iftarBody,
+        iftarConfirmTitle: iftarConfirmTitle,
+        iftarConfirmBody: iftarConfirmBody,
         nightPlanTitle: nightPlanTitle,
         nightPlanBody: nightPlanBody,
       );
@@ -1196,6 +1425,8 @@ class NotificationService {
           debugPrint('[NOTIF] Error getting pending: $e');
         }
       }
+
+      await ensureTodayFastingRemindersScheduled(database);
     } catch (e) {
       debugPrint('Error rescheduling: $e');
     }
@@ -1295,8 +1526,9 @@ class NotificationService {
   }
 
   /// Schedules evening reminders for the night before each recommended sunnah
-  /// fast (Monday/Thursday + Ayyamul Bidh, Arafah, Asyura) for the next several
-  /// weeks. Uses base ID 7,000,000 so it never collides with season reminders.
+  /// fast (Monday/Thursday + Ayyamul Bidh, Arafah, Asyura) for the next
+  /// [_sunnahEveHorizonDays] days. Sahur/Iftar for sunnah days are scheduled
+  /// today-only via [ensureTodayFastingRemindersScheduled].
   static Future<void> scheduleSunnahReminders({required AppDatabase database}) async {
     try {
       final enabled = await database.kvSettingsDao.getValue('sunnah_reminder_enabled') ?? 'true';
@@ -1315,7 +1547,6 @@ class NotificationService {
       final tzNow = tz.TZDateTime.now(location);
 
       const reminderHour = 19; // 19:00 the evening before
-      const horizonDays = 60;
       int scheduled = 0;
 
       if (Platform.isAndroid) {
@@ -1343,11 +1574,9 @@ class NotificationService {
       );
 
       final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-      for (int i = 1; i <= horizonDays; i++) {
+      for (int i = 1; i <= _sunnahEveHorizonDays; i++) {
         final fastDay = today.add(Duration(days: i));
-        final types = SunnahFastingRules.typesFor(fastDay);
-        if (types.isEmpty) continue;
-        if (SunnahFastingRules.isRamadan(fastDay)) continue;
+        if (!shouldScheduleSunnahEveForFastDay(fastDay)) continue;
 
         // Fire the evening before the fast day.
         final eve = fastDay.subtract(const Duration(days: 1));
@@ -1356,6 +1585,7 @@ class NotificationService {
         );
         if (!scheduledTz.isAfter(tzNow)) continue;
 
+        final types = SunnahFastingRules.typesFor(fastDay);
         final label = isId ? types.first.labelId() : types.first.labelEn();
         final title = isId ? 'Puasa sunnah besok' : 'Sunnah fast tomorrow';
         final body = isId
@@ -1374,7 +1604,7 @@ class NotificationService {
       }
 
       if (scheduled > 0) {
-        LogService.log('[NOTIF] Sunnah reminders scheduled: $scheduled');
+        LogService.logVerbose('[NOTIF] Sunnah eve reminders scheduled: $scheduled');
       }
     } catch (e, stack) {
       LogService.log('[NOTIF] scheduleSunnahReminders failed: $e');
@@ -1739,7 +1969,11 @@ class NotificationService {
   }
 
   static void _onNotificationTapped(NotificationResponse response) {
-    // Handle notification tap
+    NotificationLaunchBridge.onNotificationTapped(response);
+  }
+
+  static Future<NotificationAppLaunchDetails?> getLaunchDetails() async {
+    return _notifications.getNotificationAppLaunchDetails();
   }
 
   static Future<bool> requestPermissions() async {
@@ -1974,8 +2208,10 @@ class NotificationService {
     required String title,
     required String body,
     required tz.Location location,
+    String? payload,
     int batchIndex = 0,
     int batchSize = 10,
+    int? notificationBaseId,
   }) async {
     final fajrUtc = fajrTime.isUtc ? fajrTime : DateTime.utc(fajrTime.year, fajrTime.month, fajrTime.day, fajrTime.hour, fajrTime.minute, fajrTime.second);
     final reminderUtc = fajrUtc.subtract(Duration(minutes: offsetMinutes));
@@ -1999,13 +2235,15 @@ class NotificationService {
     }
     
     // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
-    final notificationId = _getNotificationId(_baseIdSahur, scheduledTime);
+    final baseId = notificationBaseId ?? _baseIdSahur;
+    final notificationId = _getNotificationId(baseId, scheduledTime);
     
     return await _scheduleWithRateLimit(
       id: notificationId,
       title: title,
       body: body,
       scheduledDate: scheduledTime,
+      payload: payload,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'ramadan_reminders',
@@ -2044,8 +2282,19 @@ class NotificationService {
     required tz.Location location,
     int batchIndex = 0,
     int batchSize = 10,
+    String? payload,
+    int? notificationBaseId,
   }) async {
-    final maghribUtc = maghribTime.isUtc ? maghribTime : DateTime.utc(maghribTime.year, maghribTime.month, maghribTime.day, maghribTime.hour, maghribTime.minute, maghribTime.second);
+    final maghribUtc = maghribTime.isUtc
+        ? maghribTime
+        : DateTime.utc(
+            maghribTime.year,
+            maghribTime.month,
+            maghribTime.day,
+            maghribTime.hour,
+            maghribTime.minute,
+            maghribTime.second,
+          );
     final reminderUtc = maghribUtc.add(Duration(minutes: offsetMinutes));
     final reminderLocal = tz.TZDateTime.from(reminderUtc, location);
     final tzNow = tz.TZDateTime.now(location);
@@ -2067,13 +2316,15 @@ class NotificationService {
     }
     
     // Note: No need to cancel individually - zonedSchedule() replaces existing notifications with same ID
-    final notificationId = _getNotificationId(_baseIdIftar, scheduledTime);
+    final baseId = notificationBaseId ?? _baseIdIftar;
+    final notificationId = _getNotificationId(baseId, scheduledTime);
     
     return await _scheduleWithRateLimit(
       id: notificationId,
       title: title,
       body: body,
       scheduledDate: scheduledTime,
+      payload: payload,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'ramadan_reminders',
@@ -2299,6 +2550,7 @@ class NotificationService {
     required int sahurOffsetMinutes,
     required bool iftarEnabled,
     required int iftarOffsetMinutes,
+    required bool iftarConfirmEnabled,
     required bool nightPlanEnabled,
     required int fajrAdjust,
     required int maghribAdjust,
@@ -2307,6 +2559,8 @@ class NotificationService {
     String? sahurBody,
     String? iftarTitle,
     String? iftarBody,
+    String? iftarConfirmTitle,
+    String? iftarConfirmBody,
     String? nightPlanTitle,
     String? nightPlanBody,
   }) async {
@@ -2314,6 +2568,10 @@ class NotificationService {
     if (kDebugMode) {
       debugPrint('[NOTIF] Scheduling Android season: $scheduleStart to $scheduleEnd');
     }
+
+    final seasonRow = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    final seasonModel =
+        seasonRow != null ? SeasonModel.fromDb(seasonRow) : null;
     
     int scheduledCount = 0;
     int skippedCount = 0;
@@ -2338,30 +2596,40 @@ class NotificationService {
         maghribAdjust: maghribAdjust,
       );
 
-        // Schedule Sahur (with rate limit batch index)
+        final dayIndex = seasonModel?.getRawDayIndex(date) ?? 0;
+        final inSeason =
+            dayIndex >= 1 && dayIndex <= (seasonModel?.days ?? 0);
+
+        // Schedule Sahur (+ fasting intention payload during season)
         if (sahurEnabled && times['fajr'] != null) {
           final scheduled = await scheduleSahurReminderForDate(
             date: date,
             fajrTime: times['fajr']!,
             offsetMinutes: sahurOffsetMinutes,
             title: sahurTitle ?? 'Sahur Reminder',
-            body: sahurBody ?? 'Time to prepare for Sahur',
+            body: sahurBody ?? 'Tap to set your fasting intention for today',
             location: location,
+            payload: inSeason
+                ? FastingNotificationPayload.ramadanSahur(seasonId, dayIndex)
+                : null,
             batchIndex: scheduledCount,
             batchSize: 10,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
         }
-        
+
         // Schedule Iftar (with rate limit batch index)
-        if (iftarEnabled && times['maghrib'] != null) {
+        if (iftarEnabled && inSeason && times['maghrib'] != null) {
           final scheduled = await scheduleIftarReminderForDate(
             date: date,
             maghribTime: times['maghrib']!,
             offsetMinutes: iftarOffsetMinutes,
-            title: iftarTitle ?? 'Iftar Reminder',
-            body: iftarBody ?? 'Time for Iftar',
+            title: iftarConfirmTitle ?? iftarTitle ?? 'Iftar',
+            body: iftarConfirmBody ??
+                iftarBody ??
+                'Tap to confirm your fast today',
             location: location,
+            payload: FastingNotificationPayload.ramadanIftar(seasonId, dayIndex),
             batchIndex: scheduledCount,
             batchSize: 10,
           );
@@ -2437,6 +2705,7 @@ class NotificationService {
     required int sahurOffsetMinutes,
     required bool iftarEnabled,
     required int iftarOffsetMinutes,
+    required bool iftarConfirmEnabled,
     required bool nightPlanEnabled,
     required int fajrAdjust,
     required int maghribAdjust,
@@ -2445,6 +2714,8 @@ class NotificationService {
     String? sahurBody,
     String? iftarTitle,
     String? iftarBody,
+    String? iftarConfirmTitle,
+    String? iftarConfirmBody,
     String? nightPlanTitle,
     String? nightPlanBody,
   }) async {
@@ -2453,6 +2724,10 @@ class NotificationService {
     if (sahurEnabled) perDayCount++;
     if (iftarEnabled) perDayCount++;
     if (nightPlanEnabled) perDayCount++;
+
+    final seasonRow = await database.ramadanSeasonsDao.getSeasonById(seasonId);
+    final seasonModel =
+        seasonRow != null ? SeasonModel.fromDb(seasonRow) : null;
     
     // Count goal reminders (estimate: max 4 per day - quran 3x, dhikr 3x, sedekah 1x, taraweeh 1x)
     // We'll check actual enabled goals, but use conservative estimate
@@ -2491,26 +2766,36 @@ class NotificationService {
       maghribAdjust: maghribAdjust,
     );
     
+        final dayIndex = seasonModel?.getRawDayIndex(date) ?? 0;
+        final inSeason =
+            dayIndex >= 1 && dayIndex <= (seasonModel?.days ?? 0);
+
         if (sahurEnabled && times['fajr'] != null) {
           final scheduled = await scheduleSahurReminderForDate(
             date: date,
             fajrTime: times['fajr']!,
             offsetMinutes: sahurOffsetMinutes,
             title: sahurTitle ?? 'Sahur Reminder',
-            body: sahurBody ?? 'Time to prepare for Sahur',
+            body: sahurBody ?? 'Tap to set your fasting intention for today',
             location: location,
+            payload: inSeason
+                ? FastingNotificationPayload.ramadanSahur(seasonId, dayIndex)
+                : null,
           );
           if (scheduled) scheduledCount++; else skippedCount++;
         }
-        
-        if (iftarEnabled && times['maghrib'] != null) {
+
+        if (iftarEnabled && inSeason && times['maghrib'] != null) {
           final scheduled = await scheduleIftarReminderForDate(
             date: date,
             maghribTime: times['maghrib']!,
             offsetMinutes: iftarOffsetMinutes,
-            title: iftarTitle ?? 'Iftar Reminder',
-            body: iftarBody ?? 'Time for Iftar',
+            title: iftarConfirmTitle ?? iftarTitle ?? 'Iftar',
+            body: iftarConfirmBody ??
+                iftarBody ??
+                'Tap to confirm your fast today',
             location: location,
+            payload: FastingNotificationPayload.ramadanIftar(seasonId, dayIndex),
           );
           if (scheduled) scheduledCount++; else skippedCount++;
     }
@@ -2652,6 +2937,7 @@ class NotificationService {
     required int sahurOffsetMinutes,
     required bool iftarEnabled,
     required int iftarOffsetMinutes,
+    required bool iftarConfirmEnabled,
     required bool nightPlanEnabled,
     int fajrAdjust = 0,
     int maghribAdjust = 0,
@@ -2659,6 +2945,8 @@ class NotificationService {
     String? sahurBody,
     String? iftarTitle,
     String? iftarBody,
+    String? iftarConfirmTitle,
+    String? iftarConfirmBody,
     String? nightPlanTitle,
     String? nightPlanBody,
   }) async {
@@ -2783,6 +3071,18 @@ class NotificationService {
     int cancelAttempts = 0;
     const maxCancelAttempts = 3;
     bool cancelSuccess = false;
+    final preserveIds =
+        await _todayUpcomingQueuedFastingNotificationIds(database);
+    if (preserveIds.isNotEmpty) {
+      LogService.log(
+        '[NOTIF] Preserving today fasting alarm(s) during schedule: $preserveIds',
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[NOTIF] Preserving today fasting alarm(s) during schedule: $preserveIds',
+        );
+      }
+    }
     
     while (cancelAttempts < maxCancelAttempts && !cancelSuccess) {
       try {
@@ -2791,19 +3091,22 @@ class NotificationService {
         
         final beforeCancel = await getPendingNotifications();
         final seasonBefore = beforeCancel
-            .where((n) => NotificationIds.seasonCategories
-                .contains(NotificationIds.categoryOf(n.id)))
+            .where((n) =>
+                NotificationIds.seasonCategories
+                    .contains(NotificationIds.categoryOf(n.id)) &&
+                !preserveIds.contains(n.id))
             .length;
         LogService.log('[NOTIF] Season notifications before cancel: $seasonBefore');
         
-        await cancelSeasonReminders();
+        await cancelSeasonReminders(excludeIds: preserveIds);
         
         await Future.delayed(const Duration(milliseconds: 500));
         
         final afterCancel = await getPendingNotifications();
         final seasonAfter = afterCancel
             .where((n) => NotificationIds.seasonCategories
-                .contains(NotificationIds.categoryOf(n.id)))
+                .contains(NotificationIds.categoryOf(n.id)) &&
+                !preserveIds.contains(n.id))
             .length;
         LogService.log('[NOTIF] Season notifications after cancel: $seasonAfter');
         
@@ -2846,6 +3149,7 @@ class NotificationService {
         sahurOffsetMinutes: sahurOffsetMinutes,
         iftarEnabled: iftarEnabled,
         iftarOffsetMinutes: iftarOffsetMinutes,
+        iftarConfirmEnabled: iftarConfirmEnabled,
         nightPlanEnabled: nightPlanEnabled,
         fajrAdjust: fajrAdjust,
         maghribAdjust: maghribAdjust,
@@ -2854,6 +3158,8 @@ class NotificationService {
         sahurBody: sahurBody,
         iftarTitle: iftarTitle,
         iftarBody: iftarBody,
+        iftarConfirmTitle: iftarConfirmTitle,
+        iftarConfirmBody: iftarConfirmBody,
         nightPlanTitle: nightPlanTitle,
         nightPlanBody: nightPlanBody,
       );
@@ -2872,6 +3178,7 @@ class NotificationService {
         sahurOffsetMinutes: sahurOffsetMinutes,
         iftarEnabled: iftarEnabled,
         iftarOffsetMinutes: iftarOffsetMinutes,
+        iftarConfirmEnabled: iftarConfirmEnabled,
         nightPlanEnabled: nightPlanEnabled,
         fajrAdjust: fajrAdjust,
         maghribAdjust: maghribAdjust,
@@ -2880,6 +3187,8 @@ class NotificationService {
         sahurBody: sahurBody,
         iftarTitle: iftarTitle,
         iftarBody: iftarBody,
+        iftarConfirmTitle: iftarConfirmTitle,
+        iftarConfirmBody: iftarConfirmBody,
         nightPlanTitle: nightPlanTitle,
         nightPlanBody: nightPlanBody,
       );
@@ -2908,6 +3217,407 @@ class NotificationService {
       LogService.log('[NOTIF] Scheduling lock released');
     }
   }
+
+  /// Whether Android can schedule exact / alarm-clock notifications.
+  static Future<bool> hasExactAlarmPermission() async {
+    if (!Platform.isAndroid) return true;
+    final androidImpl = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImpl == null) return false;
+    try {
+      return await androidImpl.canScheduleExactNotifications() ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Season-relevant pending notifications for user-facing lists (hides far-future Ramadan years).
+  static List<NotificationInfo> filterSeasonPendingForDisplay(
+    List<NotificationInfo> pending,
+  ) {
+    final filtered = pending.where((n) {
+      final category = NotificationIds.categoryOf(n.id);
+      return NotificationIds.seasonCategories.contains(category);
+    }).toList();
+    filtered.sort((a, b) => a.id.compareTo(b.id));
+    return filtered;
+  }
+
+  /// IDs of today's Sahur/Iftar alarms still in the future and already queued.
+  /// Kept during mass-cancel so reschedule does not destroy imminent alarms.
+  static Future<Set<int>> _todayUpcomingQueuedFastingNotificationIds(
+    AppDatabase database,
+  ) async {
+    final preview = await getTodayFastingReminderPreview(database);
+    final ids = <int>{};
+    for (final item in preview) {
+      if (item.status != FastingReminderPreviewStatus.upcoming ||
+          !item.isQueued) {
+        continue;
+      }
+      final baseId = item.notificationBaseId ??
+          (item.labelKey == FastingReminderLabelKey.sahur
+              ? _baseIdSahur
+              : _baseIdIftar);
+      ids.add(notificationIdForDate(baseId, item.localTime));
+    }
+    return ids;
+  }
+
+  /// Schedules today's upcoming Sahur/Iftar when missing from the pending queue.
+  /// Does not cancel existing alarms — safe after manual date/time changes on Android.
+  static Future<int> ensureTodayFastingRemindersScheduled(
+    AppDatabase database,
+  ) async {
+    try {
+      final preview = await getTodayFastingReminderPreview(database);
+      final missing = preview
+          .where(
+            (i) =>
+                i.status == FastingReminderPreviewStatus.upcoming && !i.isQueued,
+          )
+          .toList();
+      if (missing.isEmpty) return 0;
+
+      final latitudeStr =
+          await database.kvSettingsDao.getValue('prayer_latitude');
+      final longitudeStr =
+          await database.kvSettingsDao.getValue('prayer_longitude');
+      final latitude = double.tryParse(latitudeStr ?? '');
+      final longitude = double.tryParse(longitudeStr ?? '');
+      if (latitude == null || longitude == null) return 0;
+
+      final timezone =
+          await database.kvSettingsDao.getValue('prayer_timezone') ??
+              'Asia/Jakarta';
+      final method =
+          await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl';
+      final highLatRule =
+          await database.kvSettingsDao.getValue('prayer_high_lat_rule') ??
+              'middle_of_night';
+      final fajrAdjust =
+          int.tryParse(
+                await database.kvSettingsDao.getValue('prayer_fajr_adj') ??
+                    '0',
+              ) ??
+              0;
+      final maghribAdjust =
+          int.tryParse(
+                await database.kvSettingsDao.getValue('prayer_maghrib_adj') ??
+                    '0',
+              ) ??
+              0;
+      final sahurOffset =
+          (int.tryParse(
+                    await database.kvSettingsDao.getValue('sahur_offset') ??
+                        '30',
+                  ) ??
+                  30)
+              .clamp(1, 45);
+      final iftarOffset =
+          int.tryParse(
+                await database.kvSettingsDao.getValue('iftar_offset') ?? '0',
+              ) ??
+              0;
+      final iftarEnabled =
+          (await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true') ==
+              'true';
+      final sahurEnabled =
+          (await database.kvSettingsDao.getValue('sahur_enabled') ?? 'true') ==
+              'true';
+      final sunnahReminderEnabled =
+          (await database.kvSettingsDao.getValue('sunnah_reminder_enabled') ??
+                  'true') ==
+              'true';
+      final locale =
+          await database.kvSettingsDao.getValue('app_language') ?? 'en';
+      final isId = locale == 'id';
+      final sahurTitle = isId ? 'Waktu sahur' : 'Sahur time';
+      final sahurBody = isId
+          ? 'Ketuk untuk menetapkan niat puasa hari ini'
+          : 'Tap to set your fasting intention for today';
+      final iftarConfirmTitle = isId ? 'Waktu berbuka' : 'Iftar time';
+      final iftarConfirmBody = isId
+          ? 'Ketuk untuk mengonfirmasi puasa hari ini'
+          : 'Tap to confirm today\'s fast';
+
+      final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+      final times = PrayerTimeService.getFajrAndMaghrib(
+        date: todayDate,
+        latitude: latitude,
+        longitude: longitude,
+        timezone: timezone,
+        method: method,
+        highLatRule: highLatRule,
+        fajrAdjust: fajrAdjust,
+        maghribAdjust: maghribAdjust,
+      );
+
+      await initializeTimezone(timezone);
+      final location = tz.local;
+
+      final seasons = await database.ramadanSeasonsDao.getAllSeasons();
+      final seasonRow =
+          NotificationSeasonResolver.pickForScheduling(seasons, today);
+      final seasonId = seasonRow?.id;
+      final seasonModel =
+          seasonRow != null ? SeasonModel.fromDb(seasonRow) : null;
+      final dayIndex = seasonModel?.getRawDayIndex(today) ?? 0;
+      final inSeason = dayIndex >= 1 && dayIndex <= (seasonModel?.days ?? 0);
+      final isSunnahToday = !inSeason &&
+          sunnahReminderEnabled &&
+          SunnahFastingRules.typesFor(todayDate).isNotEmpty &&
+          !SunnahFastingRules.isRamadan(todayDate);
+
+      var scheduled = 0;
+      for (final item in missing) {
+        switch (item.labelKey) {
+          case FastingReminderLabelKey.sahur:
+            if (times['fajr'] == null) continue;
+            if (isSunnahToday) {
+              if (!sahurEnabled) continue;
+              final ok = await scheduleSahurReminderForDate(
+                date: todayDate,
+                fajrTime: times['fajr']!,
+                offsetMinutes: sahurOffset,
+                title: sahurTitle,
+                body: sahurBody,
+                location: location,
+                payload: FastingNotificationPayload.sunnahSahur(todayDate),
+                notificationBaseId: _baseIdSunnahSahur,
+              );
+              if (ok) scheduled++;
+            } else if (inSeason) {
+              final ok = await scheduleSahurReminderForDate(
+                date: todayDate,
+                fajrTime: times['fajr']!,
+                offsetMinutes: sahurOffset,
+                title: 'Sahur Reminder',
+                body: 'Tap to set your fasting intention for today',
+                location: location,
+                payload: seasonId != null
+                    ? FastingNotificationPayload.ramadanSahur(
+                        seasonId,
+                        dayIndex,
+                      )
+                    : null,
+              );
+              if (ok) scheduled++;
+            }
+          case FastingReminderLabelKey.iftar:
+          case FastingReminderLabelKey.iftarConfirm:
+            if (times['maghrib'] == null) continue;
+            if (isSunnahToday) {
+              if (!iftarEnabled) continue;
+              final ok = await scheduleIftarReminderForDate(
+                date: todayDate,
+                maghribTime: times['maghrib']!,
+                offsetMinutes: iftarOffset,
+                title: iftarConfirmTitle,
+                body: iftarConfirmBody,
+                location: location,
+                payload: FastingNotificationPayload.sunnahIftar(todayDate),
+                notificationBaseId: _baseIdSunnahIftar,
+              );
+              if (ok) scheduled++;
+            } else if (inSeason) {
+              final ok = await scheduleIftarReminderForDate(
+                date: todayDate,
+                maghribTime: times['maghrib']!,
+                offsetMinutes: iftarOffset,
+                title: 'Iftar',
+                body: 'Tap to confirm your fast today',
+                location: location,
+                payload: iftarEnabled && seasonId != null
+                    ? FastingNotificationPayload.ramadanIftar(
+                        seasonId,
+                        dayIndex,
+                      )
+                    : null,
+              );
+              if (ok) scheduled++;
+            }
+        }
+      }
+
+      if (scheduled > 0) {
+        LogService.log(
+          '[NOTIF] ensureTodayFastingRemindersScheduled: queued $scheduled',
+        );
+        if (kDebugMode) {
+          debugPrint(
+            '[NOTIF] ensureTodayFastingRemindersScheduled: queued $scheduled',
+          );
+        }
+      }
+      return scheduled;
+    } catch (e, stack) {
+      LogService.log('[NOTIF] ensureTodayFastingRemindersScheduled failed: $e');
+      if (kDebugMode) {
+        debugPrint('[NOTIF] ensureTodayFastingRemindersScheduled: $stack');
+      }
+      return 0;
+    }
+  }
+
+  /// Today's Sahur / Iftar times from prayer settings (for Settings preview).
+  static Future<List<FastingReminderPreviewItem>> getTodayFastingReminderPreview(
+    AppDatabase database,
+  ) async {
+    final latitudeStr = await database.kvSettingsDao.getValue('prayer_latitude');
+    final longitudeStr = await database.kvSettingsDao.getValue('prayer_longitude');
+    final latitude = double.tryParse(latitudeStr ?? '');
+    final longitude = double.tryParse(longitudeStr ?? '');
+    if (latitude == null || longitude == null) return [];
+
+    final timezone =
+        await database.kvSettingsDao.getValue('prayer_timezone') ?? 'Asia/Jakarta';
+    final method = await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl';
+    final highLatRule =
+        await database.kvSettingsDao.getValue('prayer_high_lat_rule') ?? 'middle_of_night';
+    final fajrAdjust =
+        int.tryParse(await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0') ?? 0;
+    final maghribAdjust =
+        int.tryParse(await database.kvSettingsDao.getValue('prayer_maghrib_adj') ?? '0') ?? 0;
+
+    final sahurEnabled =
+        (await database.kvSettingsDao.getValue('sahur_enabled') ?? 'true') == 'true';
+    final sahurOffset =
+        (int.tryParse(await database.kvSettingsDao.getValue('sahur_offset') ?? '30') ?? 30)
+            .clamp(1, 45);
+    final iftarEnabled =
+        (await database.kvSettingsDao.getValue('iftar_enabled') ?? 'true') == 'true';
+    final iftarOffset =
+        int.tryParse(await database.kvSettingsDao.getValue('iftar_offset') ?? '0') ?? 0;
+    final sunnahReminderEnabled =
+        (await database.kvSettingsDao.getValue('sunnah_reminder_enabled') ??
+                'true') ==
+            'true';
+
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final seasons = await database.ramadanSeasonsDao.getAllSeasons();
+    final seasonRow =
+        NotificationSeasonResolver.pickForScheduling(seasons, today);
+    final seasonModel =
+        seasonRow != null ? SeasonModel.fromDb(seasonRow) : null;
+    final dayIndex = seasonModel?.getRawDayIndex(today) ?? 0;
+    final inSeason = dayIndex >= 1 && dayIndex <= (seasonModel?.days ?? 0);
+    final isSunnahToday = !inSeason &&
+        sunnahReminderEnabled &&
+        SunnahFastingRules.typesFor(todayDate).isNotEmpty &&
+        !SunnahFastingRules.isRamadan(todayDate);
+    final showSahur = inSeason || isSunnahToday;
+    final showIftar = (inSeason && iftarEnabled) || (isSunnahToday && iftarEnabled);
+    final sahurBaseId = isSunnahToday ? _baseIdSunnahSahur : _baseIdSahur;
+    final iftarBaseId = isSunnahToday ? _baseIdSunnahIftar : _baseIdIftar;
+
+    final times = PrayerTimeService.getFajrAndMaghrib(
+      date: todayDate,
+      latitude: latitude,
+      longitude: longitude,
+      timezone: timezone,
+      method: method,
+      highLatRule: highLatRule,
+      fajrAdjust: fajrAdjust,
+      maghribAdjust: maghribAdjust,
+    );
+
+    await initializeTimezone(timezone);
+    final location = tz.local;
+    final tzNow = tz.TZDateTime.now(location);
+
+    DateTime toLocalDisplay(DateTime utcOrLocal) {
+      final utc = utcOrLocal.isUtc ? utcOrLocal : utcOrLocal.toUtc();
+      final tzTime = tz.TZDateTime.from(utc, location);
+      return DateTime(tzTime.year, tzTime.month, tzTime.day, tzTime.hour, tzTime.minute);
+    }
+
+    FastingReminderPreviewStatus statusFor(DateTime localTime, bool enabled) {
+      if (!enabled) return FastingReminderPreviewStatus.disabled;
+      final scheduled = tz.TZDateTime(
+        location,
+        localTime.year,
+        localTime.month,
+        localTime.day,
+        localTime.hour,
+        localTime.minute,
+      );
+      return scheduled.isBefore(tzNow) ? FastingReminderPreviewStatus.passed : FastingReminderPreviewStatus.upcoming;
+    }
+
+    final items = <FastingReminderPreviewItem>[];
+    final pending = await getPendingNotifications();
+    final pendingIds = pending.map((n) => n.id).toSet();
+
+    bool isQueued(
+      FastingReminderLabelKey key,
+      DateTime localTime,
+      bool enabled,
+      int baseId,
+    ) {
+      if (!enabled) return false;
+      return pendingIds.contains(notificationIdForDate(baseId, localTime));
+    }
+
+    final fajr = times['fajr'];
+    if (fajr != null && showSahur) {
+      final fajrLocal = toLocalDisplay(fajr);
+      final sahurLocal = fajrLocal.subtract(Duration(minutes: sahurOffset));
+      items.add(FastingReminderPreviewItem(
+        labelKey: FastingReminderLabelKey.sahur,
+        localTime: sahurLocal,
+        status: statusFor(sahurLocal, sahurEnabled),
+        isQueued: isQueued(
+          FastingReminderLabelKey.sahur,
+          sahurLocal,
+          sahurEnabled,
+          sahurBaseId,
+        ),
+        notificationBaseId: sahurBaseId,
+      ));
+    }
+
+    final maghrib = times['maghrib'];
+    if (maghrib != null && showIftar) {
+      final iftarLocal = toLocalDisplay(maghrib).add(Duration(minutes: iftarOffset));
+      items.add(FastingReminderPreviewItem(
+        labelKey: FastingReminderLabelKey.iftarConfirm,
+        localTime: iftarLocal,
+        status: statusFor(iftarLocal, iftarEnabled),
+        isQueued: isQueued(
+          FastingReminderLabelKey.iftar,
+          iftarLocal,
+          iftarEnabled,
+          iftarBaseId,
+        ),
+        notificationBaseId: iftarBaseId,
+      ));
+    }
+
+    return items;
+  }
+}
+
+enum FastingReminderLabelKey { sahur, iftar, iftarConfirm }
+
+enum FastingReminderPreviewStatus { upcoming, passed, disabled }
+
+class FastingReminderPreviewItem {
+  final FastingReminderLabelKey labelKey;
+  final DateTime localTime;
+  final FastingReminderPreviewStatus status;
+  final bool isQueued;
+  final int? notificationBaseId;
+
+  const FastingReminderPreviewItem({
+    required this.labelKey,
+    required this.localTime,
+    required this.status,
+    this.isQueued = false,
+    this.notificationBaseId,
+  });
 }
 
 class NotificationInfo {
