@@ -99,85 +99,82 @@ Widget buildMonthGrid(BuildContext context, WidgetRef ref, int seasonId, int day
         const horizontalPad = 20.0;
         const gridGap = 10.0;
         
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 0),
-              child: CoachMarkTip(
-                coachKey: CoachMarkService.monthCalendar,
-                message: AppLocalizations.of(context)!.coachMarkMonthCalendar,
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(horizontalPad, 0, horizontalPad, 0),
-              child: MonthJourneyCard(),
-            ),
-            Expanded(
-              child: Padding(
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
                 padding: const EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 0),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: AppSurface(
-                    padding: const EdgeInsets.all(12),
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 7,
-                        crossAxisSpacing: gridGap,
-                        mainAxisSpacing: gridGap,
-                        childAspectRatio: 1,
-                      ),
-                      itemCount: days,
-                      itemBuilder: (context, index) {
-                        final dayIndex = index + 1;
-                        final isToday = dayIndex == currentDayIndex;
-                        final isLast10 =
-                            dayIndex >= last10Start && dayIndex <= season.days;
-                        final isInSeason =
-                            dayIndex >= 1 && dayIndex <= season.days;
-
-                        final entriesAsync = ref.watch(
-                          dailyEntriesProvider(
-                            (seasonId: seasonId, dayIndex: dayIndex),
-                          ),
-                        );
-                        final seasonHabitsAsync =
-                            ref.watch(seasonHabitsProvider(seasonId));
-                        final habitsAsync = ref.watch(habitsProvider);
-                        final database = ref.watch(databaseProvider);
-
-                        final achievementDays =
-                            ref.watch(achievementDayIndicesProvider).valueOrNull ??
-                                const <int>{};
-
-                        return buildMonthDayCell(
-                          context,
-                          ref,
-                          seasonId,
-                          dayIndex,
-                          isToday,
-                          isLast10,
-                          isInSeason,
-                          achievementDays.contains(dayIndex),
-                          entriesAsync,
-                          seasonHabitsAsync,
-                          habitsAsync,
-                          database,
-                        );
-                      },
+                child: CoachMarkTip(
+                  coachKey: CoachMarkService.monthCalendar,
+                  message: AppLocalizations.of(context)!.coachMarkMonthCalendar,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(horizontalPad, 0, horizontalPad, 0),
+                child: MonthJourneyCard(),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 0),
+                child: AppSurface(
+                  padding: const EdgeInsets.all(12),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 7,
+                      crossAxisSpacing: gridGap,
+                      mainAxisSpacing: gridGap,
+                      childAspectRatio: 1,
                     ),
+                    itemCount: days,
+                    itemBuilder: (context, index) {
+                      final dayIndex = index + 1;
+                      final isToday = dayIndex == currentDayIndex;
+                      final isLast10 =
+                          dayIndex >= last10Start && dayIndex <= season.days;
+                      final isInSeason =
+                          dayIndex >= 1 && dayIndex <= season.days;
+
+                      final entriesAsync = ref.watch(
+                        dailyEntriesProvider(
+                          (seasonId: seasonId, dayIndex: dayIndex),
+                        ),
+                      );
+                      final seasonHabitsAsync =
+                          ref.watch(seasonHabitsProvider(seasonId));
+                      final habitsAsync = ref.watch(habitsProvider);
+                      final database = ref.watch(databaseProvider);
+
+                      final achievementDays =
+                          ref.watch(achievementDayIndicesProvider).valueOrNull ??
+                              const <int>{};
+
+                      return buildMonthDayCell(
+                        context,
+                        ref,
+                        seasonId,
+                        dayIndex,
+                        isToday,
+                        isLast10,
+                        isInSeason,
+                        achievementDays.contains(dayIndex),
+                        entriesAsync,
+                        seasonHabitsAsync,
+                        habitsAsync,
+                        database,
+                      );
+                    },
                   ),
                 ),
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 20),
-              child: MonthLegendCompact(),
-            ),
-          ],
+              const Padding(
+                padding: EdgeInsets.fromLTRB(horizontalPad, 12, horizontalPad, 20),
+                child: MonthLegendCompact(),
+              ),
+            ],
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

@@ -13,12 +13,10 @@ import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/data/providers/quran_provider.dart';
-import 'package:ramadan_tracker/data/providers/completion_score_provider.dart';
 import 'package:ramadan_tracker/domain/services/completion_service.dart';
 import 'package:ramadan_tracker/domain/services/streak_shield_service.dart';
 import 'package:ramadan_tracker/app/app.dart';
 import 'package:ramadan_tracker/domain/models/season_model.dart';
-import 'package:ramadan_tracker/widgets/score_ring.dart';
 import 'package:ramadan_tracker/widgets/habit_toggle.dart';
 import 'package:ramadan_tracker/widgets/quran_tracker.dart';
 import 'package:ramadan_tracker/widgets/itikaf_icon.dart';
@@ -28,7 +26,6 @@ import 'package:ramadan_tracker/widgets/sedekah_tracker.dart';
 import 'package:ramadan_tracker/widgets/counter_widget.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/prayer_details_widget.dart';
-import 'package:ramadan_tracker/features/goals/edit_goals_flow.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
@@ -46,7 +43,7 @@ import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/daily_quest_provider.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_fasting_times_card.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_habit_trends_card.dart';
-import 'package:ramadan_tracker/features/today/widgets/today_home_engagement.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_hero_card.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_qadha_entry_tile.dart';
 import 'package:ramadan_tracker/app/settings_navigation.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
@@ -55,7 +52,6 @@ import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_checklist_body.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_checklist_sticky_bar.dart';
-import 'package:ramadan_tracker/data/providers/checklist_progress_provider.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
@@ -251,7 +247,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 _buildLast10DaysHeroCard(dayIndex, totalDays),
                 const SizedBox(height: 16),
               ],
-              _buildHeroCard(seasonId, dayIndex, totalDays),
+              TodayHeroCard(
+                seasonId: seasonId,
+                dayIndex: dayIndex,
+                totalDays: totalDays,
+                streakLoader: _calculateStreak,
+              ),
               const SizedBox(height: 12),
               TodayHabitTrendsCard(seasonId: seasonId, dayIndex: dayIndex),
               const SizedBox(height: 8),
@@ -865,108 +866,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         setState(() {});
       }
     }
-  }
-
-  Widget _buildHeroCard(int seasonId, int dayIndex, int totalDays) {
-    final l10n = AppLocalizations.of(context)!;
-    final scheme = Theme.of(context).colorScheme;
-    final season = ref.watch(currentSeasonProvider).value;
-    final isSeasonToday =
-        season != null && dayIndex == season.getDayIndex(DateTime.now());
-    final checklistLabel = isSeasonToday
-        ? l10n.openTodayChecklist
-        : l10n.dayChecklistTitle(dayIndex);
-
-    return AppSurface(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TodayHomeGreeting(dayIndex: dayIndex, totalDays: totalDays),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                ref.watch(completionScoreProvider((seasonId: seasonId, dayIndex: dayIndex))).when(
-                  data: (score) => ScoreRing(score: score, label: l10n.scoreLabel),
-                  loading: () => ScoreRing(score: 0, label: l10n.scoreLabel),
-                  error: (_, __) => ScoreRing(score: 0, label: l10n.scoreLabel),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FutureBuilder<int>(
-                        future: _calculateStreak(seasonId, dayIndex),
-                        builder: (context, snapshot) {
-                          final streak = snapshot.data ?? 0;
-                          return Text(
-                            l10n.streakDays(streak),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 6),
-                      ref.watch(
-                        checklistProgressProvider((seasonId: seasonId, dayIndex: dayIndex)),
-                      ).when(
-                        data: (progress) => Text(
-                          l10n.doneCount(progress.completed, progress.total),
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: scheme.onSurface.withValues(alpha: 0.75),
-                              ),
-                        ),
-                        loading: () => Text(l10n.doneCount(0, 0)),
-                        error: (_, __) => Text(l10n.doneCount(0, 0)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            TodayJourneyMiniStrip(seasonId: seasonId, dayIndex: dayIndex),
-            const SizedBox(height: 16),
-            Text(
-              l10n.todayHomeLogPrompt,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.65),
-                  ),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _openTodayChecklistScreen,
-              icon: const Icon(Icons.checklist_rounded),
-              label: Text(checklistLabel),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.center,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => EditGoalsFlow(seasonId: seasonId),
-                    ),
-                  );
-                },
-                child: Text(l10n.editGoals),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openTodayChecklistScreen() {
-    final dayIndex = ref.read(activeDayIndexForUIProvider);
-    openDayChecklist(context, ref, dayIndex: dayIndex, switchToTodayTab: false);
   }
 
   Widget _buildOneTapTodayCard(

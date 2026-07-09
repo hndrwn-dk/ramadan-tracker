@@ -7,8 +7,8 @@ import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 /// Sticky checklist summary above the tab bar on Today home.
 ///
-/// Premium mockups use a persistent summary + CTA; the full checklist opens as a
-/// pushed screen ([TodayScreen.checklistOnly]), not a bottom sheet.
+/// The entire row is tappable — opens today's checklist. The trailing
+/// "Checklist" pill is visual only (not a separate button).
 class TodayChecklistStickyBar extends ConsumerWidget {
   final int seasonId;
   final int dayIndex;
@@ -18,6 +18,16 @@ class TodayChecklistStickyBar extends ConsumerWidget {
     required this.seasonId,
     required this.dayIndex,
   });
+
+  static String _subtitle(
+    AppLocalizations l10n,
+    int completed,
+    int total,
+  ) {
+    if (total <= 0) return l10n.openTodayChecklist;
+    if (completed >= total) return l10n.todayStickyReviewToday;
+    return l10n.todayStickyRemaining(total - completed);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,51 +49,75 @@ class TodayChecklistStickyBar extends ConsumerWidget {
             final total = progress.total;
             final fraction = total > 0 ? completed / total : 0.0;
 
-            return InkWell(
-              onTap: () => openDayChecklist(
-                context,
-                ref,
-                dayIndex: dayIndex,
-                switchToTodayTab: false,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
-                child: Row(
-                  children: [
-                    ChecklistProgressRing(
-                      progress: fraction,
-                      completed: completed,
-                      total: total,
-                      size: 44,
-                      strokeWidth: 4.5,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l10n.checklistProgressDone(completed, total),
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            l10n.openTodayChecklist,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: scheme.onSurface.withValues(alpha: 0.65),
-                                ),
-                          ),
-                        ],
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => openDayChecklist(
+                  context,
+                  ref,
+                  dayIndex: dayIndex,
+                  switchToTodayTab: false,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(
+                    children: [
+                      ChecklistProgressRing(
+                        progress: fraction,
+                        completed: completed,
+                        total: total,
+                        size: 44,
+                        strokeWidth: 4.5,
                       ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: scheme.onSurface.withValues(alpha: 0.45),
-                    ),
-                  ],
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              l10n.checklistProgressDone(completed, total),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _subtitle(l10n, completed, total),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: scheme.onSurface
+                                        .withValues(alpha: 0.65),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          l10n.todayChecklistButton,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: scheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );

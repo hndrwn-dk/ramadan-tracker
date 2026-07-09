@@ -45,8 +45,9 @@ class TodayHomeGreeting extends StatelessWidget {
       children: [
         Text(
           _greeting(l10n),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
         ),
         const SizedBox(height: 6),
@@ -66,19 +67,29 @@ class TodayHomeGreeting extends StatelessWidget {
 class TodayJourneyMiniStrip extends ConsumerWidget {
   final int seasonId;
   final int dayIndex;
+  final bool showShields;
+  final bool showQuestCountInHeadline;
+  final EdgeInsetsGeometry? padding;
 
   const TodayJourneyMiniStrip({
     super.key,
     required this.seasonId,
     required this.dayIndex,
+    this.showShields = true,
+    this.showQuestCountInHeadline = true,
+    this.padding,
   });
 
   static String _headline(
     AppLocalizations l10n,
     int level,
     int totalXp,
-    AsyncValue<DailyQuestState> questsAsync,
-  ) {
+    AsyncValue<DailyQuestState> questsAsync, {
+    required bool showQuestCountInHeadline,
+  }) {
+    if (!showQuestCountInHeadline) {
+      return l10n.todayHomeCompanionLine(level, totalXp);
+    }
     return questsAsync.when(
       data: (state) {
         if (state.quests.isEmpty) {
@@ -116,7 +127,13 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
             : 1.0;
         final scheme = Theme.of(context).colorScheme;
         final tierName = _companionTierName(l10n, level);
-        final headline = _headline(l10n, level, engagement.totalXp, questsAsync);
+        final headline = _headline(
+          l10n,
+          level,
+          engagement.totalXp,
+          questsAsync,
+          showQuestCountInHeadline: showQuestCountInHeadline,
+        );
 
         return seasonAsync.when(
           data: (season) {
@@ -138,7 +155,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: padding ?? const EdgeInsets.symmetric(vertical: 4),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -174,7 +191,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
                                 ),
                           ),
                         ],
-                        if (season != null && shieldsLeft > 0) ...[
+                        if (showShields && season != null && shieldsLeft > 0) ...[
                           const SizedBox(height: 4),
                           Text(
                             l10n.streakShieldsRemaining(shieldsLeft),

@@ -2205,6 +2205,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get todayHeroStreakLabel => 'Streak';
+
+  @override
+  String get todayHeroQuestsLabel => 'Quests';
+
+  @override
+  String get todayHeroDaysUnit => 'days';
+
+  @override
+  String get todayHeroQuestsToday => 'today';
+
+  @override
+  String get todayStickyReviewToday => 'Tap to review today';
+
+  @override
+  String todayStickyRemaining(int remaining) {
+    return '$remaining left — continue checklist';
+  }
+
+  @override
+  String get todayChecklistButton => 'Checklist';
+
+  @override
   String get onboardingLanguageStep => 'Step 1 · Language';
 
   @override

@@ -3921,6 +3921,48 @@ abstract class AppLocalizations {
   /// **'{xp} XP to level {level}'**
   String todayHomeXpToNext(int xp, int level);
 
+  /// Label for streak stat chip on Today hero
+  ///
+  /// In en, this message translates to:
+  /// **'Streak'**
+  String get todayHeroStreakLabel;
+
+  /// Label for daily quest stat chip on Today hero
+  ///
+  /// In en, this message translates to:
+  /// **'Quests'**
+  String get todayHeroQuestsLabel;
+
+  /// Unit below streak number on Today hero chip
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get todayHeroDaysUnit;
+
+  /// Unit below quest count on Today hero chip
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get todayHeroQuestsToday;
+
+  /// Sticky bar subtitle when checklist is complete
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to review today'**
+  String get todayStickyReviewToday;
+
+  /// Sticky bar subtitle when checklist items remain
+  ///
+  /// In en, this message translates to:
+  /// **'{remaining} left — continue checklist'**
+  String todayStickyRemaining(int remaining);
+
+  /// Compact CTA label on Today sticky bar
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get todayChecklistButton;
+
   /// No description provided for @onboardingLanguageStep.
   ///
   /// In en, this message translates to:

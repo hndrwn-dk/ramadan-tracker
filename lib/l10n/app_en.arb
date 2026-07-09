@@ -3696,6 +3696,38 @@
     }
   },
 
+  "todayHeroStreakLabel": "Streak",
+  "@todayHeroStreakLabel": {
+    "description": "Label for streak stat chip on Today hero"
+  },
+  "todayHeroQuestsLabel": "Quests",
+  "@todayHeroQuestsLabel": {
+    "description": "Label for daily quest stat chip on Today hero"
+  },
+  "todayHeroDaysUnit": "days",
+  "@todayHeroDaysUnit": {
+    "description": "Unit below streak number on Today hero chip"
+  },
+  "todayHeroQuestsToday": "today",
+  "@todayHeroQuestsToday": {
+    "description": "Unit below quest count on Today hero chip"
+  },
+  "todayStickyReviewToday": "Tap to review today",
+  "@todayStickyReviewToday": {
+    "description": "Sticky bar subtitle when checklist is complete"
+  },
+  "todayStickyRemaining": "{remaining} left — continue checklist",
+  "@todayStickyRemaining": {
+    "description": "Sticky bar subtitle when checklist items remain",
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "todayChecklistButton": "Checklist",
+  "@todayChecklistButton": {
+    "description": "Compact CTA label on Today sticky bar"
+  },
+
   "onboardingLanguageStep": "Step 1 · Language",
   "onboardingLanguageWelcome": "Welcome — let's personalize your Ramadan journey",
   "onboardingLanguageNudge": "You can change this anytime in Settings.",

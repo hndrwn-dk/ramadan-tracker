@@ -706,6 +706,19 @@
   "todayHomeJourneyLine": "Level {level} · {xp} XP · {questCompleted}/{questTotal} misi hari ini",
   "todayHomeXpToNext": "{xp} XP menuju level {level}",
 
+  "todayHeroStreakLabel": "Runtun",
+  "todayHeroQuestsLabel": "Misi",
+  "todayHeroDaysUnit": "hari",
+  "todayHeroQuestsToday": "hari ini",
+  "todayStickyReviewToday": "Ketuk untuk tinjau hari ini",
+  "todayStickyRemaining": "{remaining} tersisa — lanjutkan checklist",
+  "@todayStickyRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "todayChecklistButton": "Checklist",
+
   "onboardingLanguageStep": "Langkah 1 · Bahasa",
   "onboardingLanguageWelcome": "Selamat datang — mari sesuaikan perjalanan Ramadan Anda",
   "onboardingLanguageNudge": "Bisa diubah kapan saja lewat Pengaturan.",

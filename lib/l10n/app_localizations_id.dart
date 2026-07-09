@@ -2214,6 +2214,29 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get todayHeroStreakLabel => 'Runtun';
+
+  @override
+  String get todayHeroQuestsLabel => 'Misi';
+
+  @override
+  String get todayHeroDaysUnit => 'hari';
+
+  @override
+  String get todayHeroQuestsToday => 'hari ini';
+
+  @override
+  String get todayStickyReviewToday => 'Ketuk untuk tinjau hari ini';
+
+  @override
+  String todayStickyRemaining(int remaining) {
+    return '$remaining tersisa — lanjutkan checklist';
+  }
+
+  @override
+  String get todayChecklistButton => 'Checklist';
+
+  @override
   String get onboardingLanguageStep => 'Langkah 1 · Bahasa';
 
   @override
