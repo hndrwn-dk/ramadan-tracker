@@ -75,8 +75,8 @@
     
     <!-- Notification permissions -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Prayer-time reminders: user grants via Settings (not USE_EXACT_ALARM — alarm/calendar apps only). -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     
     <!-- Location is optional, app can work without GPS -->
