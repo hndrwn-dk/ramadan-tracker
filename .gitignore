@@ -62,8 +62,8 @@ bundle_release/
 bundles_release/
 releases/
 
-# Internal design notes and Superpowers artifacts (local only)
-docs/
+# Internal Superpowers artifacts (local only — not pushed)
+docs/superpowers/
 
 # Internal helper scripts (local only)
 scripts/

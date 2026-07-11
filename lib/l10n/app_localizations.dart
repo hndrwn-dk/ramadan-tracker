@@ -1244,6 +1244,18 @@ abstract class AppLocalizations {
   /// **'Tip on Ko-fi — help keep it free, private & ad-free'**
   String get buyMeACoffee;
 
+  /// Dismiss label on donation coachmark tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get donationCoachmarkDismiss;
+
+  /// Primary CTA on donation coachmark tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get donationCoachmarkView;
+
   /// Privacy policy label
   ///
   /// In en, this message translates to:
@@ -4238,6 +4250,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fasting intention saved — confirm at iftar'**
   String get fastingIntentPendingSaved;
+
+  /// No description provided for @fastingIntentAlreadySet.
+  ///
+  /// In en, this message translates to:
+  /// **'You already set your fasting intention for today'**
+  String get fastingIntentAlreadySet;
 
   /// No description provided for @iftarConfirmTitle.
   ///

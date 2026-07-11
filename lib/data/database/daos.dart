@@ -512,10 +512,106 @@ class QadhaLedgerDao extends DatabaseAccessor<AppDatabase>
     with _$QadhaLedgerDaoMixin {
   QadhaLedgerDao(AppDatabase db) : super(db);
 
+  static const autoSunnahNote = 'Auto from sunnah log';
+
   Future<List<QadhaLedgerData>> getAll() {
     return (select(qadhaLedger)
           ..orderBy([(q) => OrderingTerm.desc(q.createdAt)]))
         .get();
+  }
+
+  Future<bool> hasAutoSunnahPaidForDate(String dateYmd) async {
+    final row = await (select(qadhaLedger)
+          ..where((q) =>
+              q.kind.equals('qadha') &
+              q.direction.equals('paid') &
+              q.dateYmd.equals(dateYmd) &
+              q.note.equals(autoSunnahNote)))
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<void> ensureAutoSunnahPaidEntry(String dateYmd) async {
+    if (await hasAutoSunnahPaidForDate(dateYmd)) return;
+    await addEntry(
+      kind: 'qadha',
+      direction: 'paid',
+      days: 1,
+      dateYmd: dateYmd,
+      note: autoSunnahNote,
+    );
+  }
+
+  Future<int> removeAutoSunnahEntriesForDate(String dateYmd) {
+    return (delete(qadhaLedger)..where((q) =>
+          q.kind.equals('qadha') &
+          q.direction.equals('paid') &
+          q.dateYmd.equals(dateYmd) &
+          q.note.equals(autoSunnahNote))).go();
+  }
+
+  /// Keeps at most one auto sunnah qadha row per [dateYmd].
+  Future<int> dedupeAutoSunnahEntries() async {
+    final rows = await (select(qadhaLedger)
+          ..where((q) =>
+              q.kind.equals('qadha') &
+              q.direction.equals('paid') &
+              q.note.equals(autoSunnahNote) &
+              q.dateYmd.isNotNull())
+          ..orderBy([(q) => OrderingTerm.desc(q.createdAt)]))
+        .get();
+
+    final seen = <String>{};
+    var deleted = 0;
+    for (final row in rows) {
+      final date = row.dateYmd!;
+      if (seen.contains(date)) {
+        deleted += await deleteEntry(row.id);
+      } else {
+        seen.add(date);
+      }
+    }
+    return deleted;
+  }
+
+  /// Aligns auto ledger rows with sunnah fast qadha flags.
+  Future<void> reconcileAutoSunnahQadhaLedger() async {
+    await dedupeAutoSunnahEntries();
+
+    final autoRows = await (select(qadhaLedger)
+          ..where((q) =>
+              q.kind.equals('qadha') &
+              q.direction.equals('paid') &
+              q.note.equals(autoSunnahNote) &
+              q.dateYmd.isNotNull()))
+        .get();
+
+    for (final row in autoRows) {
+      final fast =
+          await attachedDatabase.sunnahFastsDao.getByDate(_parseYmd(row.dateYmd!));
+      final stillQadha = fast != null &&
+          fast.status == FastingStatus.fasted &&
+          fast.isQadha;
+      if (!stillQadha) {
+        await deleteEntry(row.id);
+      }
+    }
+
+    final allFasts = await attachedDatabase.sunnahFastsDao.getAll();
+    for (final fast in allFasts) {
+      if (fast.status == FastingStatus.fasted && fast.isQadha) {
+        await ensureAutoSunnahPaidEntry(fast.dateYmd);
+      }
+    }
+  }
+
+  static DateTime _parseYmd(String ymd) {
+    final parts = ymd.split('-');
+    return DateTime(
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+      int.parse(parts[2]),
+    );
   }
 
   Future<int> addEntry({

@@ -116,6 +116,14 @@ abstract final class NotificationLaunchBridge {
 class NotificationLaunchService {
   NotificationLaunchService._();
 
+  /// Cold-start launch details are sticky for the process; read at most once.
+  static String? _consumedColdStartPayload;
+
+  @visibleForTesting
+  static void resetForTest() {
+    _consumedColdStartPayload = null;
+  }
+
   static void dispatch(WidgetRef ref, NotificationLaunchRequest request) {
     ref.read(notificationLaunchProvider.notifier).state = request;
   }
@@ -136,6 +144,7 @@ class NotificationLaunchService {
     handlePayload(ref, response.payload);
   }
 
+  /// First app open — bridge tap from init, or cold-start notification payload.
   static Future<void> checkInitialLaunch(WidgetRef ref) async {
     final bridged = NotificationLaunchBridge.consumePending();
     if (bridged != null) {
@@ -147,18 +156,42 @@ class NotificationLaunchService {
       return;
     }
 
+    await _dispatchColdStartPayloadIfNeeded(ref);
+  }
+
+  /// App resumed from background — only fresh notification taps (bridge queue).
+  static void checkResumedLaunch(WidgetRef ref) {
+    final bridged = NotificationLaunchBridge.consumePending();
+    if (bridged == null) return;
+    LogService.log('[NOTIF-LAUNCH] resumed bridge: ${bridged.kind}');
+    if (kDebugMode) {
+      debugPrint('[NOTIF-LAUNCH] resumed bridge: ${bridged.kind}');
+    }
+    dispatch(ref, bridged);
+  }
+
+  static Future<void> _dispatchColdStartPayloadIfNeeded(WidgetRef ref) async {
     final details = await NotificationService.getLaunchDetails();
-    if (details?.didNotificationLaunchApp == true) {
-      final payload = details?.notificationResponse?.payload;
-      LogService.log(
+    if (details?.didNotificationLaunchApp != true) return;
+
+    final payload = details?.notificationResponse?.payload;
+    if (payload == null || payload.isEmpty) return;
+    if (payload == _consumedColdStartPayload) {
+      if (kDebugMode) {
+        debugPrint('[NOTIF-LAUNCH] skip duplicate cold-start payload');
+      }
+      return;
+    }
+
+    _consumedColdStartPayload = payload;
+    LogService.log(
+      '[NOTIF-LAUNCH] cold start payload=$payload id=${details?.notificationResponse?.id}',
+    );
+    if (kDebugMode) {
+      debugPrint(
         '[NOTIF-LAUNCH] cold start payload=$payload id=${details?.notificationResponse?.id}',
       );
-      if (kDebugMode) {
-        debugPrint(
-          '[NOTIF-LAUNCH] cold start payload=$payload id=${details?.notificationResponse?.id}',
-        );
-      }
-      handlePayload(ref, payload);
     }
+    handlePayload(ref, payload);
   }
 }

@@ -6,6 +6,7 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/testing/regression_seeder.dart';
+import 'package:ramadan_tracker/core/coachmark/app_open_counter.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
 
 void main() async {
@@ -14,6 +15,8 @@ void main() async {
   // Initialize log service
   LogService.init();
   LogService.log('=== App Started ===');
+
+  await AppOpenCounter.increment();
   
   const regressionSeed = bool.fromEnvironment('REGRESSION_SEED');
   

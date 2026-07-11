@@ -854,6 +854,16 @@
   "@buyMeACoffee": {
     "description": "Donation CTA subtitle in About section"
   },
+
+  "donationCoachmarkDismiss": "Later",
+  "@donationCoachmarkDismiss": {
+    "description": "Dismiss label on donation coachmark tooltip"
+  },
+
+  "donationCoachmarkView": "View",
+  "@donationCoachmarkView": {
+    "description": "Primary CTA on donation coachmark tooltip"
+  },
   
   "privacyPolicy": "Privacy Policy",
   "@privacyPolicy": {
@@ -3801,6 +3811,7 @@
   "sahurIntentionExcusedFootnote": "Qadha is tracked in the Sunnah tab.",
   "sahurIntentionBack": "Back",
   "fastingIntentPendingSaved": "Fasting intention saved — confirm at iftar",
+  "fastingIntentAlreadySet": "You already set your fasting intention for today",
   "iftarConfirmTitle": "Confirm today's fast",
   "iftarConfirmBody": "Did you complete a full fast today?",
   "iftarConfirmYes": "Yes, full fast",

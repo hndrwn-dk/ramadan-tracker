@@ -626,6 +626,12 @@ class AppLocalizationsId extends AppLocalizations {
       'Dukung via Ko-fi — bantu aplikasi tetap gratis, privat & tanpa iklan';
 
   @override
+  String get donationCoachmarkDismiss => 'Nanti';
+
+  @override
+  String get donationCoachmarkView => 'Lihat';
+
+  @override
   String get privacyPolicy => 'Kebijakan Privasi';
 
   @override
@@ -2396,6 +2402,9 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get fastingIntentPendingSaved =>
       'Niat puasa tersimpan — konfirmasi saat berbuka';
+
+  @override
+  String get fastingIntentAlreadySet => 'Niat puasa hari ini sudah disimpan';
 
   @override
   String get iftarConfirmTitle => 'Konfirmasi puasa hari ini';

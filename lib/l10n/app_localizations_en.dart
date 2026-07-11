@@ -623,6 +623,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tip on Ko-fi — help keep it free, private & ad-free';
 
   @override
+  String get donationCoachmarkDismiss => 'Later';
+
+  @override
+  String get donationCoachmarkView => 'View';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override
@@ -2388,6 +2394,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fastingIntentPendingSaved =>
       'Fasting intention saved — confirm at iftar';
+
+  @override
+  String get fastingIntentAlreadySet =>
+      'You already set your fasting intention for today';
 
   @override
   String get iftarConfirmTitle => 'Confirm today\'s fast';

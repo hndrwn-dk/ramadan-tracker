@@ -17,6 +17,12 @@ class ScoreRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final innerPadding = math.max(6.0, size * 0.1);
+    final contentSize = size - (strokeWidth * 2) - (innerPadding * 2);
+    final scoreFontSize = size * 0.24;
+    final labelFontSize = size * 0.13;
+
     return SizedBox(
       width: size,
       height: size,
@@ -30,21 +36,35 @@ class ScoreRing extends StatelessWidget {
               strokeWidth: strokeWidth,
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${score.round()}',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+          SizedBox(
+            width: contentSize,
+            height: contentSize,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${score.round()}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: scoreFontSize,
+                      height: 1.0,
+                      color: scheme.onSurface,
                     ),
+                  ),
+                  SizedBox(height: size * 0.03),
+                  Text(
+                    label ?? 'Score',
+                    style: TextStyle(
+                      fontSize: labelFontSize,
+                      height: 1.0,
+                      color: scheme.onSurface.withValues(alpha: 0.62),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                label ?? 'Score',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -67,7 +87,7 @@ class _ScoreRingPainter extends CustomPainter {
     final radius = (size.width - strokeWidth) / 2;
 
     final backgroundPaint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = Colors.white.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -81,13 +101,15 @@ class _ScoreRingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, backgroundPaint);
 
     final sweepAngle = (score / 100) * 2 * math.pi;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
+    if (sweepAngle > 0) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        sweepAngle,
+        false,
+        progressPaint,
+      );
+    }
   }
 
   Color _getScoreColor(double score) {
@@ -101,4 +123,3 @@ class _ScoreRingPainter extends CustomPainter {
     return oldDelegate.score != score;
   }
 }
-

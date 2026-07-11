@@ -30,6 +30,55 @@ import 'package:ramadan_tracker/utils/fasting_status.dart';
 class FastingNotificationHandler {
   FastingNotificationHandler._();
 
+  static final Set<NotificationLaunchRequest> _handledThisSession = {};
+
+  @visibleForTesting
+  static void resetHandledForTest() {
+    _handledThisSession.clear();
+  }
+
+  /// KV key — one fasting notification flow per day is enough.
+  @visibleForTesting
+  static String? handledKvKey(NotificationLaunchRequest request) {
+    switch (request.kind) {
+      case FastingNotificationKind.ramadanSahur:
+      case FastingNotificationKind.ramadanIftar:
+        final seasonId = request.seasonId;
+        final dayIndex = request.dayIndex;
+        if (seasonId == null || dayIndex == null) return null;
+        return 'notif_handled_${request.kind.name}_${seasonId}_$dayIndex';
+      case FastingNotificationKind.sunnahSahur:
+      case FastingNotificationKind.sunnahIftar:
+        final date = request.sunnahDate;
+        if (date == null) return null;
+        final y = date.year;
+        final m = date.month.toString().padLeft(2, '0');
+        final d = date.day.toString().padLeft(2, '0');
+        return 'notif_handled_${request.kind.name}_$y$m$d';
+    }
+  }
+
+  static Future<bool> _alreadyHandled(
+    AppDatabase db,
+    NotificationLaunchRequest request,
+  ) async {
+    if (_handledThisSession.contains(request)) return true;
+    final key = handledKvKey(request);
+    if (key == null) return false;
+    return await db.kvSettingsDao.getValue(key) == 'true';
+  }
+
+  static Future<void> _markHandled(
+    AppDatabase db,
+    NotificationLaunchRequest request,
+  ) async {
+    _handledThisSession.add(request);
+    final key = handledKvKey(request);
+    if (key != null) {
+      await db.kvSettingsDao.setValue(key, 'true');
+    }
+  }
+
   static Future<void> handle(
     BuildContext context,
     WidgetRef ref,
@@ -38,15 +87,24 @@ class FastingNotificationHandler {
     if (kDebugMode) {
       debugPrint('[NOTIF-LAUNCH] handle ${request.kind}');
     }
+
+    final db = ref.read(databaseProvider);
+    if (await _alreadyHandled(db, request)) {
+      if (kDebugMode) {
+        debugPrint('[NOTIF-LAUNCH] skip already-handled ${request.kind}');
+      }
+      return;
+    }
+
     switch (request.kind) {
       case FastingNotificationKind.ramadanSahur:
-        await _handleRamadanSahur(context, ref, request);
+        await _handleRamadanSahur(context, ref, request, db);
       case FastingNotificationKind.ramadanIftar:
-        await _handleRamadanIftar(context, ref, request);
+        await _handleRamadanIftar(context, ref, request, db);
       case FastingNotificationKind.sunnahSahur:
-        await _handleSunnahSahur(context, ref, request);
+        await _handleSunnahSahur(context, ref, request, db);
       case FastingNotificationKind.sunnahIftar:
-        await _handleSunnahIftar(context, ref, request);
+        await _handleSunnahIftar(context, ref, request, db);
     }
   }
 
@@ -54,6 +112,7 @@ class FastingNotificationHandler {
     BuildContext context,
     WidgetRef ref,
     NotificationLaunchRequest request,
+    AppDatabase db,
   ) async {
     final seasonId = request.seasonId;
     final dayIndex = request.dayIndex;
@@ -64,7 +123,6 @@ class FastingNotificationHandler {
       return;
     }
 
-    final db = ref.read(databaseProvider);
     final fastingHabit = await db.habitsDao.getHabitByKey('fasting');
     if (fastingHabit == null || !context.mounted) {
       if (kDebugMode) {
@@ -79,6 +137,18 @@ class FastingNotificationHandler {
         ? FastingStatus.fromEntry(existing.valueInt, existing.valueBool)
         : null;
 
+    final pendingIntent = await FastingIntentService.hasPendingRamadanIntent(
+      db,
+      seasonId: seasonId,
+      dayIndex: dayIndex,
+    );
+    if (pendingIntent) {
+      await _markHandled(db, request);
+      if (!context.mounted) return;
+      _showSnack(context, AppLocalizations.of(context)!.fastingIntentAlreadySet);
+      return;
+    }
+
     if (currentStatus != null &&
         currentStatus != FastingStatus.notDone &&
         currentStatus != FastingStatus.intentPendingFast) {
@@ -90,6 +160,7 @@ class FastingNotificationHandler {
         currentStatus: currentStatus,
         currentNote: existing?.note,
       );
+      await _markHandled(db, request);
       return;
     }
 
@@ -111,6 +182,7 @@ class FastingNotificationHandler {
         dayIndex: dayIndex,
         status: FastingStatus.intentPendingFast,
       );
+      await _markHandled(db, request);
       _showSnack(context, AppLocalizations.of(context)!.fastingIntentPendingSaved);
       return;
     }
@@ -121,6 +193,7 @@ class FastingNotificationHandler {
         seasonId: seasonId,
         dayIndex: dayIndex,
       );
+      await _markHandled(db, request);
       return;
     }
 
@@ -138,6 +211,7 @@ class FastingNotificationHandler {
     );
     ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
     await _onEngagementUpdate(ref, seasonId, dayIndex);
+    await _markHandled(db, request);
     final message = ramadanFastingSavedMessage(SunnahStrings.of(context), result.status);
     if (message != null) _showSnack(context, message);
   }
@@ -146,12 +220,12 @@ class FastingNotificationHandler {
     BuildContext context,
     WidgetRef ref,
     NotificationLaunchRequest request,
+    AppDatabase db,
   ) async {
     final seasonId = request.seasonId;
     final dayIndex = request.dayIndex;
     if (seasonId == null || dayIndex == null) return;
 
-    final db = ref.read(databaseProvider);
     final fastingHabit = await db.habitsDao.getHabitByKey('fasting');
     if (fastingHabit == null || !context.mounted) return;
 
@@ -170,6 +244,7 @@ class FastingNotificationHandler {
         status: currentStatus,
         note: existing?.note,
       );
+      await _markHandled(db, request);
       return;
     }
 
@@ -200,70 +275,32 @@ class FastingNotificationHandler {
                 )
             : null,
       );
+      await _markHandled(db, request);
       return;
     }
 
-    final pending = await FastingIntentService.hasPendingRamadanIntent(
+    final pendingGoals = await _pendingGoalsForRamadanDay(
       db,
-      seasonId: seasonId,
-      dayIndex: dayIndex,
+      ref,
+      seasonId,
+      dayIndex,
     );
+    final locale =
+        await db.kvSettingsDao.getValue('app_language') ?? 'en';
 
     if (!context.mounted) return;
 
-    if (pending) {
-      final pendingGoals = await _pendingGoalsForRamadanDay(
-        db,
-        ref,
-        seasonId,
-        dayIndex,
-      );
-      final locale =
-          await db.kvSettingsDao.getValue('app_language') ?? 'en';
-
-      if (!context.mounted) return;
-
-      final confirmed = await showRamadanIftarConfirmSheet(
-        context,
-        dayIndex: dayIndex,
-        pendingGoalTypes: pendingGoals,
-        locale: locale,
-        onConfirmFast: () async {
-          await db.dailyEntriesDao.setFastingStatus(
-            seasonId,
-            dayIndex,
-            fastingHabit.id,
-            FastingStatus.fasted,
-          );
-          await FastingIntentService.clearRamadanIntent(
-            db,
-            seasonId: seasonId,
-            dayIndex: dayIndex,
-          );
-          ref.invalidate(
-            dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
-          );
-          await _onEngagementUpdate(ref, seasonId, dayIndex);
-        },
-        onOpenChecklist: pendingGoals.isNotEmpty
-            ? () => openDayChecklist(
-                  context,
-                  ref,
-                  dayIndex: dayIndex,
-                  switchToTodayTab: true,
-                )
-            : null,
-      );
-      if (confirmed == null || !context.mounted) return;
-
-      if (confirmed) {
-        _showSnack(context, SunnahStrings.of(context).ramadanSavedFasted);
-      } else {
+    final confirmed = await showRamadanIftarConfirmSheet(
+      context,
+      dayIndex: dayIndex,
+      pendingGoalTypes: pendingGoals,
+      locale: locale,
+      onConfirmFast: () async {
         await db.dailyEntriesDao.setFastingStatus(
           seasonId,
           dayIndex,
           fastingHabit.id,
-          FastingStatus.notDone,
+          FastingStatus.fasted,
         );
         await FastingIntentService.clearRamadanIntent(
           db,
@@ -273,50 +310,61 @@ class FastingNotificationHandler {
         ref.invalidate(
           dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
         );
-      }
-      return;
+      },
+      onOpenChecklist: pendingGoals.isNotEmpty
+          ? () => openDayChecklist(
+                context,
+                ref,
+                dayIndex: dayIndex,
+                switchToTodayTab: true,
+              )
+          : null,
+    );
+    if (confirmed == null || !context.mounted) return;
+
+    await _markHandled(db, request);
+    if (confirmed) {
+      await _onEngagementUpdate(ref, seasonId, dayIndex);
+      _showSnack(context, SunnahStrings.of(context).ramadanSavedFasted);
+    } else {
+      await db.dailyEntriesDao.setFastingStatus(
+        seasonId,
+        dayIndex,
+        fastingHabit.id,
+        FastingStatus.notDone,
+      );
+      await FastingIntentService.clearRamadanIntent(
+        db,
+        seasonId: seasonId,
+        dayIndex: dayIndex,
+      );
+      ref.invalidate(
+        dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
+      );
     }
-
-    final result = await showRamadanFastingStatusSheet(
-      context,
-      dayIndex: dayIndex,
-      date: await _ramadanDate(ref, seasonId, dayIndex),
-      currentStatus: currentStatus == FastingStatus.notDone ? null : currentStatus,
-      currentNote: existing?.note,
-    );
-    if (result == null || !context.mounted) return;
-
-    if (result.status == FastingStatus.notDone && existing == null) return;
-
-    await db.dailyEntriesDao.setFastingStatus(
-      seasonId,
-      dayIndex,
-      fastingHabit.id,
-      result.status,
-      note: result.note,
-    );
-    await FastingIntentService.clearRamadanIntent(
-      db,
-      seasonId: seasonId,
-      dayIndex: dayIndex,
-    );
-    ref.invalidate(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
-    await _onEngagementUpdate(ref, seasonId, dayIndex);
-    final message = ramadanFastingSavedMessage(SunnahStrings.of(context), result.status);
-    if (message != null) _showSnack(context, message);
   }
 
   static Future<void> _handleSunnahSahur(
     BuildContext context,
     WidgetRef ref,
     NotificationLaunchRequest request,
+    AppDatabase db,
   ) async {
     final date = request.sunnahDate;
     if (date == null) return;
 
-    final db = ref.read(databaseProvider);
     final existing = await db.sunnahFastsDao.getByDate(date);
     if (!context.mounted) return;
+
+    final pendingIntent = await FastingIntentService.hasPendingSunnahIntent(
+      db,
+      date: date,
+    );
+    if (pendingIntent) {
+      await _markHandled(db, request);
+      _showSnack(context, AppLocalizations.of(context)!.fastingIntentAlreadySet);
+      return;
+    }
 
     final result = await showSahurIntentionSheet(context, date: date);
     if (result == null || !context.mounted) return;
@@ -327,6 +375,7 @@ class FastingNotificationHandler {
         date: date,
         status: FastingStatus.intentPendingFast,
       );
+      await _markHandled(db, request);
       _showSnack(context, AppLocalizations.of(context)!.fastingIntentPendingSaved);
       return;
     }
@@ -346,6 +395,7 @@ class FastingNotificationHandler {
     ref.invalidate(preRamadanQuestProgressProvider);
     await HomeWidgetService.update(db);
     await evaluateAchievements(ref);
+    await _markHandled(db, request);
 
     final s = SunnahStrings.of(context);
     String? message;
@@ -365,10 +415,12 @@ class FastingNotificationHandler {
     BuildContext context,
     WidgetRef ref,
     NotificationLaunchRequest request,
+    AppDatabase db,
   ) async {
     final date = request.sunnahDate;
     if (date == null) return;
     await showSunnahIftarConfirmFlow(context, ref, date);
+    await _markHandled(db, request);
   }
 
   static Future<List<String>> _pendingGoalsForRamadanDay(
@@ -459,7 +511,7 @@ class _NotificationLaunchListenerState extends ConsumerState<NotificationLaunchL
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
-      NotificationLaunchService.checkInitialLaunch(ref);
+      NotificationLaunchService.checkResumedLaunch(ref);
     }
   }
 

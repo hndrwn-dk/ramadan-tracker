@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:ramadan_tracker/data/database/tables.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/domain/models/companion_level.dart';
 import 'package:flutter/foundation.dart';
 
@@ -51,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(LazyDatabase(() async => NativeDatabase.memory()));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -95,6 +96,9 @@ class AppDatabase extends _$AppDatabase {
               updatedAt: DateTime.now().millisecondsSinceEpoch,
             ),
           );
+        }
+        if (from < 8) {
+          await qadhaLedgerDao.reconcileAutoSunnahQadhaLedger();
         }
       },
     );

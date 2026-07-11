@@ -53,6 +53,8 @@ import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_checklist_body.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_checklist_sticky_bar.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/core/coachmark/support_coachmark.dart';
+import 'package:ramadan_tracker/app/donation_navigation.dart';
 
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key, this.checklistOnly = false});
@@ -66,6 +68,32 @@ class TodayScreen extends ConsumerStatefulWidget {
 
 class _TodayScreenState extends ConsumerState<TodayScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _donateIconKey = GlobalKey();
+  bool _coachmarkScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.checklistOnly) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowDonationCoachmark());
+    }
+  }
+
+  Future<void> _maybeShowDonationCoachmark() async {
+    if (_coachmarkScheduled || !mounted || widget.checklistOnly) return;
+    _coachmarkScheduled = true;
+
+    final l10n = AppLocalizations.of(context)!;
+    await SupportCoachmark.maybeShow(
+      context: context,
+      targetKey: _donateIconKey,
+      title: l10n.supportDeveloper,
+      body: l10n.buyMeACoffee,
+      dismissLabel: l10n.donationCoachmarkDismiss,
+      ctaLabel: l10n.donationCoachmarkView,
+      onCta: () => openDonationPage(context),
+    );
+  }
 
   @override
   void dispose() {
@@ -163,7 +191,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ],
         ),
         actions: [
-          const DonationIconButton(),
+          DonationIconButton(iconButtonKey: _donateIconKey),
           const SettingsIconButton(),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/app/root_navigator.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/achievement_share_card.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
@@ -17,11 +18,30 @@ class CelebrationListener extends ConsumerWidget {
       if (prev != null && prev.isNotEmpty && prev.first == next.first) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
-        _showCelebration(context, ref, next.first);
+        _showCelebrationWhenIdle(context, ref);
       });
     });
 
     return child;
+  }
+
+  /// Waits until the user is back on the home screen (no pushed routes or sheets).
+  void _showCelebrationWhenIdle(BuildContext context, WidgetRef ref) {
+    if (!context.mounted) return;
+
+    final pending = ref.read(pendingCelebrationsProvider);
+    if (pending.isEmpty) return;
+
+    final nav = rootNavigatorKey.currentState;
+    if (nav != null && nav.canPop()) {
+      Future<void>.delayed(const Duration(milliseconds: 200), () {
+        if (!context.mounted) return;
+        _showCelebrationWhenIdle(context, ref);
+      });
+      return;
+    }
+
+    _showCelebration(context, ref, pending.first);
   }
 
   void _showCelebration(BuildContext context, WidgetRef ref, dynamic unlock) {

@@ -31,6 +31,9 @@ class FastingOptionCard extends StatelessWidget {
     final bgColor = selected
         ? scheme.primaryContainer.withValues(alpha: 0.35)
         : scheme.surface;
+    final effectiveIconColor = selected
+        ? iconColor
+        : scheme.onSurface.withValues(alpha: 0.45);
 
     final content = Padding(
       padding: const EdgeInsets.all(14),
@@ -42,18 +45,18 @@ class FastingOptionCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: iconColor.withValues(alpha: 0.15),
+                backgroundColor: effectiveIconColor.withValues(alpha: 0.15),
                 child: Text(
                   '$number',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: iconColor,
+                    color: effectiveIconColor,
                     fontSize: 13,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              Icon(icon, color: iconColor, size: 22),
+              Icon(icon, color: effectiveIconColor, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
