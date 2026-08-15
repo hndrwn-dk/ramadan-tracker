@@ -21,6 +21,7 @@ import 'package:ramadan_tracker/data/providers/engagement_providers.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
 import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
 import 'package:ramadan_tracker/features/today/widgets/ramadan_iftar_confirm_sheet.dart';
+import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_iftar_confirm_sheet.dart';
 import 'package:ramadan_tracker/features/today/widgets/sahur_intention_sheet.dart';
 import 'package:ramadan_tracker/features/today/widgets/ramadan_fasting_status_sheet.dart';
@@ -74,6 +75,15 @@ class FastingNotificationHandler {
   @visibleForTesting
   static bool shouldMarkIftarNotificationHandled(bool? confirmResult) {
     return confirmResult != null;
+  }
+
+  /// Final logged status (fasted or excused) should edit via the status sheet,
+  /// not the Sahur intention sheet.
+  @visibleForTesting
+  static bool shouldOpenStatusSheetForSahur(int? currentStatus) {
+    return currentStatus != null &&
+        currentStatus != FastingStatus.notDone &&
+        currentStatus != FastingStatus.intentPendingFast;
   }
 
   static Future<void> _markHandled(
@@ -157,9 +167,7 @@ class FastingNotificationHandler {
       return;
     }
 
-    if (currentStatus != null &&
-        currentStatus != FastingStatus.notDone &&
-        currentStatus != FastingStatus.intentPendingFast) {
+    if (shouldOpenStatusSheetForSahur(currentStatus)) {
       if (!context.mounted) return;
       await showRamadanFastingStatusSheet(
         context,
@@ -374,6 +382,13 @@ class FastingNotificationHandler {
       return;
     }
 
+    if (shouldOpenStatusSheetForSahur(existing?.status)) {
+      if (!context.mounted) return;
+      await showSunnahStatusSheet(context, ref, date);
+      await _markHandled(db, request);
+      return;
+    }
+
     final result = await showSahurIntentionSheet(context, date: date);
     if (result == null || !context.mounted) return;
 
@@ -434,7 +449,8 @@ class FastingNotificationHandler {
     required String defaultType,
     String? note,
   }) async {
-    final isQadha = existing?.isQadha ?? false;
+    final wasQadha = existing?.isQadha ?? false;
+    final isQadha = status == FastingStatus.fasted && wasQadha;
     await db.sunnahFastsDao.upsert(
       date,
       status: status,
@@ -442,10 +458,11 @@ class FastingNotificationHandler {
       isQadha: isQadha,
       note: note ?? existing?.note,
     );
-    if (isQadha && status == FastingStatus.fasted) {
-      await db.qadhaLedgerDao.ensureAutoSunnahPaidEntry(
-        SunnahFastsDao.dateKey(date),
-      );
+    final dateKey = SunnahFastsDao.dateKey(date);
+    if (isQadha) {
+      await db.qadhaLedgerDao.ensureAutoSunnahPaidEntry(dateKey);
+    } else {
+      await db.qadhaLedgerDao.removeAutoSunnahEntriesForDate(dateKey);
     }
   }
 
