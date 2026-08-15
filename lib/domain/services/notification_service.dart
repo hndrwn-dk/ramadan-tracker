@@ -6,6 +6,7 @@ import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/domain/services/notification_launch_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_season_resolver.dart';
 import 'package:ramadan_tracker/domain/services/notification_ids.dart';
+import 'package:ramadan_tracker/domain/services/zoned_schedule_retry_plan.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/domain/services/goal_reminder_service.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
@@ -273,82 +274,30 @@ class NotificationService {
     } catch (e) {
       final errorStr = e.toString();
       if (errorStr.contains('Missing type parameter')) {
-        LogService.log('[NOTIF] ✗ CRITICAL: Database corrupt detected during schedule! Error: $e');
-        LogService.log('[NOTIF] Attempting to auto-clear corrupt database...');
-        
-        // Auto-clear corrupt database when detected during schedule
+        final plan = ZonedScheduleRetryPlan.forScheduleError(e);
+        LogService.log('[NOTIF] ✗ Schedule failed with corrupt payload for ID $id: $e');
+        LogService.log('[NOTIF] Retrying this notification without wiping the rest of the batch...');
         try {
-          final cleared = await clearCorruptNotificationDatabase();
-          if (cleared) {
-            LogService.log('[NOTIF] Database cleared successfully. Waiting for plugin to reload...');
-            // Wait longer for plugin to fully reload after database clear
-            await Future.delayed(const Duration(milliseconds: 3000));
-            
-            // Force reinitialize plugin to clear memory cache
-            LogService.log('[NOTIF] Force reinitializing plugin to clear memory cache...');
-            try {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-    await _notifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
-              LogService.log('[NOTIF] Plugin reinitialized after database clear');
-            } catch (reinitError) {
-              LogService.log('[NOTIF] Error reinitializing plugin: $reinitError');
-            }
-            
-            // Wait a bit more after reinitialize
-            await Future.delayed(const Duration(milliseconds: 1000));
-            
-            // Retry schedule once after clear and reinitialize
-            try {
-              final retryScheduleModeStr = androidScheduleMode == AndroidScheduleMode.alarmClock
-                  ? 'ALARM_CLOCK'
-                  : androidScheduleMode == AndroidScheduleMode.exactAllowWhileIdle
-                      ? 'EXACT'
-                      : 'INEXACT';
-              LogService.log('[NOTIF] Retrying schedule after database clear and plugin reinitialize...');
-              await _notifications.zonedSchedule(
-                id,
-                title,
-                body,
-                scheduledDate,
-                notificationDetails,
-                androidScheduleMode: androidScheduleMode,
-                uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
-              );
-              LogService.log('[NOTIF] Notification ID $id scheduled successfully after database clear [Mode: $retryScheduleModeStr]');
-              return true;
-            } catch (retryError) {
-              final retryErrorStr = retryError.toString();
-              if (retryErrorStr.contains('Missing type parameter')) {
-                LogService.log('[NOTIF] ✗ Retry schedule still fails with corruption. Database may need app restart.');
-              } else {
-                LogService.log('[NOTIF] ✗ Retry schedule failed after clear: $retryError');
-              }
-              return false;
-            }
-          } else {
-            LogService.log('[NOTIF] ✗ Failed to clear corrupt database. User needs to clear app data or reinstall app.');
+          await _notifications.zonedSchedule(
+            id,
+            title,
+            body,
+            scheduledDate,
+            notificationDetails,
+            androidScheduleMode: androidScheduleMode,
+            uiLocalNotificationDateInterpretation: uiLocalNotificationDateInterpretation,
+            payload: plan.payloadForRetry(payload),
+          );
+          LogService.log('[NOTIF] Notification ID $id scheduled successfully after corrupt-payload retry');
+          return true;
+        } catch (retryError) {
+          LogService.log('[NOTIF] ✗ Retry schedule failed: $retryError');
+          if (kDebugMode) {
+            debugPrint('[NOTIF] ✗ CRITICAL: Cannot schedule notification ID $id');
+            debugPrint('[NOTIF] ✗ Error: $e');
           }
-        } catch (clearError) {
-          LogService.log('[NOTIF] ✗ Error during auto-clear: $clearError');
+          return false;
         }
-        
-        if (kDebugMode) {
-          debugPrint('[NOTIF] ✗ CRITICAL: Database corrupt! Cannot schedule notification ID $id');
-          debugPrint('[NOTIF] ✗ Error: $e');
-        }
-        return false;
       } else {
         LogService.log('[NOTIF] ✗ Error scheduling notification ID $id: $e');
         if (kDebugMode) {

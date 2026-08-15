@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/notification_launch_provider.dart';
 import 'package:ramadan_tracker/features/today/widgets/fasting_notification_handler.dart';
+import 'package:ramadan_tracker/utils/fasting_status.dart';
 
 void main() {
   group('FastingNotificationHandler.handledKvKey', () {
@@ -41,6 +43,114 @@ void main() {
         FastingNotificationHandler.handledKvKey(request),
         'notif_handled_sunnahIftar_20260610',
       );
+    });
+  });
+
+  group('FastingNotificationHandler.shouldMarkIftarNotificationHandled', () {
+    test('does not mark handled when confirm sheet is dismissed', () {
+      expect(
+        FastingNotificationHandler.shouldMarkIftarNotificationHandled(null),
+        isFalse,
+      );
+    });
+
+    test('marks handled after confirm', () {
+      expect(
+        FastingNotificationHandler.shouldMarkIftarNotificationHandled(true),
+        isTrue,
+      );
+    });
+
+    test('marks handled after decline', () {
+      expect(
+        FastingNotificationHandler.shouldMarkIftarNotificationHandled(false),
+        isTrue,
+      );
+    });
+  });
+
+  group('FastingNotificationHandler.applySunnahSahurStatus', () {
+    late AppDatabase db;
+
+    setUp(() {
+      db = AppDatabase.test();
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    test('preserves isQadha, note, and type on an existing row', () async {
+      final date = DateTime(2026, 6, 15);
+      await db.sunnahFastsDao.upsert(
+        date,
+        status: FastingStatus.fasted,
+        type: 'custom',
+        isQadha: true,
+        note: 'makeup from last Ramadan',
+      );
+
+      await FastingNotificationHandler.applySunnahSahurStatus(
+        db: db,
+        date: date,
+        status: FastingStatus.excusedSick,
+        existing: await db.sunnahFastsDao.getByDate(date),
+        defaultType: 'monday_thursday',
+      );
+
+      final row = await db.sunnahFastsDao.getByDate(date);
+      expect(row, isNotNull);
+      expect(row!.status, FastingStatus.excusedSick);
+      expect(row.isQadha, isTrue);
+      expect(row.note, 'makeup from last Ramadan');
+      expect(row.type, 'custom');
+    });
+
+    test('syncs qadha ledger when the preserved row is a qadha fast', () async {
+      final date = DateTime(2026, 6, 16);
+      await db.sunnahFastsDao.upsert(
+        date,
+        status: FastingStatus.fasted,
+        type: 'monday_thursday',
+        isQadha: true,
+        note: 'qadha',
+      );
+
+      await FastingNotificationHandler.applySunnahSahurStatus(
+        db: db,
+        date: date,
+        status: FastingStatus.fasted,
+        existing: await db.sunnahFastsDao.getByDate(date),
+        defaultType: 'custom',
+      );
+
+      expect(
+        await db.qadhaLedgerDao.hasAutoSunnahPaidForDate(
+          SunnahFastsDao.dateKey(date),
+        ),
+        isTrue,
+      );
+      final row = await db.sunnahFastsDao.getByDate(date);
+      expect(row!.isQadha, isTrue);
+      expect(row.note, 'qadha');
+    });
+
+    test('does not invent qadha when inserting a new sunnah row', () async {
+      final date = DateTime(2026, 6, 17);
+      await FastingNotificationHandler.applySunnahSahurStatus(
+        db: db,
+        date: date,
+        status: FastingStatus.excusedHaid,
+        existing: null,
+        defaultType: 'monday_thursday',
+        note: 'haid',
+      );
+
+      final row = await db.sunnahFastsDao.getByDate(date);
+      expect(row, isNotNull);
+      expect(row!.isQadha, isFalse);
+      expect(row.type, 'monday_thursday');
+      expect(row.note, 'haid');
     });
   });
 }

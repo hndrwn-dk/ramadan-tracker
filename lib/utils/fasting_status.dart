@@ -1,3 +1,10 @@
+/// What a primary tap on the Today fasting checklist row should do.
+enum FastingChecklistTapAction {
+  toggleToFasted,
+  toggleToNotDone,
+  openStatusSheet,
+}
+
 /// Fasting status for daily entry.
 /// Stored in DailyEntry.valueInt for habit "fasting".
 /// valueBool: true only when [fasted]; false for [notDone] and excused.
@@ -40,6 +47,21 @@ class FastingStatus {
       status == excusedSick || status == excusedNifas || status == excusedHaid || status == excusedOther;
 
   static bool isPendingIntent(int status) => status == intentPendingFast;
+
+  /// Binary quick-toggle is only valid between [notDone] and [fasted].
+  /// Excused variants, pending intent, and a live pending KV flag open the sheet.
+  static FastingChecklistTapAction checklistTapAction({
+    required int currentStatus,
+    bool hasPendingIntent = false,
+  }) {
+    if (hasPendingIntent || isExcused(currentStatus) || isPendingIntent(currentStatus)) {
+      return FastingChecklistTapAction.openStatusSheet;
+    }
+    if (currentStatus == fasted) {
+      return FastingChecklistTapAction.toggleToNotDone;
+    }
+    return FastingChecklistTapAction.toggleToFasted;
+  }
 
   /// True when status is haid or nifas (day is excused from prayers, tahajud, quran, taraweeh).
   static bool isHaidOrNifas(int status) =>

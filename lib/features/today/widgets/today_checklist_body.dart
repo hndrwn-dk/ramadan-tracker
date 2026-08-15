@@ -10,6 +10,7 @@ import 'package:ramadan_tracker/data/providers/habit_provider.dart';
 import 'package:ramadan_tracker/data/providers/quran_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
+import 'package:ramadan_tracker/domain/services/fasting_intent_service.dart';
 import 'package:ramadan_tracker/domain/services/streak_shield_service.dart';
 import 'package:ramadan_tracker/features/plan/plan_screen.dart' show dhikrPlanProvider;
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
@@ -196,12 +197,12 @@ class _TodayChecklistBodyState extends ConsumerState<TodayChecklistBody> {
           title: label,
           subtitle: subtitle,
           showOptionsHint: true,
-          onTap: () => _toggleFastingQuick(habit.id, status),
+          onTap: () => _toggleFastingQuick(habit.id, status, entry?.note as String?),
           onLongPress: () {
             HapticFeedback.mediumImpact();
             _openFastingSheet(habit.id, status, entry?.note as String?);
           },
-          onActionTap: () => _toggleFastingQuick(habit.id, status),
+          onActionTap: () => _toggleFastingQuick(habit.id, status, entry?.note as String?),
         );
 
       case 'quran_pages':
@@ -363,12 +364,29 @@ class _TodayChecklistBodyState extends ConsumerState<TodayChecklistBody> {
     return result;
   }
 
-  Future<void> _toggleFastingQuick(int habitId, int currentStatus) async {
+  Future<void> _toggleFastingQuick(
+    int habitId,
+    int currentStatus, [
+    String? currentNote,
+  ]) async {
     HapticFeedback.lightImpact();
-    final nextStatus = currentStatus == FastingStatus.fasted
+    final database = ref.read(databaseProvider);
+    final pending = await FastingIntentService.hasPendingRamadanIntent(
+      database,
+      seasonId: widget.seasonId,
+      dayIndex: widget.dayIndex,
+    );
+    final action = FastingStatus.checklistTapAction(
+      currentStatus: currentStatus,
+      hasPendingIntent: pending,
+    );
+    if (action == FastingChecklistTapAction.openStatusSheet) {
+      await _openFastingSheet(habitId, currentStatus, currentNote);
+      return;
+    }
+    final nextStatus = action == FastingChecklistTapAction.toggleToNotDone
         ? FastingStatus.notDone
         : FastingStatus.fasted;
-    final database = ref.read(databaseProvider);
     await database.dailyEntriesDao.setFastingStatus(
       widget.seasonId,
       widget.dayIndex,

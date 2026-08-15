@@ -3,6 +3,24 @@ import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class PrayerTimeService {
+  /// UTC offset for [timezone] on [date] (midnight local), including DST.
+  static Duration utcOffsetForDate({
+    required String timezone,
+    required DateTime date,
+  }) {
+    try {
+      final targetLocation = tz.getLocation(timezone);
+      return tz.TZDateTime(
+        targetLocation,
+        date.year,
+        date.month,
+        date.day,
+      ).timeZoneOffset;
+    } catch (e) {
+      return DateTime.now().timeZoneOffset;
+    }
+  }
+
   static CalculationParameters _getCalculationParameters(String method) {
     // Use CalculationMethod from adhan package directly
     switch (method.toLowerCase()) {
@@ -67,17 +85,8 @@ class PrayerTimeService {
       date.day,
     );
     
-    // Get UTC offset for the target timezone
-    tz.Location targetLocation;
-    Duration utcOffset;
-    try {
-      targetLocation = tz.getLocation(timezone);
-      final now = tz.TZDateTime.now(targetLocation);
-      utcOffset = now.timeZoneOffset;
-    } catch (e) {
-      // Fallback: use local timezone offset
-      utcOffset = DateTime.now().timeZoneOffset;
-    }
+    // UTC offset for the target date (not "now") so DST seasons cache correctly.
+    final utcOffset = utcOffsetForDate(timezone: timezone, date: date);
     
     // PrayerTimes constructor with utcOffset parameter
     final prayerTimes = PrayerTimes(
@@ -110,17 +119,8 @@ class PrayerTimeService {
       date.day,
     );
     
-    // Get UTC offset for the target timezone
-    tz.Location targetLocation;
-    Duration utcOffset;
-    try {
-      targetLocation = tz.getLocation(timezone);
-      final now = tz.TZDateTime.now(targetLocation);
-      utcOffset = now.timeZoneOffset;
-    } catch (e) {
-      // Fallback: use local timezone offset
-      utcOffset = DateTime.now().timeZoneOffset;
-    }
+    // UTC offset for the target date (not "now") so DST seasons cache correctly.
+    final utcOffset = utcOffsetForDate(timezone: timezone, date: date);
     
     // PrayerTimes constructor with utcOffset parameter
     // According to adhan package docs, this returns times in the specified timezone
@@ -196,15 +196,6 @@ class PrayerTimeService {
     int maghribAdjust = 0,
   }) async {
     final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    
-    final cached = await database.prayerTimesCacheDao.getCachedTime(seasonId, dateStr);
-    
-    if (cached != null) {
-      return {
-        'fajr': DateTime.parse(cached.fajrIso),
-        'maghrib': DateTime.parse(cached.maghribIso),
-      };
-    }
 
     final times = getFajrAndMaghrib(
       date: date,
@@ -216,6 +207,16 @@ class PrayerTimeService {
       fajrAdjust: fajrAdjust,
       maghribAdjust: maghribAdjust,
     );
+
+    final cached = await database.prayerTimesCacheDao.getCachedTime(seasonId, dateStr);
+    if (cached != null &&
+        _sameUtcInstant(DateTime.parse(cached.fajrIso), times['fajr']!) &&
+        _sameUtcInstant(DateTime.parse(cached.maghribIso), times['maghrib']!)) {
+      return {
+        'fajr': DateTime.parse(cached.fajrIso),
+        'maghrib': DateTime.parse(cached.maghribIso),
+      };
+    }
 
     await database.prayerTimesCacheDao.cacheTime(
       PrayerTimesCacheData(
@@ -276,5 +277,9 @@ class PrayerTimeService {
       fajrAdjust: fajrAdjust,
       maghribAdjust: maghribAdjust,
     );
+  }
+
+  static bool _sameUtcInstant(DateTime a, DateTime b) {
+    return a.toUtc().millisecondsSinceEpoch == b.toUtc().millisecondsSinceEpoch;
   }
 }

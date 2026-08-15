@@ -36,4 +36,58 @@ void main() {
       expect(FastingStatus.isCompletedForDay(null, true), isTrue);
     });
   });
+
+  group('FastingStatus.checklistTapAction', () {
+    test('toggles notDone to fasted', () {
+      expect(
+        FastingStatus.checklistTapAction(
+          currentStatus: FastingStatus.notDone,
+        ),
+        FastingChecklistTapAction.toggleToFasted,
+      );
+    });
+
+    test('toggles fasted to notDone', () {
+      expect(
+        FastingStatus.checklistTapAction(
+          currentStatus: FastingStatus.fasted,
+        ),
+        FastingChecklistTapAction.toggleToNotDone,
+      );
+    });
+
+    test('opens status sheet for every excused variant', () {
+      for (final status in [
+        FastingStatus.excusedSick,
+        FastingStatus.excusedNifas,
+        FastingStatus.excusedHaid,
+        FastingStatus.excusedOther,
+      ]) {
+        expect(
+          FastingStatus.checklistTapAction(currentStatus: status),
+          FastingChecklistTapAction.openStatusSheet,
+          reason: 'status $status must not quick-toggle',
+        );
+      }
+    });
+
+    test('opens status sheet for pending intent status', () {
+      expect(
+        FastingStatus.checklistTapAction(
+          currentStatus: FastingStatus.intentPendingFast,
+        ),
+        FastingChecklistTapAction.openStatusSheet,
+      );
+    });
+
+    test('opens status sheet when pending intent KV is set', () {
+      expect(
+        FastingStatus.checklistTapAction(
+          currentStatus: FastingStatus.notDone,
+          hasPendingIntent: true,
+        ),
+        FastingChecklistTapAction.openStatusSheet,
+      );
+    });
+  });
 }

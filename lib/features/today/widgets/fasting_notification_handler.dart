@@ -15,6 +15,7 @@ import 'package:ramadan_tracker/domain/services/goal_reminder_service.dart';
 import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_launch_service.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
+import 'package:ramadan_tracker/data/providers/qadha_provider.dart';
 import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
 import 'package:ramadan_tracker/data/providers/engagement_providers.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
@@ -66,6 +67,13 @@ class FastingNotificationHandler {
     final key = handledKvKey(request);
     if (key == null) return false;
     return await db.kvSettingsDao.getValue(key) == 'true';
+  }
+
+  /// Ramadan Iftar marks handled only after confirm/decline (non-null).
+  /// Dismiss (`null`) must stay unmarked so the same notification can re-open.
+  @visibleForTesting
+  static bool shouldMarkIftarNotificationHandled(bool? confirmResult) {
+    return confirmResult != null;
   }
 
   static Future<void> _markHandled(
@@ -383,16 +391,21 @@ class FastingNotificationHandler {
     final types = SunnahFastingRules.typesFor(date);
     final defaultType = types.isNotEmpty ? types.first.key : 'custom';
 
-    await db.sunnahFastsDao.upsert(
-      date,
+    await applySunnahSahurStatus(
+      db: db,
+      date: date,
       status: result.status,
-      type: existing?.type ?? defaultType,
-      isQadha: false,
+      existing: existing,
+      defaultType: defaultType,
+      note: result.note,
     );
     await FastingIntentService.clearSunnahIntent(db, date: date);
     ref.read(sunnahRefreshProvider.notifier).state++;
     ref.invalidate(sunnahMonthlyChallengeProvider);
     ref.invalidate(preRamadanQuestProgressProvider);
+    if (existing?.isQadha ?? false) {
+      ref.read(qadhaRefreshProvider.notifier).state++;
+    }
     await HomeWidgetService.update(db);
     await evaluateAchievements(ref);
     await _markHandled(db, request);
@@ -411,6 +424,31 @@ class FastingNotificationHandler {
     if (message != null) _showSnack(context, message);
   }
 
+  /// Persists a Sahur intention onto the sunnah row for [date].
+  @visibleForTesting
+  static Future<void> applySunnahSahurStatus({
+    required AppDatabase db,
+    required DateTime date,
+    required int status,
+    required SunnahFast? existing,
+    required String defaultType,
+    String? note,
+  }) async {
+    final isQadha = existing?.isQadha ?? false;
+    await db.sunnahFastsDao.upsert(
+      date,
+      status: status,
+      type: existing?.type ?? defaultType,
+      isQadha: isQadha,
+      note: note ?? existing?.note,
+    );
+    if (isQadha && status == FastingStatus.fasted) {
+      await db.qadhaLedgerDao.ensureAutoSunnahPaidEntry(
+        SunnahFastsDao.dateKey(date),
+      );
+    }
+  }
+
   static Future<void> _handleSunnahIftar(
     BuildContext context,
     WidgetRef ref,
@@ -419,8 +457,10 @@ class FastingNotificationHandler {
   ) async {
     final date = request.sunnahDate;
     if (date == null) return;
-    await showSunnahIftarConfirmFlow(context, ref, date);
-    await _markHandled(db, request);
+    final confirmed = await showSunnahIftarConfirmFlow(context, ref, date);
+    if (shouldMarkIftarNotificationHandled(confirmed)) {
+      await _markHandled(db, request);
+    }
   }
 
   static Future<List<String>> _pendingGoalsForRamadanDay(
