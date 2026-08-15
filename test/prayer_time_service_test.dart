@@ -158,6 +158,49 @@ void main() {
       await db.close();
     });
 
+    test('does not rerun adhan when cache params and DST offset already match',
+        () async {
+      final date = DateTime(2026, 3, 15);
+      final correct = fajrMaghrib(date);
+      await db.prayerTimesCacheDao.cacheTime(
+        PrayerTimesCacheData(
+          seasonId: 1,
+          dateYyyyMmDd: '2026-03-15',
+          fajrIso: correct['fajr']!.toUtc().toIso8601String(),
+          maghribIso: correct['maghrib']!.toUtc().toIso8601String(),
+          method: 'isna',
+          lat: lat,
+          lon: lon,
+          timezone: nyc,
+          fajrAdj: 0,
+          maghribAdj: 0,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+          utcOffsetMinutes: PrayerTimeService.utcOffsetForDate(
+            timezone: nyc,
+            date: date,
+          ).inMinutes,
+        ),
+      );
+
+      PrayerTimeService.debugAdhanCallCount = 0;
+      final result = await PrayerTimeService.getCachedOrCalculate(
+        database: db,
+        seasonId: 1,
+        date: date,
+        latitude: lat,
+        longitude: lon,
+        timezone: nyc,
+        method: 'isna',
+        highLatRule: 'middle_of_the_night',
+      );
+
+      expect(PrayerTimeService.debugAdhanCallCount, 0);
+      expect(
+        result['fajr']!.toUtc().millisecondsSinceEpoch,
+        correct['fajr']!.toUtc().millisecondsSinceEpoch,
+      );
+    });
+
     test('replaces cached fajr/maghrib computed with the wrong UTC offset', () async {
       final date = DateTime(2026, 3, 15);
       const dateStr = '2026-03-15';

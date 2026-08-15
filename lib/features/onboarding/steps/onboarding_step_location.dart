@@ -1,13 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
-import 'package:ramadan_tracker/utils/device_timezone.dart';
 import 'package:ramadan_tracker/utils/location_helper.dart';
+import 'package:ramadan_tracker/utils/onboarding_location.dart';
 import 'package:ramadan_tracker/features/onboarding/widgets/onboarding_prayer_times_preview.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
 
@@ -59,14 +57,7 @@ class _OnboardingStepLocationState extends ConsumerState<OnboardingStepLocation>
     }
     String tz = 'UTC';
     try {
-      if (Platform.isAndroid) {
-        final result = await Process.run('getprop', ['persist.sys.timezone']);
-        if (result.exitCode == 0) {
-          tz = result.stdout.toString().trim();
-        }
-      } else if (Platform.isIOS) {
-        tz = await resolveDeviceTimezone();
-      }
+      tz = await acquireDeviceTimezone();
     } catch (_) {
       tz = 'UTC';
     }
@@ -119,7 +110,14 @@ class _OnboardingStepLocationState extends ConsumerState<OnboardingStepLocation>
         return;
       }
 
-      final position = await Geolocator.getCurrentPosition();
+      const gpsTimeout = Duration(seconds: 8);
+      final position = await acquireCurrentPosition(
+        timeout: gpsTimeout,
+        getPosition: () => Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: gpsTimeout,
+        ),
+      );
       final detectedMethod = LocationHelper.detectCalculationMethod(
         position.latitude,
         position.longitude,

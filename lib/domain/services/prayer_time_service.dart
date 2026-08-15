@@ -1,8 +1,13 @@
 import 'package:adhan/adhan.dart';
+import 'package:flutter/foundation.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class PrayerTimeService {
+  /// Counts [getFajrAndMaghrib] calls. Used to prove cache hits skip adhan.
+  @visibleForTesting
+  static int debugAdhanCallCount = 0;
+
   /// UTC offset for [timezone] on [date] (midnight local), including DST.
   static Duration utcOffsetForDate({
     required String timezone,
@@ -109,6 +114,7 @@ class PrayerTimeService {
     int fajrAdjust = 0,
     int maghribAdjust = 0,
   }) {
+    debugAdhanCallCount++;
     final coordinates = Coordinates(latitude, longitude);
     final params = _getCalculationParameters(method);
     
@@ -196,6 +202,27 @@ class PrayerTimeService {
     int maghribAdjust = 0,
   }) async {
     final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateOffsetMinutes =
+        utcOffsetForDate(timezone: timezone, date: date).inMinutes;
+
+    final cached =
+        await database.prayerTimesCacheDao.getCachedTime(seasonId, dateStr);
+    if (cached != null &&
+        _cacheReusable(
+          cached: cached,
+          latitude: latitude,
+          longitude: longitude,
+          timezone: timezone,
+          method: method,
+          fajrAdjust: fajrAdjust,
+          maghribAdjust: maghribAdjust,
+          dateOffsetMinutes: dateOffsetMinutes,
+        )) {
+      return {
+        'fajr': DateTime.parse(cached.fajrIso),
+        'maghrib': DateTime.parse(cached.maghribIso),
+      };
+    }
 
     final times = getFajrAndMaghrib(
       date: date,
@@ -207,16 +234,6 @@ class PrayerTimeService {
       fajrAdjust: fajrAdjust,
       maghribAdjust: maghribAdjust,
     );
-
-    final cached = await database.prayerTimesCacheDao.getCachedTime(seasonId, dateStr);
-    if (cached != null &&
-        _sameUtcInstant(DateTime.parse(cached.fajrIso), times['fajr']!) &&
-        _sameUtcInstant(DateTime.parse(cached.maghribIso), times['maghrib']!)) {
-      return {
-        'fajr': DateTime.parse(cached.fajrIso),
-        'maghrib': DateTime.parse(cached.maghribIso),
-      };
-    }
 
     await database.prayerTimesCacheDao.cacheTime(
       PrayerTimesCacheData(
@@ -230,6 +247,7 @@ class PrayerTimeService {
         timezone: timezone,
         fajrAdj: fajrAdjust,
         maghribAdj: maghribAdjust,
+        utcOffsetMinutes: dateOffsetMinutes,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
       ),
     );
@@ -279,7 +297,23 @@ class PrayerTimeService {
     );
   }
 
-  static bool _sameUtcInstant(DateTime a, DateTime b) {
-    return a.toUtc().millisecondsSinceEpoch == b.toUtc().millisecondsSinceEpoch;
+  static bool _cacheReusable({
+    required PrayerTimesCacheData cached,
+    required double latitude,
+    required double longitude,
+    required String timezone,
+    required String method,
+    required int fajrAdjust,
+    required int maghribAdjust,
+    required int dateOffsetMinutes,
+  }) {
+    if (cached.utcOffsetMinutes == null) return false;
+    return cached.method == method &&
+        cached.timezone == timezone &&
+        cached.fajrAdj == fajrAdjust &&
+        cached.maghribAdj == maghribAdjust &&
+        cached.lat == latitude &&
+        cached.lon == longitude &&
+        cached.utcOffsetMinutes == dateOffsetMinutes;
   }
 }

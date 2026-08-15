@@ -168,6 +168,7 @@ class PrayerTimesCache extends Table {
   TextColumn get timezone => text()();
   IntColumn get fajrAdj => integer().withDefault(const Constant(0))();
   IntColumn get maghribAdj => integer().withDefault(const Constant(0))();
+  IntColumn get utcOffsetMinutes => integer().nullable()();
   IntColumn get updatedAt => integer()();
 
   @override

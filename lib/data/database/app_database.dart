@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(LazyDatabase(() async => NativeDatabase.memory()));
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -99,6 +99,12 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 8) {
           await qadhaLedgerDao.reconcileAutoSunnahQadhaLedger();
+        }
+        if (from < 9) {
+          await migrator.addColumn(
+            prayerTimesCache,
+            prayerTimesCache.utcOffsetMinutes,
+          );
         }
       },
     );
