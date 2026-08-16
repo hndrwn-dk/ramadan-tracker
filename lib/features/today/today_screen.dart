@@ -27,6 +27,7 @@ import 'package:ramadan_tracker/widgets/counter_widget.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/prayer_details_widget.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
+import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_sync_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
@@ -845,6 +846,21 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         highLatRule: highLatRule,
         fajrAdjust: fajrAdj,
         maghribAdjust: maghribAdj,
+      );
+      final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
+      unawaited(
+        PrayerTimeSyncService().syncMonth(
+          database: database,
+          seasonId: seasonId,
+          month: DateTime.now(),
+          latitude: lat,
+          longitude: lon,
+          timezone: timezoneStr,
+          method: method,
+          locale: locale,
+          fajrAdjust: fajrAdj,
+          maghribAdjust: maghribAdj,
+        ),
       );
       return {
         'fajr': times['fajr'],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
@@ -14,6 +15,10 @@ import 'package:cross_file/cross_file.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_ids.dart';
+import 'package:ramadan_tracker/domain/services/prayer_times/myquran_client.dart';
+import 'package:ramadan_tracker/domain/services/prayer_times/myquran_parser.dart';
+import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_models.dart';
+import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_sync_service.dart';
 import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/app/app_engagement.dart';
@@ -670,6 +675,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final sunnahReminderEnabled =
             settings['sunnah_reminder_enabled'] == 'true';
         final method = settings['prayer_method'] ?? 'mwl';
+        final sourcePref = settings['prayer_time_source'] ?? 'auto';
+        final myquranCityName = settings['prayer_myquran_city_name'];
+        final fajrAdj = int.tryParse(settings['prayer_fajr_adj'] ?? '0') ?? 0;
+        final maghribAdj =
+            int.tryParse(settings['prayer_maghrib_adj'] ?? '0') ?? 0;
+        final lastSyncedMs = int.tryParse(settings['prayer_times_last_synced_at'] ?? '');
+        final lastSyncedLabel = lastSyncedMs == null
+            ? l10n.prayerTimesNeverSynced
+            : l10n.prayerTimesLastSynced(
+                DateFormat.yMMMd().add_Hm().format(
+                  DateTime.fromMillisecondsSinceEpoch(lastSyncedMs),
+                ),
+              );
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,6 +700,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: () => _showMethodDialog(method),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.prayerTimeSource),
+              subtitle: Text(_prayerSourceLabel(l10n, sourcePref)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showPrayerSourceDialog(sourcePref, seasonId),
+            ),
+            if (sourcePref == 'myquran' || sourcePref == 'auto')
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.myQuranCity),
+                subtitle: Text(
+                  myquranCityName ?? l10n.myQuranCityNotSet,
+                ),
+                trailing: const Icon(Icons.search),
+                onTap: () => _showMyQuranCitySearch(seasonId),
+              ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.fajrAdjustment),
+              subtitle: Text('${fajrAdj >= 0 ? '+' : ''}$fajrAdj ${l10n.minutesUnit}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showMinuteAdjDialog(
+                key: 'prayer_fajr_adj',
+                title: l10n.fajrAdjustment,
+                current: fajrAdj,
+                seasonId: seasonId,
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.maghribAdjustment),
+              subtitle: Text('${maghribAdj >= 0 ? '+' : ''}$maghribAdj ${l10n.minutesUnit}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showMinuteAdjDialog(
+                key: 'prayer_maghrib_adj',
+                title: l10n.maghribAdjustment,
+                current: maghribAdj,
+                seasonId: seasonId,
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(lastSyncedLabel),
+              trailing: IconButton(
+                icon: const Icon(Icons.sync),
+                tooltip: l10n.syncPrayerTimes,
+                onPressed: () => _syncPrayerTimes(seasonId),
               ),
             ),
             const Divider(height: 24),
@@ -833,6 +901,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'night_plan_hour': await database.kvSettingsDao.getValue('night_plan_hour') ?? '2',
       'night_plan_minute': await database.kvSettingsDao.getValue('night_plan_minute') ?? '30',
       'prayer_method': await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl',
+      'prayer_time_source':
+          await database.kvSettingsDao.getValue('prayer_time_source') ?? 'auto',
+      'prayer_myquran_city_name':
+          await database.kvSettingsDao.getValue('prayer_myquran_city_name'),
+      'prayer_fajr_adj':
+          await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0',
+      'prayer_maghrib_adj':
+          await database.kvSettingsDao.getValue('prayer_maghrib_adj') ?? '0',
+      'prayer_times_last_synced_at':
+          await database.kvSettingsDao.getValue('prayer_times_last_synced_at'),
       'goal_reminder_digest_enabled':
           await database.kvSettingsDao.getValue('goal_reminder_digest_enabled'),
       'goal_reminder_quran_enabled': await database.kvSettingsDao.getValue('goal_reminder_quran_enabled') ?? 'true',
@@ -904,6 +982,234 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           }).toList(),
         ),
       ),
+    );
+  }
+
+  String _prayerSourceLabel(AppLocalizations l10n, String source) {
+    switch (source) {
+      case 'local':
+        return l10n.prayerTimeSourceLocal;
+      case 'aladhan':
+        return l10n.prayerTimeSourceAladhan;
+      case 'myquran':
+        return l10n.prayerTimeSourceMyQuran;
+      default:
+        return l10n.prayerTimeSourceAuto;
+    }
+  }
+
+  Future<void> _syncPrayerTimes(int seasonId) async {
+    final database = ref.read(databaseProvider);
+    final latStr = await database.kvSettingsDao.getValue('prayer_latitude');
+    final lonStr = await database.kvSettingsDao.getValue('prayer_longitude');
+    final timezone =
+        await database.kvSettingsDao.getValue('prayer_timezone') ?? 'UTC';
+    final method = await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl';
+    final locale = await database.kvSettingsDao.getValue('app_language') ?? 'en';
+    final fajrAdj =
+        int.tryParse(await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0') ??
+            0;
+    final maghribAdj = int.tryParse(
+          await database.kvSettingsDao.getValue('prayer_maghrib_adj') ?? '0',
+        ) ??
+        0;
+    final lat = double.tryParse(latStr ?? '');
+    final lon = double.tryParse(lonStr ?? '');
+    if (lat == null || lon == null) return;
+    unawaited(
+      PrayerTimeSyncService()
+          .syncMonth(
+            database: database,
+            seasonId: seasonId,
+            month: DateTime.now(),
+            latitude: lat,
+            longitude: lon,
+            timezone: timezone,
+            method: method,
+            locale: locale,
+            fajrAdjust: fajrAdj,
+            maghribAdjust: maghribAdj,
+          )
+          .then((_) {
+        if (mounted) setState(() {});
+      }),
+    );
+  }
+
+  void _showPrayerSourceDialog(String current, int seasonId) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.prayerTimeSource),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.prayerTimeSourceAutoHint),
+            const SizedBox(height: 8),
+            ...[
+              {'value': 'auto', 'label': l10n.prayerTimeSourceAuto},
+              {'value': 'local', 'label': l10n.prayerTimeSourceLocal},
+              {'value': 'aladhan', 'label': l10n.prayerTimeSourceAladhan},
+              {'value': 'myquran', 'label': l10n.prayerTimeSourceMyQuran},
+            ].map((item) {
+              return RadioListTile<String>(
+                title: Text(item['label']!),
+                value: item['value']!,
+                groupValue: current,
+                onChanged: (value) async {
+                  if (value == null) return;
+                  await ref
+                      .read(databaseProvider)
+                      .kvSettingsDao
+                      .setValue(PrayerTimeSyncService.sourceKey, value);
+                  if (context.mounted) Navigator.pop(context);
+                  setState(() {});
+                  _syncPrayerTimes(seasonId);
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMyQuranCitySearch(int seasonId) async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    List<MyQuranCity> results = [];
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.myQuranCity),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        hintText: l10n.myQuranCitySearchHint,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () async {
+                        final cities =
+                            await MyQuranClient().searchCities(controller.text);
+                        setDialogState(() => results = cities);
+                      },
+                      child: Text(l10n.search),
+                    ),
+                    Flexible(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: results
+                            .map(
+                              (city) => ListTile(
+                                title: Text(city.name),
+                                onTap: () async {
+                                  final database = ref.read(databaseProvider);
+                                  await database.kvSettingsDao.setValue(
+                                    PrayerTimeSyncService.myquranCityIdKey,
+                                    city.id,
+                                  );
+                                  await database.kvSettingsDao.setValue(
+                                    PrayerTimeSyncService.myquranCityNameKey,
+                                    city.name,
+                                  );
+                                  await database.kvSettingsDao.setValue(
+                                    PrayerTimeSyncService.myquranVersionKey,
+                                    MyQuranParser.sourceVersion,
+                                  );
+                                  if (dialogContext.mounted) {
+                                    Navigator.pop(dialogContext);
+                                  }
+                                  setState(() {});
+                                  _syncPrayerTimes(seasonId);
+                                },
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(l10n.cancel),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showMinuteAdjDialog({
+    required String key,
+    required String title,
+    required int current,
+    required int seasonId,
+  }) async {
+    var value = current.toDouble();
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(title),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${value.round()}'),
+                  Slider(
+                    value: value,
+                    min: -30,
+                    max: 30,
+                    divisions: 60,
+                    onChanged: (v) => setDialogState(() => value = v),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(AppLocalizations.of(context)!.cancel),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final database = ref.read(databaseProvider);
+                    await database.kvSettingsDao
+                        .setValue(key, value.round().toString());
+                    final seasonAsync = ref.read(currentSeasonProvider);
+                    seasonAsync.whenData((season) async {
+                      if (season != null) {
+                        await database.prayerTimesCacheDao
+                            .clearCacheForSeason(season.id);
+                      }
+                    });
+                    if (context.mounted) Navigator.pop(context);
+                    setState(() {});
+                    _rescheduleReminders();
+                    _syncPrayerTimes(seasonId);
+                  },
+                  child: Text(AppLocalizations.of(context)!.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

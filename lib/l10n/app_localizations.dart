@@ -4436,6 +4436,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Allow Alarms & reminders'**
   String get openExactAlarmSettings;
+
+  /// Settings label for local vs remote prayer timetable source
+  ///
+  /// In en, this message translates to:
+  /// **'Prayer time source'**
+  String get prayerTimeSource;
+
+  /// No description provided for @prayerTimeSourceLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local (adhan)'**
+  String get prayerTimeSourceLocal;
+
+  /// No description provided for @prayerTimeSourceAladhan.
+  ///
+  /// In en, this message translates to:
+  /// **'Aladhan'**
+  String get prayerTimeSourceAladhan;
+
+  /// No description provided for @prayerTimeSourceMyQuran.
+  ///
+  /// In en, this message translates to:
+  /// **'myQuran (Kemenag)'**
+  String get prayerTimeSourceMyQuran;
+
+  /// No description provided for @prayerTimeSourceAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get prayerTimeSourceAuto;
+
+  /// No description provided for @prayerTimeSourceAutoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Indonesia with a verified city uses myQuran. Other locations use Aladhan. Offline uses cached or local times.'**
+  String get prayerTimeSourceAutoHint;
+
+  /// No description provided for @myQuranCity.
+  ///
+  /// In en, this message translates to:
+  /// **'myQuran city'**
+  String get myQuranCity;
+
+  /// No description provided for @myQuranCitySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search kabupaten or kota (Indonesia)'**
+  String get myQuranCitySearchHint;
+
+  /// No description provided for @myQuranCityNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and pick a city. IDs are not guessed.'**
+  String get myQuranCityNotSet;
+
+  /// No description provided for @prayerTimesLastSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Last synced: {when}'**
+  String prayerTimesLastSynced(String when);
+
+  /// No description provided for @prayerTimesNeverSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote timetable not synced yet'**
+  String get prayerTimesNeverSynced;
+
+  /// No description provided for @syncPrayerTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync prayer times'**
+  String get syncPrayerTimes;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
 }
 
 class _AppLocalizationsDelegate

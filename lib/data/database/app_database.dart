@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(LazyDatabase(() async => NativeDatabase.memory()));
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -105,6 +105,11 @@ class AppDatabase extends _$AppDatabase {
             prayerTimesCache,
             prayerTimesCache.utcOffsetMinutes,
           );
+        }
+        if (from < 10) {
+          await migrator.addColumn(prayerTimesCache, prayerTimesCache.source);
+          await migrator.addColumn(prayerTimesCache, prayerTimesCache.sourceRef);
+          await migrator.addColumn(prayerTimesCache, prayerTimesCache.fetchedAt);
         }
       },
     );

@@ -1,0 +1,22 @@
+{
+  "status": true,
+  "message": "success",
+  "data": {
+    "id": "eda80a3d5b344bc40f3bc04f65b7a357",
+    "kabko": "KOTA KEDIRI",
+    "prov": "JAWA TIMUR",
+    "jadwal": {
+      "2026-03-15": {
+        "tanggal": "Minggu, 15/03/2026",
+        "imsak": "04:13",
+        "subuh": "04:23",
+        "terbit": "05:41",
+        "dhuha": "06:10",
+        "dzuhur": "11:38",
+        "ashar": "14:57",
+        "maghrib": "17:27",
+        "isya": "18:42"
+      }
+    }
+  }
+}

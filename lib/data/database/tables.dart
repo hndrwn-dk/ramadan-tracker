@@ -169,6 +169,9 @@ class PrayerTimesCache extends Table {
   IntColumn get fajrAdj => integer().withDefault(const Constant(0))();
   IntColumn get maghribAdj => integer().withDefault(const Constant(0))();
   IntColumn get utcOffsetMinutes => integer().nullable()();
+  TextColumn get source => text().nullable()();
+  TextColumn get sourceRef => text().nullable()();
+  IntColumn get fetchedAt => integer().nullable()();
   IntColumn get updatedAt => integer()();
 
   @override

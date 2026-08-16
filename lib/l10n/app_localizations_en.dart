@@ -2499,4 +2499,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openExactAlarmSettings => 'Allow Alarms & reminders';
+
+  @override
+  String get prayerTimeSource => 'Prayer time source';
+
+  @override
+  String get prayerTimeSourceLocal => 'Local (adhan)';
+
+  @override
+  String get prayerTimeSourceAladhan => 'Aladhan';
+
+  @override
+  String get prayerTimeSourceMyQuran => 'myQuran (Kemenag)';
+
+  @override
+  String get prayerTimeSourceAuto => 'Auto';
+
+  @override
+  String get prayerTimeSourceAutoHint =>
+      'Indonesia with a verified city uses myQuran. Other locations use Aladhan. Offline uses cached or local times.';
+
+  @override
+  String get myQuranCity => 'myQuran city';
+
+  @override
+  String get myQuranCitySearchHint => 'Search kabupaten or kota (Indonesia)';
+
+  @override
+  String get myQuranCityNotSet =>
+      'Search and pick a city. IDs are not guessed.';
+
+  @override
+  String prayerTimesLastSynced(String when) {
+    return 'Last synced: $when';
+  }
+
+  @override
+  String get prayerTimesNeverSynced => 'Remote timetable not synced yet';
+
+  @override
+  String get syncPrayerTimes => 'Sync prayer times';
+
+  @override
+  String get search => 'Search';
 }

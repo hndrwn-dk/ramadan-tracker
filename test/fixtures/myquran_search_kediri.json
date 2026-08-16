@@ -1,0 +1,8 @@
+{
+  "status": true,
+  "message": "success",
+  "data": [
+    { "id": "eda80a3d5b344bc40f3bc04f65b7a357", "lokasi": "KOTA KEDIRI" },
+    { "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "lokasi": "KAB. KEDIRI" }
+  ]
+}

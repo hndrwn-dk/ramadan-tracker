@@ -2508,4 +2508,46 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get openExactAlarmSettings => 'Izinkan Alarm & pengingat';
+
+  @override
+  String get prayerTimeSource => 'Sumber waktu sholat';
+
+  @override
+  String get prayerTimeSourceLocal => 'Lokal (adhan)';
+
+  @override
+  String get prayerTimeSourceAladhan => 'Aladhan';
+
+  @override
+  String get prayerTimeSourceMyQuran => 'myQuran (Kemenag)';
+
+  @override
+  String get prayerTimeSourceAuto => 'Otomatis';
+
+  @override
+  String get prayerTimeSourceAutoHint =>
+      'Indonesia dengan kota terverifikasi memakai myQuran. Lokasi lain memakai Aladhan. Offline memakai cache atau hitungan lokal.';
+
+  @override
+  String get myQuranCity => 'Kota myQuran';
+
+  @override
+  String get myQuranCitySearchHint => 'Cari kabupaten atau kota (Indonesia)';
+
+  @override
+  String get myQuranCityNotSet => 'Cari dan pilih kota. ID tidak ditebak.';
+
+  @override
+  String prayerTimesLastSynced(String when) {
+    return 'Terakhir disinkronkan: $when';
+  }
+
+  @override
+  String get prayerTimesNeverSynced => 'Jadwal jarak jauh belum disinkronkan';
+
+  @override
+  String get syncPrayerTimes => 'Sinkronkan waktu sholat';
+
+  @override
+  String get search => 'Cari';
 }

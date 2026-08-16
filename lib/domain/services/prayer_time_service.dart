@@ -1,6 +1,7 @@
 import 'package:adhan/adhan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ramadan_tracker/data/database/app_database.dart';
+import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_models.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class PrayerTimeService {
@@ -207,6 +208,9 @@ class PrayerTimeService {
 
     final cached =
         await database.prayerTimesCacheDao.getCachedTime(seasonId, dateStr);
+    final sourcePref = PrayerTimeSourceKindCodec.parse(
+      await database.kvSettingsDao.getValue('prayer_time_source'),
+    );
     if (cached != null &&
         _cacheReusable(
           cached: cached,
@@ -217,7 +221,8 @@ class PrayerTimeService {
           fajrAdjust: fajrAdjust,
           maghribAdjust: maghribAdjust,
           dateOffsetMinutes: dateOffsetMinutes,
-        )) {
+        ) &&
+        _cacheAllowedForPreference(cached: cached, preference: sourcePref)) {
       return {
         'fajr': DateTime.parse(cached.fajrIso),
         'maghrib': DateTime.parse(cached.maghribIso),
@@ -248,6 +253,9 @@ class PrayerTimeService {
         fajrAdj: fajrAdjust,
         maghribAdj: maghribAdjust,
         utcOffsetMinutes: dateOffsetMinutes,
+        source: 'local',
+        sourceRef: null,
+        fetchedAt: null,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
       ),
     );
@@ -315,5 +323,13 @@ class PrayerTimeService {
         cached.lat == latitude &&
         cached.lon == longitude &&
         cached.utcOffsetMinutes == dateOffsetMinutes;
+  }
+
+  static bool _cacheAllowedForPreference({
+    required PrayerTimesCacheData cached,
+    required PrayerTimeSourceKind preference,
+  }) {
+    if (preference != PrayerTimeSourceKind.local) return true;
+    return cached.source == null || cached.source == 'local';
   }
 }

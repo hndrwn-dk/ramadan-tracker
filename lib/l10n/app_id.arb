@@ -806,6 +806,25 @@
   "reminderQueued": "Terjadwal",
   "reminderNotQueued": "Belum antri",
   "reminderMissedNotQueuedHint": "Sahur lewat tanpa notifikasi. Buka app sebelum Sahur besok agar terjadwal, dan izinkan Alarm & pengingat di bawah.",
-  "openExactAlarmSettings": "Izinkan Alarm & pengingat"
+  "openExactAlarmSettings": "Izinkan Alarm & pengingat",
+
+  "prayerTimeSource": "Sumber waktu sholat",
+  "prayerTimeSourceLocal": "Lokal (adhan)",
+  "prayerTimeSourceAladhan": "Aladhan",
+  "prayerTimeSourceMyQuran": "myQuran (Kemenag)",
+  "prayerTimeSourceAuto": "Otomatis",
+  "prayerTimeSourceAutoHint": "Indonesia dengan kota terverifikasi memakai myQuran. Lokasi lain memakai Aladhan. Offline memakai cache atau hitungan lokal.",
+  "myQuranCity": "Kota myQuran",
+  "myQuranCitySearchHint": "Cari kabupaten atau kota (Indonesia)",
+  "myQuranCityNotSet": "Cari dan pilih kota. ID tidak ditebak.",
+  "prayerTimesLastSynced": "Terakhir disinkronkan: {when}",
+  "@prayerTimesLastSynced": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "prayerTimesNeverSynced": "Jadwal jarak jauh belum disinkronkan",
+  "syncPrayerTimes": "Sinkronkan waktu sholat",
+  "search": "Cari"
 }
 

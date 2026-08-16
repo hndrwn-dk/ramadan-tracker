@@ -3847,6 +3847,28 @@
   "reminderQueued": "Queued",
   "reminderNotQueued": "Not queued",
   "reminderMissedNotQueuedHint": "Sahur passed without a notification. Open the app before Sahur tomorrow so it can be scheduled, and allow Alarms & reminders below.",
-  "openExactAlarmSettings": "Allow Alarms & reminders"
+  "openExactAlarmSettings": "Allow Alarms & reminders",
+
+  "prayerTimeSource": "Prayer time source",
+  "@prayerTimeSource": {
+    "description": "Settings label for local vs remote prayer timetable source"
+  },
+  "prayerTimeSourceLocal": "Local (adhan)",
+  "prayerTimeSourceAladhan": "Aladhan",
+  "prayerTimeSourceMyQuran": "myQuran (Kemenag)",
+  "prayerTimeSourceAuto": "Auto",
+  "prayerTimeSourceAutoHint": "Indonesia with a verified city uses myQuran. Other locations use Aladhan. Offline uses cached or local times.",
+  "myQuranCity": "myQuran city",
+  "myQuranCitySearchHint": "Search kabupaten or kota (Indonesia)",
+  "myQuranCityNotSet": "Search and pick a city. IDs are not guessed.",
+  "prayerTimesLastSynced": "Last synced: {when}",
+  "@prayerTimesLastSynced": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "prayerTimesNeverSynced": "Remote timetable not synced yet",
+  "syncPrayerTimes": "Sync prayer times",
+  "search": "Search"
 }
 
