@@ -10,7 +10,7 @@ class PrayerHttpResponse {
 typedef PrayerHttpGet = Future<PrayerHttpResponse> Function(Uri uri);
 
 class PrayerHttp {
-  static const userAgent = 'RamadanTracker/1.0.3 (Flutter; offline-first)';
+  static const userAgent = 'RamadanTracker/1.0.4 (Flutter; offline-first)';
 
   static Map<String, String> get headers => {
         'User-Agent': userAgent,
