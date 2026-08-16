@@ -110,14 +110,21 @@ class _OnboardingStepLocationState extends ConsumerState<OnboardingStepLocation>
         return;
       }
 
-      const gpsTimeout = Duration(seconds: 8);
-      final position = await acquireCurrentPosition(
+      const gpsTimeout = onboardingGpsTimeout;
+      final acquired = await acquireOnboardingPosition(
         timeout: gpsTimeout,
-        getPosition: () => Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium,
-          timeLimit: gpsTimeout,
-        ),
+        getLastKnownPosition: onboardingLastKnownPosition,
+        getCurrentPosition: () => onboardingCurrentPosition(timeout: gpsTimeout),
       );
+      if (!acquired.ok || acquired.position == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.onboardingLocationGpsFailed)),
+          );
+        }
+        return;
+      }
+      final position = acquired.position!;
       final detectedMethod = LocationHelper.detectCalculationMethod(
         position.latitude,
         position.longitude,
@@ -140,11 +147,11 @@ class _OnboardingStepLocationState extends ConsumerState<OnboardingStepLocation>
         _loadingLocation = false;
         _showManualLocation = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorMessage(e.toString()))),
+          SnackBar(content: Text(l10n.onboardingLocationGpsFailed)),
         );
       }
     } finally {

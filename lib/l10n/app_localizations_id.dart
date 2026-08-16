@@ -2293,6 +2293,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get onboardingAllowLocation => 'Izinkan lokasi';
 
   @override
+  String get onboardingLocationGpsFailed =>
+      'GPS tidak didapat. Coba lagi atau atur kota secara manual.';
+
+  @override
   String get onboardingGoalsQuranDhikrTitle =>
       'Target Harian — Al-Quran & Dzikir';
 

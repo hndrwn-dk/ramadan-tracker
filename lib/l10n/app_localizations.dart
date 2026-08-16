@@ -4059,6 +4059,12 @@ abstract class AppLocalizations {
   /// **'Allow location'**
   String get onboardingAllowLocation;
 
+  /// No description provided for @onboardingLocationGpsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t get GPS. Try again or set city manually.'**
+  String get onboardingLocationGpsFailed;
+
   /// No description provided for @onboardingGoalsQuranDhikrTitle.
   ///
   /// In en, this message translates to:

@@ -3758,6 +3758,7 @@
   "onboardingLocationTitle": "Enable location",
   "onboardingLocationSubtitle": "For automatic imsak, sahur, and iftar times",
   "onboardingAllowLocation": "Allow location",
+  "onboardingLocationGpsFailed": "Couldn't get GPS. Try again or set city manually.",
   "onboardingGoalsQuranDhikrTitle": "Daily Goals — Quran & Dhikr",
   "onboardingGoalsSedekahTitle": "Sedekah Goal",
   "onboardingReadyTitle": "You're ready!",

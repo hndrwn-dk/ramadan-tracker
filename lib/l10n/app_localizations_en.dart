@@ -2284,6 +2284,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingAllowLocation => 'Allow location';
 
   @override
+  String get onboardingLocationGpsFailed =>
+      'Couldn\'t get GPS. Try again or set city manually.';
+
+  @override
   String get onboardingGoalsQuranDhikrTitle => 'Daily Goals — Quran & Dhikr';
 
   @override

@@ -735,6 +735,7 @@
   "onboardingLocationTitle": "Aktifkan lokasi",
   "onboardingLocationSubtitle": "Untuk waktu imsak, sahur, dan berbuka otomatis",
   "onboardingAllowLocation": "Izinkan lokasi",
+  "onboardingLocationGpsFailed": "GPS tidak didapat. Coba lagi atau atur kota secara manual.",
   "onboardingGoalsQuranDhikrTitle": "Target Harian — Al-Quran & Dzikir",
   "onboardingGoalsSedekahTitle": "Target Sedekah",
   "onboardingReadyTitle": "Kamu siap!",
