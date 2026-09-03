@@ -25,6 +25,11 @@ abstract final class NotificationIds {
   static const int baseSunnahSahur = 9000000;
   static const int baseSunnahIftar = 10000000;
 
+  /// Stable eve slots so Android replaces the previous Monday/Thursday reminder
+  /// instead of stacking identical copies. Must stay inside 27M-31M (sunnah).
+  static const int sunnahEveMonday = 27000001;
+  static const int sunnahEveThursday = 27000002;
+
   /// Season-bound reminders (Sahur, Imsak, Iftar, night plan, goals, legacy habits).
   static const seasonCategories = {
     NotificationCategory.sahur,
@@ -62,6 +67,11 @@ abstract final class NotificationIds {
       return NotificationCategory.sunnah;
     }
     return NotificationCategory.other;
+  }
+
+  /// Eve reminders only (not sunnah Sahur/Iftar). Used to dismiss stacked copies.
+  static bool isSunnahEve(int id) {
+    return id >= 27000000 && id < 28000000;
   }
 
   static String label(NotificationCategory category) {

@@ -6,6 +6,7 @@ import 'package:ramadan_tracker/domain/models/season_model.dart';
 import 'package:ramadan_tracker/domain/services/notification_launch_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_season_resolver.dart';
 import 'package:ramadan_tracker/domain/services/notification_ids.dart';
+import 'package:ramadan_tracker/domain/services/sunnah_eve_reminder_plan.dart';
 import 'package:ramadan_tracker/domain/services/zoned_schedule_retry_plan.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
 import 'package:ramadan_tracker/domain/services/goal_reminder_service.dart';
@@ -36,14 +37,10 @@ class NotificationService {
   static const int _baseIdHabitReminder = 4000000;
   static const int _baseIdGoal = 5000000;
   static const int _baseIdNextRamadan = 6000000;
-  static const int _baseIdSunnah = 7000000;
   static const int _baseIdImsak = 8000000;
   static const int _baseIdSunnahSahur = 9000000;
   static const int _baseIdSunnahIftar = 10000000;
   static const String _notifAntispamMigratedKey = 'notif_antispam_v1_migrated';
-
-  // 14-day rolling horizon for sunnah eve reminders; refill on app-open.
-  static const int _sunnahEveHorizonDays = 14;
 
   // Goal type indices
   static const int _goalTypeQuran = 0;
@@ -73,9 +70,7 @@ class NotificationService {
   /// Whether to schedule a sunnah eve reminder for [fastDay] (bulk scheduler).
   @visibleForTesting
   static bool shouldScheduleSunnahEveForFastDay(DateTime fastDay) {
-    if (SunnahFastingRules.typesFor(fastDay).isEmpty) return false;
-    if (SunnahFastingRules.isRamadan(fastDay)) return false;
-    return true;
+    return SunnahEveReminderPlan.shouldScheduleForFastDay(fastDay);
   }
 
   static Future<List<PendingNotificationRequest>> _fetchPendingRaw() async {
@@ -530,8 +525,23 @@ class NotificationService {
     return cancelRemindersInCategories({NotificationCategory.nextRamadan});
   }
 
-  static Future<int> cancelSunnahReminders() {
-    return cancelRemindersInCategories({NotificationCategory.sunnah});
+  static Future<int> cancelSunnahReminders() async {
+    final pendingCancelled =
+        await cancelRemindersInCategories({NotificationCategory.sunnah});
+    var activeEveCancelled = 0;
+    try {
+      final active = await _notifications.getActiveNotifications();
+      for (final n in active) {
+        final id = n.id;
+        if (id == null) continue;
+        if (!NotificationIds.isSunnahEve(id)) continue;
+        await cancel(id);
+        activeEveCancelled++;
+      }
+    } catch (_) {
+      // Some platforms/OS versions do not support listing active notifications.
+    }
+    return pendingCancelled + activeEveCancelled;
   }
 
   /// One-time cleanup after anti-spam update: cancel bulk sunnah + legacy 21M/22M
@@ -1474,9 +1484,9 @@ class NotificationService {
     }
   }
 
-  /// Schedules evening reminders for the night before each recommended sunnah
-  /// fast (Monday/Thursday + Ayyamul Bidh, Arafah, Asyura) for the next
-  /// [_sunnahEveHorizonDays] days. Sahur/Iftar for sunnah days are scheduled
+  /// Schedules evening reminders for the night before the next recommended
+  /// sunnah fasts (one Monday slot, one Thursday slot, plus dated specials
+  /// such as Ayyamul Bidh). Sahur/Iftar for sunnah days are scheduled
   /// today-only via [ensureTodayFastingRemindersScheduled].
   static Future<void> scheduleSunnahReminders({required AppDatabase database}) async {
     try {
@@ -1495,7 +1505,6 @@ class NotificationService {
       final location = tz.local;
       final tzNow = tz.TZDateTime.now(location);
 
-      const reminderHour = 19; // 19:00 the evening before
       int scheduled = 0;
 
       if (Platform.isAndroid) {
@@ -1522,32 +1531,37 @@ class NotificationService {
         ),
       );
 
-      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-      for (int i = 1; i <= _sunnahEveHorizonDays; i++) {
-        final fastDay = today.add(Duration(days: i));
-        if (!shouldScheduleSunnahEveForFastDay(fastDay)) continue;
-
-        // Fire the evening before the fast day.
-        final eve = fastDay.subtract(const Duration(days: 1));
+      final today = DateTime(tzNow.year, tzNow.month, tzNow.day);
+      final nowLocal = DateTime(
+        tzNow.year,
+        tzNow.month,
+        tzNow.day,
+        tzNow.hour,
+        tzNow.minute,
+        tzNow.second,
+      );
+      final plan = SunnahEveReminderPlan.build(
+        today: today,
+        now: nowLocal,
+        isId: isId,
+      );
+      for (final item in plan) {
         final scheduledTz = tz.TZDateTime(
-          location, eve.year, eve.month, eve.day, reminderHour, 0,
+          location,
+          item.fireAt.year,
+          item.fireAt.month,
+          item.fireAt.day,
+          item.fireAt.hour,
+          item.fireAt.minute,
         );
         if (!scheduledTz.isAfter(tzNow)) continue;
 
-        final types = SunnahFastingRules.typesFor(fastDay);
-        final label = isId ? types.first.labelId() : types.first.labelEn();
-        final title = isId ? 'Puasa sunnah besok' : 'Sunnah fast tomorrow';
-        final body = isId
-            ? 'Besok: $label. Niatkan puasa malam ini.'
-            : 'Tomorrow: $label. Set your intention tonight.';
-
         final ok = await _safeZonedSchedule(
-          id: _getNotificationId(_baseIdSunnah, fastDay),
-          title: title,
-          body: body,
+          id: item.id,
+          title: item.title,
+          body: item.body,
           scheduledDate: scheduledTz,
           notificationDetails: details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         );
         if (ok) scheduled++;
       }

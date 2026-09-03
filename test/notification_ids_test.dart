@@ -34,6 +34,14 @@ void main() {
         NotificationCategory.sunnah,
       );
       expect(
+        NotificationIds.categoryOf(NotificationIds.sunnahEveMonday),
+        NotificationCategory.sunnah,
+      );
+      expect(
+        NotificationIds.categoryOf(NotificationIds.sunnahEveThursday),
+        NotificationCategory.sunnah,
+      );
+      expect(
         NotificationIds.categoryOf(NotificationIds.baseSunnahSahur + 20260606),
         NotificationCategory.sunnah,
       );
@@ -64,6 +72,19 @@ void main() {
       expect(NotificationIds.categoryOf(sunnahIftar), NotificationCategory.sunnah);
       expect(sunnahSahur, isNot(seasonSahur));
       expect(sunnahIftar, isNot(seasonIftar));
+    });
+
+    test('isSunnahEve matches Monday/Thursday slots and dated eves, not Sahur', () {
+      expect(NotificationIds.isSunnahEve(NotificationIds.sunnahEveMonday), isTrue);
+      expect(NotificationIds.isSunnahEve(NotificationIds.sunnahEveThursday), isTrue);
+      expect(
+        NotificationIds.isSunnahEve(NotificationIds.baseSunnah + 20260824),
+        isTrue,
+      );
+      expect(
+        NotificationIds.isSunnahEve(NotificationIds.baseSunnahSahur + 20260824),
+        isFalse,
+      );
     });
 
     test('countByCategory groups pending list', () {
