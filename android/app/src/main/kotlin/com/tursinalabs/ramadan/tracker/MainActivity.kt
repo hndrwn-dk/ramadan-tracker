@@ -4,7 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -14,7 +14,16 @@ class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.ramadan_tracker/notifications"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // Edge-to-edge without ComponentActivity (keeps FlutterActivity hosting).
+        // Bar colors come from theme (styles.xml) — no setStatusBarColor /
+        // setNavigationBarColor DEX references from our code.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isStatusBarContrastEnforced = false
+            // Match enableEdgeToEdge default: system may apply a nav scrim in
+            // 3-button mode while keeping gesture nav effectively transparent.
+            window.isNavigationBarContrastEnforced = true
+        }
         super.onCreate(savedInstanceState)
     }
 
@@ -117,4 +126,3 @@ class MainActivity: FlutterActivity() {
         }
     }
 }
-
