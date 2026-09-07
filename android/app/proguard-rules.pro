@@ -80,10 +80,12 @@
 -keepnames class com.google.gson.reflect.TypeToken
 -keepnames class * extends com.google.gson.reflect.TypeToken
 
-# CRITICAL: Prevent R8 from optimizing Gson and flutter_local_notifications
-# R8 full mode can strip generic type signatures even with -keepattributes Signature
-# This causes ScheduledNotificationReceiver to fail silently when deserializing notification data
--dontoptimize
+# Optimization enabled 2026-09. -dontoptimize was added 2026-02-17
+# (a41405a) alongside the vendored ScheduledNotificationReceiver patch as
+# a belt-and-suspenders fix. It was redundant: the release buildType used
+# proguard-android.txt, which already disabled optimization, so the Feb
+# bug had a different root cause. Signature/InnerClasses/EnclosingMethod
+# and the TypeToken keeps (added 2026-02-13, a90be22) remain in force.
 
 # Keep all classes with generic signatures used by Gson reflection
 -keep,allowobfuscation class * extends com.google.gson.reflect.TypeToken
