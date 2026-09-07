@@ -13,6 +13,7 @@ import 'package:ramadan_tracker/features/qadha/widgets/obligations_history_secti
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/utils/obligations_utils.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class ObligationsReviewScreen extends ConsumerStatefulWidget {
   final InsightsRange range;
@@ -40,52 +41,54 @@ class _ObligationsReviewScreenState
         leading: const AppBackButton(),
         title: Text(s.obligationsReviewTitle),
       ),
-      body: FutureBuilder<_ObligationsReviewData?>(
-        future: _loadData(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final data = snapshot.data;
-          if (data == null) {
-            return Center(child: Text(s.obligationsChartEmpty));
-          }
+      body: ScaffoldBodyBottomSafe(
+        child: FutureBuilder<_ObligationsReviewData?>(
+          future: _loadData(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final data = snapshot.data;
+            if (data == null) {
+              return Center(child: Text(s.obligationsChartEmpty));
+            }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              ObligationsHistoryCharts(
-                entries: data.filteredEntries,
-                currency: data.currency,
-                season: data.season,
-                rangeAnalytics: data.analytics,
-              ),
-              const SizedBox(height: 24),
-              ObligationsHistorySection(
-                entries: data.filteredEntries,
-                zakatByCurrency: const {},
-                fidyahByCurrency: const {},
-                onDelete: (e) async {
-                  final db = ref.read(databaseProvider);
-                  await db.qadhaLedgerDao.deleteEntry(e.id);
-                  ref.read(qadhaRefreshProvider.notifier).state++;
-                  if (mounted) setState(() {});
-                },
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const QadhaScreen()),
-                  );
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(s.obligationsAddPayment),
-              ),
-            ],
-          );
-        },
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                ObligationsHistoryCharts(
+                  entries: data.filteredEntries,
+                  currency: data.currency,
+                  season: data.season,
+                  rangeAnalytics: data.analytics,
+                ),
+                const SizedBox(height: 24),
+                ObligationsHistorySection(
+                  entries: data.filteredEntries,
+                  zakatByCurrency: const {},
+                  fidyahByCurrency: const {},
+                  onDelete: (e) async {
+                    final db = ref.read(databaseProvider);
+                    await db.qadhaLedgerDao.deleteEntry(e.id);
+                    ref.read(qadhaRefreshProvider.notifier).state++;
+                    if (mounted) setState(() {});
+                  },
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const QadhaScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(s.obligationsAddPayment),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

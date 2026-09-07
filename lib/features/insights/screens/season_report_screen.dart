@@ -13,6 +13,7 @@ import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class SeasonReportScreen extends ConsumerWidget {
   final int seasonId;
@@ -76,18 +77,19 @@ class SeasonReportScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: FutureBuilder(
-        future: seasonFuture,
-        builder: (context, seasonFuture) {
-          if (seasonFuture.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final season = seasonFuture.data;
-          if (season == null) {
-            return Center(child: Text(l10n.errorMessage('No season')));
-          }
+      body: ScaffoldBodyBottomSafe(
+        child: FutureBuilder(
+          future: seasonFuture,
+          builder: (context, seasonFuture) {
+            if (seasonFuture.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final season = seasonFuture.data;
+            if (season == null) {
+              return Center(child: Text(l10n.errorMessage('No season')));
+            }
 
-          return insightsAsync.when(
+            return insightsAsync.when(
             data: (insightsData) {
               return FutureBuilder<Map<String, HabitMasteryTier>>(
                 future: HabitMasteryService.tiersForSeason(
@@ -134,6 +136,7 @@ class SeasonReportScreen extends ConsumerWidget {
             error: (error, _) => Center(child: Text(l10n.errorMessage(error.toString()))),
           );
         },
+        ),
       ),
     );
   }

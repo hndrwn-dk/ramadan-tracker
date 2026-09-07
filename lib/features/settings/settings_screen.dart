@@ -28,6 +28,7 @@ import 'package:ramadan_tracker/data/providers/locale_provider.dart';
 import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 import 'package:ramadan_tracker/utils/log_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
@@ -98,33 +99,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         title: Text(l10n.settingsTitle),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildSectionHeader(l10n.settingsSectionEngage),
-            const SizedBox(height: 8),
-            _buildAbout(),
-            const SizedBox(height: 16),
-            _buildSectionHeader(l10n.settingsSectionTrack),
-            const SizedBox(height: 8),
-            _buildTimesAndReminders(),
-            const SizedBox(height: 16),
-            _buildHabitsSettings(),
-            const SizedBox(height: 16),
-            _buildSeasonManagement(),
-            const SizedBox(height: 16),
-            _buildSectionHeader(l10n.settingsSectionApp),
-            const SizedBox(height: 8),
-            _buildAppearance(),
-            const SizedBox(height: 16),
-            _buildLanguage(),
-            if (_debugEnabled && kDebugMode) ...[
+      body: ScaffoldBodyBottomSafe(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildSectionHeader(l10n.settingsSectionEngage),
+              const SizedBox(height: 8),
+              _buildAbout(),
               const SizedBox(height: 16),
-              _buildDebugSection(),
+              _buildSectionHeader(l10n.settingsSectionTrack),
+              const SizedBox(height: 8),
+              _buildTimesAndReminders(),
+              const SizedBox(height: 16),
+              _buildHabitsSettings(),
+              const SizedBox(height: 16),
+              _buildSeasonManagement(),
+              const SizedBox(height: 16),
+              _buildSectionHeader(l10n.settingsSectionApp),
+              const SizedBox(height: 8),
+              _buildAppearance(),
+              const SizedBox(height: 16),
+              _buildLanguage(),
+              if (_debugEnabled && kDebugMode) ...[
+                const SizedBox(height: 16),
+                _buildDebugSection(),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

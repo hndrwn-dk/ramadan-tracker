@@ -17,6 +17,7 @@ import 'package:ramadan_tracker/features/insights/services/insights_service.dart
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class TaskDetailInsightsScreen extends ConsumerStatefulWidget {
   final String habitKey;
@@ -45,7 +46,8 @@ class _TaskDetailInsightsScreenState extends ConsumerState<TaskDetailInsightsScr
         leading: const AppBackButton(),
         title: Text(_getHabitDisplayName(widget.habitKey)),
       ),
-      body: seasonAsync.when(
+      body: ScaffoldBodyBottomSafe(
+        child: seasonAsync.when(
         data: (season) {
           if (season == null) return const Center(child: Text('No season found'));
           return habitsAsync.when(
@@ -80,6 +82,7 @@ class _TaskDetailInsightsScreenState extends ConsumerState<TaskDetailInsightsScr
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
+        ),
       ),
     );
   }

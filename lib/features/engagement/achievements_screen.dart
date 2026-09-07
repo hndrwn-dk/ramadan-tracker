@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/achievement_share_card.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class AchievementsScreen extends ConsumerWidget {
   const AchievementsScreen({super.key});
@@ -44,61 +45,63 @@ class AchievementsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          engagementAsync.when(
-            data: (e) => PremiumCard(
-              child: Row(
-                children: [
-                  Icon(Icons.military_tech, color: Theme.of(context).colorScheme.primary, size: 40),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.companionLevelLabel(e.companionLevel),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        Text(
-                          l10n.totalXpLabel(e.totalXp),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
+      body: ScaffoldBodyBottomSafe(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            engagementAsync.when(
+              data: (e) => PremiumCard(
+                child: Row(
+                  children: [
+                    Icon(Icons.military_tech, color: Theme.of(context).colorScheme.primary, size: 40),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.companionLevelLabel(e.companionLevel),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            l10n.totalXpLabel(e.totalXp),
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 16),
-          unlockedAsync.when(
-            data: (unlocked) {
-              final unlockedKeys = unlocked.map((u) => u.achievementKey).toSet();
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.85,
+                  ],
                 ),
-                itemCount: AchievementCatalog.all.length,
-                itemBuilder: (context, index) {
-                  final def = AchievementCatalog.all[index];
-                  final isUnlocked = unlockedKeys.contains(def.key);
-                  return _AchievementTile(definition: def, unlocked: isUnlocked);
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text(l10n.errorMessage(e.toString())),
-          ),
-        ],
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 16),
+            unlockedAsync.when(
+              data: (unlocked) {
+                final unlockedKeys = unlocked.map((u) => u.achievementKey).toSet();
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: AchievementCatalog.all.length,
+                  itemBuilder: (context, index) {
+                    final def = AchievementCatalog.all[index];
+                    final isUnlocked = unlockedKeys.contains(def.key);
+                    return _AchievementTile(definition: def, unlocked: isUnlocked);
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text(l10n.errorMessage(e.toString())),
+            ),
+          ],
+        ),
       ),
     );
   }

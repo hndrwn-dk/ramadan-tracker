@@ -10,6 +10,7 @@ import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/sedekah_icon.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 /// Today-only financial review screen for Sedekah.
 class SedekahAnalyticsTodayScreen extends ConsumerStatefulWidget {
@@ -36,7 +37,8 @@ class _SedekahAnalyticsTodayScreenState extends ConsumerState<SedekahAnalyticsTo
         leading: const AppBackButton(),
         title: const Text('Sedekah Today'),
       ),
-      body: seasonAsync.when(
+      body: ScaffoldBodyBottomSafe(
+        child: seasonAsync.when(
         data: (season) {
           if (season == null) return const Center(child: Text('No season found'));
           final selectedDate = widget.selectedDate ?? DateTime.now();
@@ -65,6 +67,7 @@ class _SedekahAnalyticsTodayScreenState extends ConsumerState<SedekahAnalyticsTo
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
+        ),
       ),
     );
   }

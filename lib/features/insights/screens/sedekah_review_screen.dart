@@ -10,6 +10,7 @@ import 'package:ramadan_tracker/features/insights/models/insights_range.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class SedekahReviewScreen extends ConsumerStatefulWidget {
   final InsightsRange range;
@@ -33,21 +34,22 @@ class _SedekahReviewScreenState extends ConsumerState<SedekahReviewScreen> {
         leading: const AppBackButton(),
         title: const Text('Sedekah Financial Review'),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _loadSedekahData(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final data = snapshot.data!;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSummaryCard(context, data),
-                const SizedBox(height: 24),
-                _buildTrendChart(context, data),
+      body: ScaffoldBodyBottomSafe(
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _loadSedekahData(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final data = snapshot.data!;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSummaryCard(context, data),
+                  const SizedBox(height: 24),
+                  _buildTrendChart(context, data),
                 const SizedBox(height: 24),
                 _buildPatternsSection(context, data),
                 const SizedBox(height: 24),
@@ -56,6 +58,7 @@ class _SedekahReviewScreenState extends ConsumerState<SedekahReviewScreen> {
             ),
           );
         },
+        ),
       ),
     );
   }

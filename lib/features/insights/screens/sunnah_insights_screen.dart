@@ -7,6 +7,7 @@ import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class SunnahInsightsScreen extends ConsumerWidget {
   const SunnahInsightsScreen({super.key});
@@ -21,23 +22,24 @@ class SunnahInsightsScreen extends ConsumerWidget {
         leading: const AppBackButton(),
         title: Text(s.insightsSunnahTitleFor(year)),
       ),
-      body: FutureBuilder<SunnahInsightsData>(
-        future: SunnahInsightsService.load(ref.read(databaseProvider)),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final data = snapshot.data!;
-          final scheme = Theme.of(context).colorScheme;
+      body: ScaffoldBodyBottomSafe(
+        child: FutureBuilder<SunnahInsightsData>(
+          future: SunnahInsightsService.load(ref.read(databaseProvider)),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final data = snapshot.data!;
+            final scheme = Theme.of(context).colorScheme;
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              PremiumCard(
-                child: Row(
-                  children: [
-                    _heroStat(context, '${data.totalThisYear}', s.thisYear),
-                    _heroStat(context, '${data.seninKamisStreak}', s.streak),
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                PremiumCard(
+                  child: Row(
+                    children: [
+                      _heroStat(context, '${data.totalThisYear}', s.thisYear),
+                      _heroStat(context, '${data.seninKamisStreak}', s.streak),
                     _heroStat(context, '${data.totalAllTime}', s.allTime),
                   ],
                 ),
@@ -131,6 +133,7 @@ class SunnahInsightsScreen extends ConsumerWidget {
             ],
           );
         },
+        ),
       ),
     );
   }

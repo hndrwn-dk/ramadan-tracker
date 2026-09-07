@@ -25,6 +25,7 @@ import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/domain/models/daily_entry_model.dart';
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class DayDetailScreen extends ConsumerStatefulWidget {
   final int seasonId;
@@ -53,19 +54,21 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
         leading: const AppBackButton(),
         title: Text('Day ${widget.dayIndex}'),
       ),
-      body: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
-        child: seasonAsync.when(
-          data: (season) {
-            if (season == null) {
-              return const Center(child: Text('No season found'));
-            }
-            return _buildContent(season.days, isInLast10 || showItikaf);
+      body: ScaffoldBodyBottomSafe(
+        child: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(child: Text('Error: $error')),
+          child: seasonAsync.when(
+            data: (season) {
+              if (season == null) {
+                return const Center(child: Text('No season found'));
+              }
+              return _buildContent(season.days, isInLast10 || showItikaf);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(child: Text('Error: $error')),
+          ),
         ),
       ),
     );

@@ -54,6 +54,7 @@ import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_checklist_body.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_checklist_sticky_bar.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 import 'package:ramadan_tracker/core/coachmark/support_coachmark.dart';
 import 'package:ramadan_tracker/app/donation_navigation.dart';
 
@@ -118,7 +119,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 leading: const AppBackButton(),
                 title: Text(l10n.todayChecklistTitle),
               ),
-              body: const YearRoundNoSeasonBody(),
+              body: const ScaffoldBodyBottomSafe(
+                child: YearRoundNoSeasonBody(),
+              ),
             );
           }
           final last10Start = season.days - 9;
@@ -130,14 +133,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           );
         },
         loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
+          body: ScaffoldBodyBottomSafe(
+            child: Center(child: CircularProgressIndicator()),
+          ),
         ),
         error: (error, stack) => Scaffold(
           appBar: AppBar(
             leading: const AppBackButton(),
             title: Text(l10n.todayChecklistTitle),
           ),
-          body: Center(child: Text(l10n.errorMessage(error.toString()))),
+          body: ScaffoldBodyBottomSafe(
+            child: Center(child: Text(l10n.errorMessage(error.toString()))),
+          ),
         ),
       );
     }
@@ -228,19 +235,21 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         leading: const AppBackButton(),
         title: Text(title),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(
-            dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
-          );
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: TodayChecklistBody(
-            seasonId: seasonId,
-            dayIndex: dayIndex,
-            showItikaf: showItikaf,
+      body: ScaffoldBodyBottomSafe(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(
+              dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)),
+            );
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: TodayChecklistBody(
+              seasonId: seasonId,
+              dayIndex: dayIndex,
+              showItikaf: showItikaf,
+            ),
           ),
         ),
       ),

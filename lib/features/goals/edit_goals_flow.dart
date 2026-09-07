@@ -8,6 +8,7 @@ import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step5_goals
 import 'package:ramadan_tracker/features/onboarding/steps/onboarding_step6_goals_sedekah.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class EditGoalsFlow extends ConsumerStatefulWidget {
   final int seasonId;
@@ -244,7 +245,9 @@ class _EditGoalsFlowState extends ConsumerState<EditGoalsFlow> {
           leading: const AppBackButton(),
           title: const Text('Edit Goals'),
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const ScaffoldBodyBottomSafe(
+          child: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
@@ -253,51 +256,53 @@ class _EditGoalsFlowState extends ConsumerState<EditGoalsFlow> {
         leading: const AppBackButton(),
         title: const Text('Edit Goals'),
       ),
-      body: ClipRect(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 150),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          layoutBuilder: (currentChild, previousChildren) {
-            return Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.hardEdge,
-              children: [
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
-            );
-          },
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            final int? childStep = (child.key is ValueKey<int>)
-                ? (child.key as ValueKey<int>).value
-                : null;
+      body: ScaffoldBodyBottomSafe(
+        child: ClipRect(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 150),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            layoutBuilder: (currentChild, previousChildren) {
+              return Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
+              );
+            },
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final int? childStep = (child.key is ValueKey<int>)
+                  ? (child.key as ValueKey<int>).value
+                  : null;
 
-            final bool isForward = _lastStep == null || _currentStep > _lastStep!;
-            final bool isIncoming = childStep == _currentStep;
+              final bool isForward = _lastStep == null || _currentStep > _lastStep!;
+              final bool isIncoming = childStep == _currentStep;
 
-            final Animation<double> slideAnim =
-                isIncoming ? animation : ReverseAnimation(animation);
+              final Animation<double> slideAnim =
+                  isIncoming ? animation : ReverseAnimation(animation);
 
-            final Offset inBegin = Offset(isForward ? 0.15 : -0.15, 0.0);
-            final Offset outEnd = Offset(isForward ? -0.15 : 0.15, 0.0);
+              final Offset inBegin = Offset(isForward ? 0.15 : -0.15, 0.0);
+              final Offset outEnd = Offset(isForward ? -0.15 : 0.15, 0.0);
 
-            final Tween<Offset> tween = isIncoming
-                ? Tween<Offset>(begin: inBegin, end: Offset.zero)
-                : Tween<Offset>(begin: Offset.zero, end: outEnd);
+              final Tween<Offset> tween = isIncoming
+                  ? Tween<Offset>(begin: inBegin, end: Offset.zero)
+                  : Tween<Offset>(begin: Offset.zero, end: outEnd);
 
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: tween.animate(CurvedAnimation(
-                  parent: slideAnim,
-                  curve: Curves.easeOut,
-                )),
-                child: child,
-              ),
-            );
-          },
-          child: _buildCurrentStep(),
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: tween.animate(CurvedAnimation(
+                    parent: slideAnim,
+                    curve: Curves.easeOut,
+                  )),
+                  child: child,
+                ),
+              );
+            },
+            child: _buildCurrentStep(),
+          ),
         ),
       ),
     );

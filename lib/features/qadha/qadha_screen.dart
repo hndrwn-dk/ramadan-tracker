@@ -9,6 +9,7 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 import 'package:ramadan_tracker/utils/obligations_utils.dart';
 import 'package:ramadan_tracker/utils/sedekah_utils.dart';
 
@@ -97,60 +98,62 @@ class _QadhaScreenState extends ConsumerState<QadhaScreen> {
         leading: const AppBackButton(),
         title: Text(s.obligationsTitle),
       ),
-      body: balanceAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (balance) {
-          final season = seasonAsync.valueOrNull;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildCurrencySelector(context, s, l10n),
-              const SizedBox(height: 16),
-              _buildZakatCalculator(context, s),
-              const SizedBox(height: 16),
-              _buildFidyahCalculator(context, s),
-              const SizedBox(height: 24),
-              Text(s.qadhaSection,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              _buildBalanceCard(context, s, balance),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _addEntry(s, 'qadha', 'owed'),
-                      icon: const Icon(Icons.add),
-                      label: Text(s.addOwed),
+      body: ScaffoldBodyBottomSafe(
+        child: balanceAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (balance) {
+            final season = seasonAsync.valueOrNull;
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildCurrencySelector(context, s, l10n),
+                const SizedBox(height: 16),
+                _buildZakatCalculator(context, s),
+                const SizedBox(height: 16),
+                _buildFidyahCalculator(context, s),
+                const SizedBox(height: 24),
+                Text(s.qadhaSection,
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                _buildBalanceCard(context, s, balance),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _addEntry(s, 'qadha', 'owed'),
+                        icon: const Icon(Icons.add),
+                        label: Text(s.addOwed),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => _addEntry(s, 'qadha', 'paid'),
-                      icon: const Icon(Icons.check),
-                      label: Text(s.addPaid),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () => _addEntry(s, 'qadha', 'paid'),
+                        icon: const Icon(Icons.check),
+                        label: Text(s.addPaid),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              ObligationsHistorySection(
-                entries: balance.entries,
-                zakatByCurrency: balance.zakatPaidByCurrency,
-                fidyahByCurrency: balance.fidyahPaidByCurrency,
-                currency: _currency,
-                season: season,
-                onDelete: (e) async {
-                  final db = ref.read(databaseProvider);
-                  await db.qadhaLedgerDao.deleteEntry(e.id);
-                  ref.read(qadhaRefreshProvider.notifier).state++;
-                },
-              ),
-            ],
-          );
-        },
+                  ],
+                ),
+                const SizedBox(height: 24),
+                ObligationsHistorySection(
+                  entries: balance.entries,
+                  zakatByCurrency: balance.zakatPaidByCurrency,
+                  fidyahByCurrency: balance.fidyahPaidByCurrency,
+                  currency: _currency,
+                  season: season,
+                  onDelete: (e) async {
+                    final db = ref.read(databaseProvider);
+                    await db.qadhaLedgerDao.deleteEntry(e.id);
+                    ref.read(qadhaRefreshProvider.notifier).state++;
+                  },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
