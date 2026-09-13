@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/app/achievements_navigation.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/domain/models/achievement_model.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
@@ -7,7 +8,6 @@ import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/achievement_share_card.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
-import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 
 class AchievementsScreen extends ConsumerWidget {
   const AchievementsScreen({super.key});
@@ -18,35 +18,41 @@ class AchievementsScreen extends ConsumerWidget {
     final unlockedAsync = ref.watch(unlockedAchievementsProvider);
     final engagementAsync = ref.watch(userEngagementProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: Text(l10n.achievementsTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: l10n.shareAction,
-            onPressed: () async {
-              final engagement = await ref.read(userEngagementProvider.future);
-              final unlocked = await ref.read(unlockedAchievementsProvider.future);
-              final highlights = unlocked
-                  .map((u) => AchievementCatalog.byKey(u.achievementKey))
-                  .whereType<AchievementDefinition>()
-                  .toList();
-              if (!context.mounted) return;
-              await showAchievementShareDialog(
-                context: context,
-                companionLevel: engagement.companionLevel,
-                totalXp: engagement.totalXp,
-                unlockedCount: unlocked.length,
-                highlights: highlights,
-              );
-            },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) closeAchievementsScreen(ref);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: AppBackButton(
+            onPressed: () => closeAchievementsScreen(ref),
           ),
-        ],
-      ),
-      body: ScaffoldBodyBottomSafe(
-        child: ListView(
+          title: Text(l10n.achievementsTitle),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              tooltip: l10n.shareAction,
+              onPressed: () async {
+                final engagement = await ref.read(userEngagementProvider.future);
+                final unlocked = await ref.read(unlockedAchievementsProvider.future);
+                final highlights = unlocked
+                    .map((u) => AchievementCatalog.byKey(u.achievementKey))
+                    .whereType<AchievementDefinition>()
+                    .toList();
+                if (!context.mounted) return;
+                await showAchievementShareDialog(
+                  context: context,
+                  companionLevel: engagement.companionLevel,
+                  totalXp: engagement.totalXp,
+                  unlockedCount: unlocked.length,
+                  highlights: highlights,
+                );
+              },
+            ),
+          ],
+        ),
+        body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             engagementAsync.when(

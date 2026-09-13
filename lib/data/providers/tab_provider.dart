@@ -11,3 +11,6 @@ final openSettingsSectionProvider = StateProvider<String?>((ref) => null);
 /// When true, Wawasan opens on the Puasa Sunnah sub-tab (during active Ramadan).
 final wawasanSunnahTabProvider = StateProvider<bool>((ref) => false);
 
+/// When true, MainScreen shows Achievements in the shell body (bottom nav stays).
+final achievementsVisibleProvider = StateProvider<bool>((ref) => false);
+

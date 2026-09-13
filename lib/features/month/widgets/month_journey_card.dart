@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/app/achievements_navigation.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/domain/models/achievement_model.dart';
 import 'package:ramadan_tracker/domain/models/companion_level.dart';
-import 'package:ramadan_tracker/features/engagement/achievements_screen.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
 
-/// Season journey summary and primary entry to [AchievementsScreen].
+/// Season journey summary and primary entry to Achievements.
 class MonthJourneyCard extends ConsumerWidget {
   const MonthJourneyCard({super.key});
 
@@ -33,11 +33,7 @@ class MonthJourneyCard extends ConsumerWidget {
         final progress = seasonDays > 0 ? (dayIndex / seasonDays).clamp(0.0, 1.0) : 0.0;
 
         return AppSurface(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const AchievementsScreen()),
-            );
-          },
+          onTap: () => openAchievementsScreen(ref),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

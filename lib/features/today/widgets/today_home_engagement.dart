@@ -5,8 +5,8 @@ import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/domain/models/companion_level.dart';
+import 'package:ramadan_tracker/app/achievements_navigation.dart';
 import 'package:ramadan_tracker/domain/services/streak_shield_service.dart';
-import 'package:ramadan_tracker/features/engagement/achievements_screen.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 /// Time-of-day greeting plus a contextual Ramadan nudge for Today home.
@@ -148,11 +148,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
                 final shieldsLeft = shieldSnapshot.data ?? 0;
 
                 return InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => const AchievementsScreen()),
-                    );
-                  },
+                  onTap: () => openAchievementsScreen(ref),
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: padding ?? const EdgeInsets.symmetric(vertical: 4),
@@ -227,6 +223,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
           },
           loading: () => _buildProgressOnly(
             context,
+            ref,
             l10n,
             headline,
             progress,
@@ -235,6 +232,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
           ),
           error: (_, __) => _buildProgressOnly(
             context,
+            ref,
             l10n,
             headline,
             progress,
@@ -263,6 +261,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
 
   Widget _buildProgressOnly(
     BuildContext context,
+    WidgetRef ref,
     AppLocalizations l10n,
     String headline,
     double progress,
@@ -271,11 +270,7 @@ class TodayJourneyMiniStrip extends ConsumerWidget {
   ) {
     final scheme = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const AchievementsScreen()),
-        );
-      },
+      onTap: () => openAchievementsScreen(ref),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),

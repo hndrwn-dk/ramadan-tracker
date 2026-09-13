@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/app/achievements_navigation.dart';
 import 'package:ramadan_tracker/data/providers/achievement_days_provider.dart';
 import 'package:ramadan_tracker/domain/models/achievement_model.dart';
-import 'package:ramadan_tracker/features/engagement/achievements_screen.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
@@ -31,11 +31,7 @@ class WeeklyAchievementsCard extends ConsumerWidget {
             .toList();
 
         return AppSurface(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const AchievementsScreen()),
-            );
-          },
+          onTap: () => openAchievementsScreen(ref),
           child: Row(
             children: [
               Icon(Icons.military_tech_outlined, color: Theme.of(context).colorScheme.primary),

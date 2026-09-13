@@ -9,7 +9,9 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_screen.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_wrapper.dart';
 import 'package:ramadan_tracker/features/today/widgets/fasting_notification_handler.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/celebration_listener.dart';
+import 'package:ramadan_tracker/features/engagement/achievements_screen.dart';
 import 'package:ramadan_tracker/app/root_navigator.dart';
+import 'package:ramadan_tracker/app/achievements_navigation.dart';
 import 'package:ramadan_tracker/widgets/theme.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/data/providers/theme_provider.dart';
@@ -236,6 +238,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(tabIndexProvider);
+    final showAchievements = ref.watch(achievementsVisibleProvider);
     final l10n = AppLocalizations.of(context)!;
     final safeIndex = currentIndex.clamp(0, _screens.length - 1);
     if (safeIndex != currentIndex) {
@@ -246,15 +249,20 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
 
     return Scaffold(
       body: SafeArea(
-        child: IndexedStack(
-          index: safeIndex,
-          children: _screens,
-        ),
+        child: showAchievements
+            ? const AchievementsScreen()
+            : IndexedStack(
+                index: safeIndex,
+                children: _screens,
+              ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: safeIndex,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         onDestinationSelected: (index) {
+          if (showAchievements) {
+            closeAchievementsScreen(ref);
+          }
           if (safeIndex == 0 && index != 0) {
             ref.read(selectedDayIndexProvider.notifier).state = null;
           }
