@@ -11,6 +11,18 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+
+    // Plugins pinned to an old compileSdk (share_plus 7.x uses 33) fail AAR
+    // metadata checks against the androidx artifacts the embedding pulls in.
+    if (project.name != 'app') {
+        project.afterEvaluate {
+            if (project.plugins.hasPlugin('com.android.library')) {
+                if (project.android.compileSdk == null || project.android.compileSdk < 36) {
+                    project.android.compileSdk = 36
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

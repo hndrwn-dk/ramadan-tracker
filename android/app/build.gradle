@@ -87,4 +87,7 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    // dynamic_color pulls material 1.7.0, which calls the edge-to-edge APIs
+    // deprecated in Android 15. 1.14.0 guards them behind an SDK check.
+    implementation 'com.google.android.material:material:1.14.0'
 }
