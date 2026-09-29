@@ -27,6 +27,7 @@ import 'package:ramadan_tracker/widgets/counter_widget.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/prayer_details_widget.dart';
 import 'package:ramadan_tracker/domain/services/prayer_time_service.dart';
+import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_models.dart';
 import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_sync_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:ramadan_tracker/domain/models/habit_model.dart';
@@ -899,23 +900,58 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final highLatRule = await database.kvSettingsDao.getValue('prayer_high_lat_rule') ?? 'middle_of_night';
     final fajrAdj = int.tryParse(await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0') ?? 0;
     final maghribAdj = int.tryParse(await database.kvSettingsDao.getValue('prayer_maghrib_adj') ?? '0') ?? 0;
+    final sourcePref = PrayerTimeSourceKindCodec.parse(
+      await database.kvSettingsDao.getValue(PrayerTimeSyncService.sourceKey),
+    );
 
     if (latStr != null && lonStr != null) {
       final lat = double.tryParse(latStr);
       final lon = double.tryParse(lonStr);
       if (lat != null && lon != null) {
-        await database.prayerTimesCacheDao.clearCacheForSeason(seasonId);
-        await PrayerTimeService.ensureTodayAndTomorrowCached(
-          database: database,
-          seasonId: seasonId,
-          latitude: lat,
-          longitude: lon,
-          timezone: tz,
-          method: method,
-          highLatRule: highLatRule,
-          fajrAdjust: fajrAdj,
-          maghribAdjust: maghribAdj,
-        );
+        if (sourcePref == PrayerTimeSourceKind.local) {
+          // Local-only users: recompute Adhan for today/tomorrow.
+          await database.prayerTimesCacheDao.clearCacheForSeason(seasonId);
+          await PrayerTimeService.ensureTodayAndTomorrowCached(
+            database: database,
+            seasonId: seasonId,
+            latitude: lat,
+            longitude: lon,
+            timezone: tz,
+            method: method,
+            highLatRule: highLatRule,
+            fajrAdjust: fajrAdj,
+            maghribAdjust: maghribAdj,
+          );
+        } else {
+          // Remote/auto: re-sync the month. Do not clear first — wiping the
+          // season cache and writing local today/tomorrow permanently replaces
+          // the official timetable when sync is offline or fails.
+          final locale =
+              await database.kvSettingsDao.getValue('app_language') ?? 'en';
+          await PrayerTimeSyncService().syncMonth(
+            database: database,
+            seasonId: seasonId,
+            month: DateTime.now(),
+            latitude: lat,
+            longitude: lon,
+            timezone: tz,
+            method: method,
+            locale: locale,
+            fajrAdjust: fajrAdj,
+            maghribAdjust: maghribAdj,
+          );
+          await PrayerTimeService.ensureTodayAndTomorrowCached(
+            database: database,
+            seasonId: seasonId,
+            latitude: lat,
+            longitude: lon,
+            timezone: tz,
+            method: method,
+            highLatRule: highLatRule,
+            fajrAdjust: fajrAdj,
+            maghribAdjust: maghribAdj,
+          );
+        }
         setState(() {});
       }
     }
