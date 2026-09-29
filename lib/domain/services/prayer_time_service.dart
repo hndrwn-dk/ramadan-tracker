@@ -240,25 +240,34 @@ class PrayerTimeService {
       maghribAdjust: maghribAdjust,
     );
 
-    await database.prayerTimesCacheDao.cacheTime(
-      PrayerTimesCacheData(
-        seasonId: seasonId,
-        dateYyyyMmDd: dateStr,
-        fajrIso: times['fajr']!.toIso8601String(),
-        maghribIso: times['maghrib']!.toIso8601String(),
-        method: method,
-        lat: latitude,
-        lon: longitude,
-        timezone: timezone,
-        fajrAdj: fajrAdjust,
-        maghribAdj: maghribAdjust,
-        utcOffsetMinutes: dateOffsetMinutes,
-        source: 'local',
-        sourceRef: null,
-        fetchedAt: null,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      ),
+    // Never replace a remote timetable row with a local Adhan fallback.
+    // Users who chose Aladhan/myQuran (or auto-synced remote) would otherwise
+    // keep serving wrong local times until the next successful sync.
+    final preserveRemote = _shouldPreserveRemoteCache(
+      cached: cached,
+      preference: sourcePref,
     );
+    if (!preserveRemote) {
+      await database.prayerTimesCacheDao.cacheTime(
+        PrayerTimesCacheData(
+          seasonId: seasonId,
+          dateYyyyMmDd: dateStr,
+          fajrIso: times['fajr']!.toIso8601String(),
+          maghribIso: times['maghrib']!.toIso8601String(),
+          method: method,
+          lat: latitude,
+          lon: longitude,
+          timezone: timezone,
+          fajrAdj: fajrAdjust,
+          maghribAdj: maghribAdjust,
+          utcOffsetMinutes: dateOffsetMinutes,
+          source: 'local',
+          sourceRef: null,
+          fetchedAt: null,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+    }
 
     return times;
   }
@@ -329,7 +338,35 @@ class PrayerTimeService {
     required PrayerTimesCacheData cached,
     required PrayerTimeSourceKind preference,
   }) {
-    if (preference != PrayerTimeSourceKind.local) return true;
-    return cached.source == null || cached.source == 'local';
+    switch (preference) {
+      case PrayerTimeSourceKind.local:
+        return cached.source == null || cached.source == 'local';
+      case PrayerTimeSourceKind.aladhan:
+        return cached.source == 'aladhan';
+      case PrayerTimeSourceKind.myquran:
+        return cached.source == 'myquran';
+      case PrayerTimeSourceKind.auto:
+        // Auto may use a synced remote row or a local Adhan fallback.
+        return true;
+    }
+  }
+
+  /// True when an existing remote cache row must not be overwritten by local Adhan.
+  @visibleForTesting
+  static bool shouldPreserveRemoteCache({
+    required PrayerTimesCacheData? cached,
+    required PrayerTimeSourceKind preference,
+  }) {
+    return _shouldPreserveRemoteCache(cached: cached, preference: preference);
+  }
+
+  static bool _shouldPreserveRemoteCache({
+    required PrayerTimesCacheData? cached,
+    required PrayerTimeSourceKind preference,
+  }) {
+    if (preference == PrayerTimeSourceKind.local) return false;
+    if (cached == null) return false;
+    final source = cached.source;
+    return source != null && source != 'local';
   }
 }
