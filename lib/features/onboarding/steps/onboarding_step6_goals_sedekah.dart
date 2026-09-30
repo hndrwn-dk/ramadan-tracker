@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
+import 'package:ramadan_tracker/features/onboarding/onboarding_sedekah_goal.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 /// Step 7 of 9 — Sedekah daily goal (always shown; amount defaults to 0).
@@ -25,6 +26,7 @@ class OnboardingStep6GoalsSedekah extends StatefulWidget {
 class _OnboardingStep6GoalsSedekahState
     extends State<OnboardingStep6GoalsSedekah> {
   late TextEditingController _sedekahAmountController;
+  bool _showAmountError = false;
 
   static String _formatIdrAmount(int amount) {
     if (amount <= 0) return '';
@@ -55,6 +57,17 @@ class _OnboardingStep6GoalsSedekahState
     super.dispose();
   }
 
+  void _onContinue() {
+    if (isSedekahGoalReadyToContinue(
+      goalEnabled: widget.data.sedekahGoalEnabled,
+      amount: widget.data.sedekahAmount,
+    )) {
+      widget.onNext();
+      return;
+    }
+    setState(() => _showAmountError = true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -81,7 +94,12 @@ class _OnboardingStep6GoalsSedekahState
             title: Text(l10n.setDailySedekahGoal),
             value: widget.data.sedekahGoalEnabled,
             onChanged: (value) {
-              setState(() => widget.data.sedekahGoalEnabled = value);
+              setState(() {
+                widget.data.sedekahGoalEnabled = value;
+                if (!value) {
+                  _showAmountError = false;
+                }
+              });
             },
           ),
           if (widget.data.sedekahGoalEnabled) ...[
@@ -99,6 +117,7 @@ class _OnboardingStep6GoalsSedekahState
               decoration: InputDecoration(
                 hintText: l10n.enterAmount,
                 border: const OutlineInputBorder(),
+                errorText: _showAmountError ? l10n.sedekahGoalAmountRequired : null,
               ),
               inputFormatters: widget.data.sedekahCurrency == 'IDR'
                   ? [
@@ -107,9 +126,15 @@ class _OnboardingStep6GoalsSedekahState
                     ]
                   : [FilteringTextInputFormatter.digitsOnly],
               onChanged: (value) {
-                widget.data.sedekahAmount = widget.data.sedekahCurrency == 'IDR'
+                final amount = widget.data.sedekahCurrency == 'IDR'
                     ? _parseIdrAmount(value)
                     : (int.tryParse(value) ?? 0);
+                setState(() {
+                  widget.data.sedekahAmount = amount;
+                  if (amount > 0) {
+                    _showAmountError = false;
+                  }
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -161,7 +186,7 @@ class _OnboardingStep6GoalsSedekahState
               const SizedBox(width: 16),
               Expanded(
                 child: FilledButton(
-                  onPressed: widget.onNext,
+                  onPressed: _onContinue,
                   child: Text(l10n.continueButton),
                 ),
               ),

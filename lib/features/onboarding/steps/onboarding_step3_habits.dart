@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ramadan_tracker/features/onboarding/onboarding_advanced_habits.dart';
 import 'package:ramadan_tracker/features/onboarding/onboarding_flow.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/widgets/quran_icon.dart';
@@ -26,6 +27,9 @@ class OnboardingStep3Habits extends StatefulWidget {
 }
 
 class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
+  bool _advancedExpanded = false;
+  bool _advancedIntroSeen = false;
+
   String _getQuranLabel(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     // Just return "Al-Quran" without page details - details will be shown in next step
@@ -88,16 +92,22 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
                   ],
                   _buildHabitCheckbox(context, 'sedekah', l10n.habitSedekah, Icons.volunteer_activism, iconWidget: const SedekahIcon(size: 20)),
                   SizedBox(height: isSmallScreen ? 12 : 20),
-                  ExpansionTile(
-                    title: Text(l10n.advanced),
-                    initiallyExpanded: false,
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
                     visualDensity: isSmallScreen ? VisualDensity.compact : VisualDensity.standard,
-                    children: [
-                      _buildHabitCheckbox(context, 'prayers', l10n.habitPrayers, Icons.mosque, iconWidget: const PrayersIcon(size: 20)),
-                      _buildHabitCheckbox(context, 'tahajud', l10n.habitTahajud, Icons.self_improvement, iconWidget: const TahajudIcon(size: 20)),
-                      _buildHabitCheckbox(context, 'itikaf', l10n.habitItikaf, Icons.mosque, iconWidget: const ItikafIcon(size: 20)),
-                    ],
+                    title: Text(l10n.advanced),
+                    trailing: Icon(
+                      _advancedExpanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                    ),
+                    onTap: _onAdvancedTapped,
                   ),
+                  if (_advancedExpanded) ...[
+                    _buildHabitCheckbox(context, 'prayers', l10n.habitPrayers, Icons.mosque, iconWidget: const PrayersIcon(size: 20)),
+                    _buildHabitCheckbox(context, 'tahajud', l10n.habitTahajud, Icons.self_improvement, iconWidget: const TahajudIcon(size: 20)),
+                    _buildHabitCheckbox(context, 'itikaf', l10n.habitItikaf, Icons.mosque, iconWidget: const ItikafIcon(size: 20)),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),
@@ -111,7 +121,7 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
                 child: Text(l10n.back),
               );
               final continueBtn = ElevatedButton(
-                onPressed: widget.onNext,
+                onPressed: _onContinue,
                 child: Text(l10n.continueButton),
               );
               if (narrow) {
@@ -136,6 +146,104 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
         ],
       ),
     );
+  }
+
+  Future<void> _onAdvancedTapped() async {
+    if (_advancedExpanded) {
+      setState(() => _advancedExpanded = false);
+      return;
+    }
+    if (!_advancedIntroSeen) {
+      final showOptions = await _showAdvancedIntroDialog();
+      if (showOptions != true || !mounted) return;
+      _advancedIntroSeen = true;
+    }
+    setState(() => _advancedExpanded = true);
+  }
+
+  Future<void> _onContinue() async {
+    if (!_advancedIntroSeen) {
+      final showOptions = await _showAdvancedIntroDialog();
+      if (!mounted) return;
+      if (showOptions == true) {
+        setState(() {
+          _advancedIntroSeen = true;
+          _advancedExpanded = true;
+        });
+        return;
+      }
+      if (showOptions == false) {
+        _advancedIntroSeen = true;
+        widget.onNext();
+      }
+      return;
+    }
+    if (!hasAdvancedHabitsSelected(widget.data.selectedHabits)) {
+      widget.onNext();
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
+        final habitNames = selectedAdvancedHabitKeys(widget.data.selectedHabits)
+            .map((key) => _advancedHabitLabel(l10n, key))
+            .join(', ');
+        return AlertDialog(
+          title: Text(l10n.onboardingAdvancedContinueTitle),
+          content: Text(l10n.onboardingAdvancedContinueBody(habitNames)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.onboardingAdvancedGoBack),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.continueButton),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed == true && mounted) {
+      widget.onNext();
+    }
+  }
+
+  Future<bool?> _showAdvancedIntroDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
+        return AlertDialog(
+          title: Text(l10n.onboardingAdvancedTitle),
+          content: Text(l10n.onboardingAdvancedBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.onboardingAdvancedNotNow),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.onboardingAdvancedShowOptions),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _advancedHabitLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'prayers':
+        return l10n.habitPrayers;
+      case 'tahajud':
+        return l10n.habitTahajud;
+      case 'itikaf':
+        return l10n.habitItikaf;
+      default:
+        return key;
+    }
   }
 
   Widget _buildRakaatChip(BuildContext context, int rakaat) {

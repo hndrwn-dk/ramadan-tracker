@@ -1057,6 +1057,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterAmount => 'Enter amount';
 
   @override
+  String get sedekahGoalAmountRequired =>
+      'Enter a daily amount, or turn the goal off.';
+
+  @override
+  String get onboardingAdvancedTitle => 'Track extra habits?';
+
+  @override
+  String get onboardingAdvancedBody =>
+      '5 prayers, Tahajud, and I\'tikaf add more items to your daily checklist. You can change this later in Settings.';
+
+  @override
+  String get onboardingAdvancedNotNow => 'Not now';
+
+  @override
+  String get onboardingAdvancedShowOptions => 'Show options';
+
+  @override
+  String get onboardingAdvancedContinueTitle => 'Use Advanced tracking?';
+
+  @override
+  String onboardingAdvancedContinueBody(String habits) {
+    return 'You turned on: $habits.';
+  }
+
+  @override
+  String get onboardingAdvancedGoBack => 'Go back';
+
+  @override
   String get currency => 'Currency';
 
   @override

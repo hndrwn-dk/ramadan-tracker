@@ -1598,6 +1598,51 @@
   "@enterAmount": {
     "description": "Enter amount hint"
   },
+
+  "sedekahGoalAmountRequired": "Enter a daily amount, or turn the goal off.",
+  "@sedekahGoalAmountRequired": {
+    "description": "Inline error when Sedekah goal is on but amount is empty"
+  },
+
+  "onboardingAdvancedTitle": "Track extra habits?",
+  "@onboardingAdvancedTitle": {
+    "description": "Dialog title when opening Advanced habits"
+  },
+
+  "onboardingAdvancedBody": "5 prayers, Tahajud, and I'tikaf add more items to your daily checklist. You can change this later in Settings.",
+  "@onboardingAdvancedBody": {
+    "description": "Dialog body when opening Advanced habits"
+  },
+
+  "onboardingAdvancedNotNow": "Not now",
+  "@onboardingAdvancedNotNow": {
+    "description": "Dismiss Advanced habits intro dialog"
+  },
+
+  "onboardingAdvancedShowOptions": "Show options",
+  "@onboardingAdvancedShowOptions": {
+    "description": "Expand Advanced habits after intro dialog"
+  },
+
+  "onboardingAdvancedContinueTitle": "Use Advanced tracking?",
+  "@onboardingAdvancedContinueTitle": {
+    "description": "Confirm dialog title when leaving habits step with Advanced selected"
+  },
+
+  "onboardingAdvancedContinueBody": "You turned on: {habits}.",
+  "@onboardingAdvancedContinueBody": {
+    "description": "Confirm dialog body listing selected Advanced habits",
+    "placeholders": {
+      "habits": {
+        "type": "String"
+      }
+    }
+  },
+
+  "onboardingAdvancedGoBack": "Go back",
+  "@onboardingAdvancedGoBack": {
+    "description": "Stay on habits step from Advanced confirm dialog"
+  },
   
   "currency": "Currency",
   "@currency": {

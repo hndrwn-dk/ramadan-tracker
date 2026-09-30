@@ -1976,6 +1976,54 @@ abstract class AppLocalizations {
   /// **'Enter amount'**
   String get enterAmount;
 
+  /// Inline error when Sedekah goal is on but amount is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a daily amount, or turn the goal off.'**
+  String get sedekahGoalAmountRequired;
+
+  /// Dialog title when opening Advanced habits
+  ///
+  /// In en, this message translates to:
+  /// **'Track extra habits?'**
+  String get onboardingAdvancedTitle;
+
+  /// Dialog body when opening Advanced habits
+  ///
+  /// In en, this message translates to:
+  /// **'5 prayers, Tahajud, and I\'tikaf add more items to your daily checklist. You can change this later in Settings.'**
+  String get onboardingAdvancedBody;
+
+  /// Dismiss Advanced habits intro dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get onboardingAdvancedNotNow;
+
+  /// Expand Advanced habits after intro dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Show options'**
+  String get onboardingAdvancedShowOptions;
+
+  /// Confirm dialog title when leaving habits step with Advanced selected
+  ///
+  /// In en, this message translates to:
+  /// **'Use Advanced tracking?'**
+  String get onboardingAdvancedContinueTitle;
+
+  /// Confirm dialog body listing selected Advanced habits
+  ///
+  /// In en, this message translates to:
+  /// **'You turned on: {habits}.'**
+  String onboardingAdvancedContinueBody(String habits);
+
+  /// Stay on habits step from Advanced confirm dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get onboardingAdvancedGoBack;
+
   /// Currency label
   ///
   /// In en, this message translates to:

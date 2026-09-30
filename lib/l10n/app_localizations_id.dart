@@ -1061,6 +1061,34 @@ class AppLocalizationsId extends AppLocalizations {
   String get enterAmount => 'Masukkan jumlah';
 
   @override
+  String get sedekahGoalAmountRequired =>
+      'Masukkan jumlah harian, atau matikan targetnya.';
+
+  @override
+  String get onboardingAdvancedTitle => 'Lacak kebiasaan tambahan?';
+
+  @override
+  String get onboardingAdvancedBody =>
+      'Sholat 5 waktu, Tahajud, dan I\'tikaf menambah item di checklist harian. Anda bisa mengubahnya nanti di Pengaturan.';
+
+  @override
+  String get onboardingAdvancedNotNow => 'Nanti saja';
+
+  @override
+  String get onboardingAdvancedShowOptions => 'Tampilkan opsi';
+
+  @override
+  String get onboardingAdvancedContinueTitle => 'Pakai pelacakan Lanjutan?';
+
+  @override
+  String onboardingAdvancedContinueBody(String habits) {
+    return 'Anda mengaktifkan: $habits.';
+  }
+
+  @override
+  String get onboardingAdvancedGoBack => 'Kembali';
+
+  @override
   String get currency => 'Mata Uang';
 
   @override
