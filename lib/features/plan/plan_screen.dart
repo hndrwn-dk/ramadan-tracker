@@ -74,20 +74,6 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
               child: SeasonCompletedCard(),
             );
           }
-          if (seasonState == SeasonState.preRamadan) {
-            return Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: PreRamadanBanner(
-                    target: PreRamadanBannerTarget.autopilot,
-                    showButton: false,
-                  ),
-                ),
-                Expanded(child: _buildContent(season.id, season.days)),
-              ],
-            );
-          }
           return _buildContent(season.id, season.days);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -121,11 +107,19 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   }
 
   Widget _buildSetupWizard(int seasonId, int totalDays) {
+    final seasonState = ref.watch(seasonStateProvider);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (seasonState == SeasonState.preRamadan) ...[
+            const PreRamadanBanner(
+              target: PreRamadanBannerTarget.autopilot,
+              showButton: false,
+            ),
+            const SizedBox(height: 16),
+          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -338,6 +332,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (seasonState == SeasonState.preRamadan) ...[
+                            const PreRamadanBanner(
+                              target: PreRamadanBannerTarget.autopilot,
+                              showButton: false,
+                            ),
+                            const SizedBox(height: 16),
                             Text(
                               s.planPreRamadanPreviewHint,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
