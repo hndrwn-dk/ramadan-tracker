@@ -247,7 +247,9 @@ class PrayerTimeService {
       cached: cached,
       preference: sourcePref,
     );
-    if (!preserveRemote) {
+    final mayPersistLocalFallback = sourcePref == PrayerTimeSourceKind.local ||
+        sourcePref == PrayerTimeSourceKind.auto;
+    if (!preserveRemote && mayPersistLocalFallback) {
       await database.prayerTimesCacheDao.cacheTime(
         PrayerTimesCacheData(
           seasonId: seasonId,
@@ -267,6 +269,11 @@ class PrayerTimeService {
           updatedAt: DateTime.now().millisecondsSinceEpoch,
         ),
       );
+    } else if (cached != null) {
+      return {
+        'fajr': DateTime.parse(cached.fajrIso),
+        'maghrib': DateTime.parse(cached.maghribIso),
+      };
     }
 
     return times;
@@ -351,6 +358,11 @@ class PrayerTimeService {
     }
   }
 
+  /// Remote/auto refresh must not warm today/tomorrow via local Adhan.
+  static bool shouldEnsureLocalTodayTomorrow(PrayerTimeSourceKind preference) {
+    return preference == PrayerTimeSourceKind.local;
+  }
+
   /// True when an existing remote cache row must not be overwritten by local Adhan.
   @visibleForTesting
   static bool shouldPreserveRemoteCache({
@@ -367,6 +379,7 @@ class PrayerTimeService {
     if (preference == PrayerTimeSourceKind.local) return false;
     if (cached == null) return false;
     final source = cached.source;
-    return source != null && source != 'local';
+    if (source == null || source == 'local') return false;
+    return _cacheAllowedForPreference(cached: cached, preference: preference);
   }
 }

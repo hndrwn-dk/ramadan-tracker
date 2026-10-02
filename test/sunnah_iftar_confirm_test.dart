@@ -18,6 +18,18 @@ DateTime _syawalOnlyDay() {
   fail('expected a Syawal-first day in 1447');
 }
 
+DateTime _syawalMondayOrThursday() {
+  for (var day = 2; day <= 28; day++) {
+    final date = HijriCalendar.toGregorian(1447, 10, day);
+    final types = SunnahFastingRules.typesFor(date);
+    if (types.contains(SunnahType.seninKamis) &&
+        types.contains(SunnahType.syawal)) {
+      return date;
+    }
+  }
+  fail('expected a Monday/Thursday in Syawal 1447');
+}
+
 void main() {
   group('applySunnahIftarConfirmed', () {
     late AppDatabase db;
@@ -76,6 +88,29 @@ void main() {
         ),
         isTrue,
       );
+    });
+
+    test('prefers syawal over senin_kamis on Monday/Thursday in Syawal',
+        () async {
+      final date = _syawalMondayOrThursday();
+      expect(
+        SunnahFastingRules.typesFor(date).first,
+        SunnahType.seninKamis,
+      );
+
+      await applySunnahIftarConfirmed(
+        db: db,
+        date: date,
+        existing: null,
+      );
+
+      final row = await db.sunnahFastsDao.getByDate(date);
+      expect(row!.type, 'syawal');
+      final progress = await SunnahMonthlyChallengeService.progress(
+        db,
+        DateTime(2026, 10, 15),
+      );
+      expect(progress.shawwalDone, 1);
     });
 
     test('confirmed Syawal day counts toward monthly Shawwal progress',

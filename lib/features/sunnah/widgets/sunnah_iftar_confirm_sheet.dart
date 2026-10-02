@@ -26,8 +26,7 @@ Future<void> applySunnahIftarConfirmed({
   required DateTime date,
   required SunnahFast? existing,
 }) async {
-  final types = SunnahFastingRules.typesFor(date);
-  final defaultType = types.isNotEmpty ? types.first.key : 'custom';
+  final defaultType = SunnahFastingRules.defaultTypeKey(date);
   final wasQadha = existing?.isQadha ?? false;
   await db.sunnahFastsDao.upsert(
     date,

@@ -287,6 +287,51 @@ void main() {
         ),
       );
 
+      final result = await PrayerTimeService.getCachedOrCalculate(
+        database: db,
+        seasonId: 1,
+        date: date,
+        latitude: lat,
+        longitude: lon,
+        timezone: nyc,
+        method: 'isna',
+        highLatRule: 'middle_of_the_night',
+      );
+
+      expect(result['fajr']!.toUtc(), remoteFajr.toUtc());
+      expect(result['maghrib']!.toUtc(), remoteMaghrib.toUtc());
+
+      final stored = await db.prayerTimesCacheDao.getCachedTime(1, dateStr);
+      expect(stored!.source, 'aladhan');
+      expect(DateTime.parse(stored.fajrIso).toUtc(), remoteFajr.toUtc());
+      expect(DateTime.parse(stored.maghribIso).toUtc(), remoteMaghrib.toUtc());
+    });
+
+    test('does not overwrite myquran row when preference is aladhan', () async {
+      final date = DateTime(2026, 3, 15);
+      const dateStr = '2026-03-15';
+      final remoteFajr = DateTime.parse('2026-03-15T09:45:00Z');
+      final remoteMaghrib = DateTime.parse('2026-03-15T23:02:00Z');
+
+      await db.kvSettingsDao.setValue('prayer_time_source', 'aladhan');
+      await db.prayerTimesCacheDao.cacheTime(
+        PrayerTimesCacheData(
+          seasonId: 1,
+          dateYyyyMmDd: dateStr,
+          fajrIso: remoteFajr.toIso8601String(),
+          maghribIso: remoteMaghrib.toIso8601String(),
+          method: 'isna',
+          lat: lat,
+          lon: lon,
+          timezone: nyc,
+          fajrAdj: 0,
+          maghribAdj: 0,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+          utcOffsetMinutes: -999,
+          source: 'myquran',
+        ),
+      );
+
       await PrayerTimeService.getCachedOrCalculate(
         database: db,
         seasonId: 1,
@@ -299,9 +344,48 @@ void main() {
       );
 
       final stored = await db.prayerTimesCacheDao.getCachedTime(1, dateStr);
-      expect(stored!.source, 'aladhan');
+      expect(stored!.source, 'myquran');
       expect(DateTime.parse(stored.fajrIso).toUtc(), remoteFajr.toUtc());
-      expect(DateTime.parse(stored.maghribIso).toUtc(), remoteMaghrib.toUtc());
+    });
+
+    test('does not persist local fallback when preference is aladhan and cache is empty',
+        () async {
+      final date = DateTime(2026, 3, 15);
+      const dateStr = '2026-03-15';
+      await db.kvSettingsDao.setValue('prayer_time_source', 'aladhan');
+
+      await PrayerTimeService.getCachedOrCalculate(
+        database: db,
+        seasonId: 1,
+        date: date,
+        latitude: lat,
+        longitude: lon,
+        timezone: nyc,
+        method: 'isna',
+        highLatRule: 'middle_of_the_night',
+      );
+
+      expect(await db.prayerTimesCacheDao.getCachedTime(1, dateStr), isNull);
+    });
+
+    test('does not persist local fallback when preference is myquran and cache is empty',
+        () async {
+      final date = DateTime(2026, 3, 15);
+      const dateStr = '2026-03-15';
+      await db.kvSettingsDao.setValue('prayer_time_source', 'myquran');
+
+      await PrayerTimeService.getCachedOrCalculate(
+        database: db,
+        seasonId: 1,
+        date: date,
+        latitude: lat,
+        longitude: lon,
+        timezone: nyc,
+        method: 'isna',
+        highLatRule: 'middle_of_the_night',
+      );
+
+      expect(await db.prayerTimesCacheDao.getCachedTime(1, dateStr), isNull);
     });
 
     test('overwrites remote cache with local when preference is local', () async {
@@ -351,6 +435,35 @@ void main() {
     });
   });
 
+  group('PrayerTimeService.shouldEnsureLocalTodayTomorrow', () {
+    test('is true only for local preference', () {
+      expect(
+        PrayerTimeService.shouldEnsureLocalTodayTomorrow(
+          PrayerTimeSourceKind.local,
+        ),
+        isTrue,
+      );
+      expect(
+        PrayerTimeService.shouldEnsureLocalTodayTomorrow(
+          PrayerTimeSourceKind.aladhan,
+        ),
+        isFalse,
+      );
+      expect(
+        PrayerTimeService.shouldEnsureLocalTodayTomorrow(
+          PrayerTimeSourceKind.myquran,
+        ),
+        isFalse,
+      );
+      expect(
+        PrayerTimeService.shouldEnsureLocalTodayTomorrow(
+          PrayerTimeSourceKind.auto,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('PrayerTimeService.shouldPreserveRemoteCache', () {
     PrayerTimesCacheData row(String? source) {
       return PrayerTimesCacheData(
@@ -383,6 +496,23 @@ void main() {
           preference: PrayerTimeSourceKind.auto,
         ),
         isTrue,
+      );
+    });
+
+    test('does not preserve a mismatched remote source', () {
+      expect(
+        PrayerTimeService.shouldPreserveRemoteCache(
+          cached: row('myquran'),
+          preference: PrayerTimeSourceKind.aladhan,
+        ),
+        isFalse,
+      );
+      expect(
+        PrayerTimeService.shouldPreserveRemoteCache(
+          cached: row('aladhan'),
+          preference: PrayerTimeSourceKind.myquran,
+        ),
+        isFalse,
       );
     });
 

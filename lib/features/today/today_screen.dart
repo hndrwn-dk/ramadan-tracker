@@ -908,7 +908,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       final lat = double.tryParse(latStr);
       final lon = double.tryParse(lonStr);
       if (lat != null && lon != null) {
-        if (sourcePref == PrayerTimeSourceKind.local) {
+        if (PrayerTimeService.shouldEnsureLocalTodayTomorrow(sourcePref)) {
           // Local-only users: recompute Adhan for today/tomorrow.
           await database.prayerTimesCacheDao.clearCacheForSeason(seasonId);
           await PrayerTimeService.ensureTodayAndTomorrowCached(
@@ -923,9 +923,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             maghribAdjust: maghribAdj,
           );
         } else {
-          // Remote/auto: re-sync the month. Do not clear first — wiping the
-          // season cache and writing local today/tomorrow permanently replaces
-          // the official timetable when sync is offline or fails.
+          // Remote/auto: re-sync the month. Do not clear first and do not
+          // warm today/tomorrow via local Adhan — that replaces official
+          // rows when sync is offline or returns nothing.
           final locale =
               await database.kvSettingsDao.getValue('app_language') ?? 'en';
           await PrayerTimeSyncService().syncMonth(
@@ -937,17 +937,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             timezone: tz,
             method: method,
             locale: locale,
-            fajrAdjust: fajrAdj,
-            maghribAdjust: maghribAdj,
-          );
-          await PrayerTimeService.ensureTodayAndTomorrowCached(
-            database: database,
-            seasonId: seasonId,
-            latitude: lat,
-            longitude: lon,
-            timezone: tz,
-            method: method,
-            highLatRule: highLatRule,
             fajrAdjust: fajrAdj,
             maghribAdjust: maghribAdj,
           );

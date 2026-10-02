@@ -125,6 +125,29 @@ class SunnahFastingRules {
     return result;
   }
 
+  /// Default persisted type when no existing row type is available.
+  ///
+  /// Seasonal / named days win over weekly Senin-Kamis so Shawwal and
+  /// similar counters still count overlap days.
+  static String defaultTypeKey(DateTime date) {
+    final types = typesFor(date);
+    if (types.isEmpty) return 'custom';
+    const priority = <SunnahType>[
+      SunnahType.arafah,
+      SunnahType.asyura,
+      SunnahType.tasua,
+      SunnahType.syawal,
+      SunnahType.ayyamulBidh,
+      SunnahType.syaban,
+      SunnahType.seninKamis,
+      SunnahType.daud,
+    ];
+    for (final type in priority) {
+      if (types.contains(type)) return type.key;
+    }
+    return types.first.key;
+  }
+
   /// Days on which fasting is forbidden:
   /// - 1 Syawal (Idul Fitri)
   /// - 10 Dzulhijjah (Idul Adha) and 11-13 Dzulhijjah (Tasyriq)
