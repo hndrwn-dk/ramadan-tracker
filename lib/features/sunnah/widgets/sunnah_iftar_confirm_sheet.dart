@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/data/database/app_database.dart';
 import 'package:ramadan_tracker/data/providers/achievement_provider.dart';
 import 'package:ramadan_tracker/data/providers/database_provider.dart';
 import 'package:ramadan_tracker/data/providers/engagement_providers.dart';
+import 'package:ramadan_tracker/data/providers/qadha_provider.dart';
 import 'package:ramadan_tracker/data/providers/sunnah_provider.dart';
 import 'package:ramadan_tracker/domain/services/fasting_intent_service.dart';
 import 'package:ramadan_tracker/domain/services/home_widget_service.dart';
@@ -10,6 +13,36 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dart';
 import 'package:ramadan_tracker/features/today/widgets/ramadan_iftar_confirm_sheet.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
+import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
+
+/// Persists a confirmed sunnah Iftar after a pending Sahur intent.
+///
+/// Must preserve [existing] type / note / isQadha. Calling
+/// [SunnahFastsDao.upsert] with only `status` would null-wipe those fields
+/// via DAO defaults and drop Shawwal / achievement progress.
+@visibleForTesting
+Future<void> applySunnahIftarConfirmed({
+  required AppDatabase db,
+  required DateTime date,
+  required SunnahFast? existing,
+}) async {
+  final types = SunnahFastingRules.typesFor(date);
+  final defaultType = types.isNotEmpty ? types.first.key : 'custom';
+  final wasQadha = existing?.isQadha ?? false;
+  await db.sunnahFastsDao.upsert(
+    date,
+    status: FastingStatus.fasted,
+    type: existing?.type ?? defaultType,
+    isQadha: wasQadha,
+    note: existing?.note,
+  );
+  final dateKey = SunnahFastsDao.dateKey(date);
+  if (wasQadha) {
+    await db.qadhaLedgerDao.ensureAutoSunnahPaidEntry(dateKey);
+  } else {
+    await db.qadhaLedgerDao.removeAutoSunnahEntriesForDate(dateKey);
+  }
+}
 
 /// Iftar confirmation flow for sunnah fast days.
 /// Returns `true`/`false` after confirm/decline or already-final summary;
@@ -52,7 +85,15 @@ Future<bool?> showSunnahIftarConfirmFlow(
     if (confirmed == null || !context.mounted) return null;
 
     if (confirmed) {
-      await db.sunnahFastsDao.upsert(date, status: FastingStatus.fasted);
+      final wasQadha = existing?.isQadha ?? false;
+      await applySunnahIftarConfirmed(
+        db: db,
+        date: date,
+        existing: existing,
+      );
+      if (wasQadha) {
+        ref.read(qadhaRefreshProvider.notifier).state++;
+      }
       if (context.mounted) _showSnack(context, s.savedSunnahFast);
     } else {
       await db.sunnahFastsDao.remove(date);
