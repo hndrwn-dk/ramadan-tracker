@@ -2,7 +2,7 @@
 
 Track Ramadan habits, sunnah fasting year-round, and worship obligations — with smart reminders and private local storage.
 
-![Feature overview](assets/feature_design.png)
+![Feature overview](assets/phone_assets/feature_graphic_en.png)
 
 Premium companion for **Ramadan seasons** and **year-round ibadah**: one-tap logging, Autopilot Quran plan, Sahur/Iftar reminders, sunnah fast calendar, Zakat/Fidyah/Qadha, rich insights, and local backup/restore.
 
