@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:ramadan_tracker/features/today/today_screen.dart';
 import 'package:ramadan_tracker/features/month/month_screen.dart';
 import 'package:ramadan_tracker/features/plan/plan_screen.dart';
@@ -33,53 +32,37 @@ class RamadanCompanionApp extends ConsumerWidget {
     final themeModeAsync = ref.watch(themeModeProvider);
     final localeAsync = ref.watch(localeProvider);
     
-    return DynamicColorBuilder(
-      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        // Create fallback schemes with neutral colors to avoid green flash during hot restart
-        final lightScheme = lightDynamic ?? ColorScheme.light(
-          primary: const Color(0xFF6750A4), // Neutral purple
-          surface: Colors.white,
-          background: Colors.white,
-        );
-        final darkScheme = darkDynamic ?? ColorScheme.dark(
-          primary: const Color(0xFF6750A4), // Neutral purple
-          surface: const Color(0xFF121212),
-          background: const Color(0xFF121212),
-        );
-        
-        // Use the theme mode from async value, default to system to avoid flicker
-        final themeMode = themeModeAsync.when(
-          data: (mode) => mode,
-          loading: () => ThemeMode.system, // Default to system while loading to avoid flicker
-          error: (_, __) => ThemeMode.system, // Default to system on error
-        );
-        
-        // Use the locale from async value, default to English
-        final locale = localeAsync.when(
-          data: (loc) => loc,
-          loading: () => const Locale('en', ''), // Default to English while loading
-          error: (_, __) => const Locale('en', ''), // Default to English on error
-        );
-        
-        return MaterialApp(
-          navigatorKey: rootNavigatorKey,
-          title: 'Ramadan Tracker',
-          theme: AppTheme.lightThemeWithDynamic(lightScheme),
-          darkTheme: AppTheme.darkThemeWithDynamic(darkScheme),
-          themeMode: themeMode,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const OnboardingWrapper(
-            child: CelebrationListener(
-              child: NotificationLaunchListener(
-                child: MainScreen(),
-              ),
-            ),
+    // Use the theme mode from async value, default to system to avoid flicker
+    final themeMode = themeModeAsync.when(
+      data: (mode) => mode,
+      loading: () => ThemeMode.system,
+      error: (_, __) => ThemeMode.system,
+    );
+
+    // Use the locale from async value, default to English
+    final locale = localeAsync.when(
+      data: (loc) => loc,
+      loading: () => const Locale('en', ''),
+      error: (_, __) => const Locale('en', ''),
+    );
+
+    return MaterialApp(
+      navigatorKey: rootNavigatorKey,
+      title: 'Ramadan Tracker',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const OnboardingWrapper(
+        child: CelebrationListener(
+          child: NotificationLaunchListener(
+            child: MainScreen(),
           ),
-          debugShowCheckedModeBanner: false,
-        );
-      },
+        ),
+      ),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

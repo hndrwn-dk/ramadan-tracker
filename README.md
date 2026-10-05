@@ -45,6 +45,7 @@ Premium companion for **Ramadan seasons** and **year-round ibadah**: one-tap log
 - **Prayer times**: Location-based times (including Kemenag method for Indonesia)
 - **Backup and restore**: Export/import all data as JSON
 - **100% offline and private**: No account, no ads, no tracking; data stays on your device
+- **Appearance**: Light, Dark, or Auto; fixed Mediterranean Teal brand palette
 - **Multi-language**: English and Indonesian
 
 ## App tabs
