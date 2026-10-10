@@ -1,7 +1,7 @@
 name: ramadan_tracker
 description: Premium Ramadan tracker & planner with yearly seasons, Autopilot Qur'an plan, Sahur/Iftar reminders, and local backup/restore.
 publish_to: 'none'
-version: 1.0.9+24
+version: 1.0.10+25
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -57,7 +57,8 @@ dev_dependencies:
   flutter_lints: ^3.0.1
   drift_dev: ^2.14.1
   build_runner: ^2.4.7
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 dependency_overrides:
   flutter_local_notifications:
@@ -73,8 +74,25 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/icon/app_icon_1024.png"
-  adaptive_icon_background: "assets/icon/ic_launcher_background.png"
-  adaptive_icon_foreground: "assets/icon/ic_launcher_foreground.png"
-  adaptive_icon_monochrome: "assets/icon/ic_launcher_monochrome.png"
+  image_path: "assets/icon/icon_full_1024.png"
+  adaptive_icon_background: "assets/icon/adaptive_background.png"
+  adaptive_icon_foreground: "assets/icon/adaptive_foreground.png"
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icon/adaptive_monochrome.png"
+  min_sdk_android: 24
+
+flutter_native_splash:
+  color: "#F7F1E3"
+  image: assets/icon/splash_logo.png
+  color_dark: "#264653"
+  image_dark: assets/icon/splash_logo.png
+  android_12:
+    color: "#F7F1E3"
+    image: assets/icon/adaptive_foreground.png
+    color_dark: "#264653"
+    image_dark: assets/icon/adaptive_foreground.png
+  android: true
+  ios: false
+  web: false
+  fullscreen: false
 
