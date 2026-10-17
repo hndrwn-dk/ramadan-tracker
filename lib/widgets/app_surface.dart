@@ -26,7 +26,7 @@ class AppSurface extends StatelessWidget {
     return scheme.outline.withValues(alpha: 0.14);
   }
 
-  /// Slightly elevated fill in dark mode (surface == scaffold otherwise).
+  /// White cards on the light page. Dark mode lifts with a teal tint.
   static Color fillColor(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -37,7 +37,7 @@ class AppSurface extends StatelessWidget {
         scheme.surface,
       );
     }
-    return scheme.surface;
+    return scheme.surfaceContainerLowest;
   }
 
   /// Compact grid/chip fill — closer to scaffold, border carries structure.

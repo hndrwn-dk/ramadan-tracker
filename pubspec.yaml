@@ -1,7 +1,7 @@
 name: ramadan_tracker
 description: Premium Ramadan tracker & planner with yearly seasons, Autopilot Qur'an plan, Sahur/Iftar reminders, and local backup/restore.
 publish_to: 'none'
-version: 1.0.10+26
+version: 1.0.10+27
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -84,12 +84,12 @@ flutter_launcher_icons:
   min_sdk_android: 24
 
 flutter_native_splash:
-  color: "#F7F1E3"
+  color: "#F2F5F4"
   image: assets/icon/splash_logo.png
   color_dark: "#264653"
   image_dark: assets/icon/splash_logo.png
   android_12:
-    color: "#F7F1E3"
+    color: "#F2F5F4"
     image: assets/icon/adaptive_foreground.png
     color_dark: "#264653"
     image_dark: assets/icon/adaptive_foreground.png
