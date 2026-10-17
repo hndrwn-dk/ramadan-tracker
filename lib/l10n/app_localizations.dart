@@ -1232,29 +1232,131 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
-  /// Donation CTA title in About and app bar tooltip
+  /// Support row title in About and app bar tooltip
   ///
   /// In en, this message translates to:
   /// **'Support this app'**
   String get supportDeveloper;
 
-  /// Donation CTA subtitle in About section
+  /// Support row subtitle in About
   ///
   /// In en, this message translates to:
-  /// **'Tip on Ko-fi — help keep it free, private & ad-free'**
-  String get buyMeACoffee;
+  /// **'Through Google Play. Every feature stays free.'**
+  String get supportSettingsSubtitle;
 
-  /// Dismiss label on donation coachmark tooltip
+  /// Support sheet title
   ///
   /// In en, this message translates to:
-  /// **'Later'**
-  String get donationCoachmarkDismiss;
+  /// **'Support Ramadan Tracker'**
+  String get supportSheetTitle;
 
-  /// Primary CTA on donation coachmark tooltip
+  /// Support sheet explanation
   ///
   /// In en, this message translates to:
-  /// **'View'**
-  String get donationCoachmarkView;
+  /// **'Free, with no ads and no account. Your support goes to building features and keeping the app maintained.'**
+  String get supportSheetBody;
+
+  /// Label for the smallest support product
+  ///
+  /// In en, this message translates to:
+  /// **'Buy a coffee'**
+  String get supportTierCoffee;
+
+  /// Label for the middle support product
+  ///
+  /// In en, this message translates to:
+  /// **'Buy a lunch'**
+  String get supportTierLunch;
+
+  /// Label for the largest support product
+  ///
+  /// In en, this message translates to:
+  /// **'Full support'**
+  String get supportTierFull;
+
+  /// Hint that quantity is chosen in Google Play
+  ///
+  /// In en, this message translates to:
+  /// **'Want to give more? You can choose a quantity on the Google Play screen.'**
+  String get supportQuantityHint;
+
+  /// Primary button that starts the Play purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to Google Play'**
+  String get supportContinuePlay;
+
+  /// Note that support does not unlock features
+  ///
+  /// In en, this message translates to:
+  /// **'Payment goes through Google Play. It does not unlock anything — every feature stays free for everyone.'**
+  String get supportFootnote;
+
+  /// Shown when Play Billing is unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this device yet'**
+  String get supportUnavailable;
+
+  /// Shown while a purchase is pending
+  ///
+  /// In en, this message translates to:
+  /// **'Payment is being processed'**
+  String get supportPaymentPending;
+
+  /// Short snackbar after a purchase error
+  ///
+  /// In en, this message translates to:
+  /// **'Payment didn\'t go through.'**
+  String get supportPurchaseError;
+
+  /// Thank-you title after a support purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Jazakallahu khairan'**
+  String get supportThanksTitle;
+
+  /// Thank-you message after a support purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for supporting Ramadan Tracker. May it be a good deed for you.'**
+  String get supportThanksBody;
+
+  /// Dismiss button on the thank-you view and support greeting
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get supportClose;
+
+  /// Button on a support greeting that opens the sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get supportAskButton;
+
+  /// Short ask under a seasonal greeting
+  ///
+  /// In en, this message translates to:
+  /// **'If Ramadan Tracker has helped you, you can support its development.'**
+  String get supportAskBody;
+
+  /// Greeting after ten filled days of Ramadan
+  ///
+  /// In en, this message translates to:
+  /// **'Mashallah, you have lived 10 days of Ramadan.'**
+  String get supportMilestoneDayTen;
+
+  /// Greeting on the first day after Ramadan
+  ///
+  /// In en, this message translates to:
+  /// **'Taqabbalallahu minna wa minkum. May your Ramadan be accepted.'**
+  String get supportMilestoneEid;
+
+  /// Greeting after ten recorded sunnah fasts
+  ///
+  /// In en, this message translates to:
+  /// **'Mashallah, you have logged 10 days of sunnah fasting.'**
+  String get supportMilestoneSunnah;
 
   /// Privacy policy label
   ///

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ramadan_tracker/app/donation_navigation.dart';
+import 'package:ramadan_tracker/features/support/support_sheet.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 class DonationIconButton extends StatelessWidget {
@@ -14,7 +14,7 @@ class DonationIconButton extends StatelessWidget {
     return IconButton(
       key: iconButtonKey,
       tooltip: l10n.supportDeveloper,
-      onPressed: () => openDonationPage(context),
+      onPressed: () => showSupportSheet(context),
       icon: const Icon(Icons.volunteer_activism_outlined),
     );
   }

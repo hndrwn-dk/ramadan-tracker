@@ -22,7 +22,7 @@ import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_sync_se
 import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/app/app_engagement.dart';
-import 'package:ramadan_tracker/app/donation_navigation.dart';
+import 'package:ramadan_tracker/features/support/support_sheet.dart';
 import 'package:ramadan_tracker/features/settings/webview_screen.dart';
 import 'package:ramadan_tracker/data/providers/locale_provider.dart';
 import 'package:ramadan_tracker/data/providers/onboarding_provider.dart';
@@ -1910,9 +1910,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const Divider(height: 1),
           _buildActionTile(
             l10n.supportDeveloper,
-            l10n.buyMeACoffee,
+            l10n.supportSettingsSubtitle,
             Icons.volunteer_activism_outlined,
-            () => openDonationPage(context),
+            () => showSupportSheet(context),
           ),
           const Divider(height: 1),
           _buildLinkTile(

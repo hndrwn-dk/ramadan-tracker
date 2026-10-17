@@ -622,14 +622,73 @@ class AppLocalizationsId extends AppLocalizations {
   String get supportDeveloper => 'Dukung aplikasi ini';
 
   @override
-  String get buyMeACoffee =>
-      'Dukung via Ko-fi — bantu aplikasi tetap gratis, privat & tanpa iklan';
+  String get supportSettingsSubtitle =>
+      'Lewat Google Play. Semua fitur tetap gratis.';
 
   @override
-  String get donationCoachmarkDismiss => 'Nanti';
+  String get supportSheetTitle => 'Dukung Ramadan Tracker';
 
   @override
-  String get donationCoachmarkView => 'Lihat';
+  String get supportSheetBody =>
+      'Gratis, tanpa iklan, tanpa akun. Dukunganmu dipakai untuk pengembangan fitur dan perawatan aplikasi.';
+
+  @override
+  String get supportTierCoffee => 'Segelas kopi';
+
+  @override
+  String get supportTierLunch => 'Makan siang';
+
+  @override
+  String get supportTierFull => 'Dukung penuh';
+
+  @override
+  String get supportQuantityHint =>
+      'Ingin memberi lebih? Kamu bisa memilih jumlah di layar Google Play.';
+
+  @override
+  String get supportContinuePlay => 'Lanjut ke Google Play';
+
+  @override
+  String get supportFootnote =>
+      'Pembayaran lewat Google Play. Tidak membuka fitur apa pun — semua fitur tetap gratis untuk semua orang.';
+
+  @override
+  String get supportUnavailable => 'Belum tersedia di perangkat ini';
+
+  @override
+  String get supportPaymentPending => 'Pembayaran sedang diproses';
+
+  @override
+  String get supportPurchaseError => 'Pembayaran tidak selesai.';
+
+  @override
+  String get supportThanksTitle => 'Jazakallahu khairan';
+
+  @override
+  String get supportThanksBody =>
+      'Terima kasih sudah mendukung Ramadan Tracker. Semoga menjadi kebaikan untukmu.';
+
+  @override
+  String get supportClose => 'Tutup';
+
+  @override
+  String get supportAskButton => 'Dukung';
+
+  @override
+  String get supportAskBody =>
+      'Kalau Ramadan Tracker membantumu, kamu bisa mendukung pengembangannya.';
+
+  @override
+  String get supportMilestoneDayTen =>
+      'MasyaAllah, 10 hari Ramadan sudah kamu jalani.';
+
+  @override
+  String get supportMilestoneEid =>
+      'Taqabbalallahu minna wa minkum. Semoga Ramadanmu diterima.';
+
+  @override
+  String get supportMilestoneSunnah =>
+      'MasyaAllah, 10 hari puasa sunnah sudah kamu catat.';
 
   @override
   String get privacyPolicy => 'Kebijakan Privasi';

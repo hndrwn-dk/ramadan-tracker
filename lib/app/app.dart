@@ -23,15 +23,28 @@ import 'package:ramadan_tracker/domain/services/widget_launch_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ramadan_tracker/app/platform_adaptive.dart';
+import 'package:ramadan_tracker/data/providers/support_provider.dart';
 
-class RamadanCompanionApp extends ConsumerWidget {
+class RamadanCompanionApp extends ConsumerStatefulWidget {
   const RamadanCompanionApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RamadanCompanionApp> createState() =>
+      _RamadanCompanionAppState();
+}
+
+class _RamadanCompanionAppState extends ConsumerState<RamadanCompanionApp> {
+  @override
+  void initState() {
+    super.initState();
+    ref.read(supportPurchaseProvider).start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeModeAsync = ref.watch(themeModeProvider);
     final localeAsync = ref.watch(localeProvider);
-    
+
     // Use the theme mode from async value, default to system to avoid flicker
     final themeMode = themeModeAsync.when(
       data: (mode) => mode,
@@ -74,7 +87,8 @@ class MainScreen extends ConsumerStatefulWidget {
   ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObserver {
+class _MainScreenState extends ConsumerState<MainScreen>
+    with WidgetsBindingObserver {
   final List<Widget> _screens = const [
     TodayScreen(),
     MonthScreen(),
@@ -107,6 +121,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      ref.invalidate(supportMomentProvider);
       _ensureTodayFastingReminders();
       // Reschedule notifications when app resumes, but only if enough time has passed
       _rescheduleNotifications();
@@ -136,7 +151,8 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     const regressionSeed = bool.fromEnvironment('REGRESSION_SEED');
     if (regressionSeed) {
       if (kDebugMode) {
-        debugPrint('=== _rescheduleNotifications skipped (REGRESSION_SEED) ===');
+        debugPrint(
+            '=== _rescheduleNotifications skipped (REGRESSION_SEED) ===');
       }
       return;
     }
@@ -155,17 +171,17 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
         return;
       }
     }
-    
+
     // Check if scheduling is already in progress (prevent concurrent calls)
     // This is a safety check - NotificationService also has its own lock
     _lastRescheduleTime = now;
     if (kDebugMode) {
       debugPrint('=== _rescheduleNotifications called ===');
     }
-    
+
     try {
       final database = ref.read(databaseProvider);
-      
+
       if (kDebugMode) {
         final hasPermission =
             await NotificationService.checkNotificationPermission();
@@ -182,14 +198,15 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
           debugPrint('Could not get pending count before reschedule: $e');
         }
       }
-      
-      await NotificationService.rescheduleAllNotificationTypes(database: database);
+
+      await NotificationService.rescheduleAllNotificationTypes(
+          database: database);
       await NotificationService.ensureTodayFastingRemindersScheduled(database);
       await HomeWidgetService.update(database);
       if (kDebugMode) {
         debugPrint('=== _rescheduleNotifications completed ===');
       }
-      
+
       if (kDebugMode) {
         try {
           await Future.delayed(const Duration(milliseconds: 1000));
@@ -285,4 +302,3 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     );
   }
 }
-

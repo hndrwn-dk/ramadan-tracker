@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/data/providers/season_state_provider.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
+import 'package:ramadan_tracker/data/providers/support_provider.dart';
 import 'package:ramadan_tracker/features/today/today_screen.dart';
 
 /// Opens the full-screen habit checklist for [dayIndex].
@@ -18,10 +19,14 @@ void openDayChecklist(
 
   final navigator = Navigator.of(context, rootNavigator: true);
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    navigator.push(
+    navigator
+        .push(
       MaterialPageRoute<void>(
         builder: (_) => const TodayScreen(checklistOnly: true),
       ),
-    );
+    )
+        .then((_) {
+      ref.invalidate(supportMomentProvider);
+    });
   });
 }

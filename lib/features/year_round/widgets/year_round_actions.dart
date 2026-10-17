@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/features/support/support_prompt_card.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
@@ -72,9 +73,8 @@ class _RamadanNearCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = SunnahStrings.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final msg = daysUntil <= 0
-        ? s.ramadanIsHere
-        : s.ramadanCountdown(daysUntil);
+    final msg =
+        daysUntil <= 0 ? s.ramadanIsHere : s.ramadanCountdown(daysUntil);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -138,6 +138,7 @@ class YearRoundNoSeasonBody extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
+        const SupportPromptSlot(),
         const SizedBox(height: 8),
         Icon(
           Icons.nightlight_round,
