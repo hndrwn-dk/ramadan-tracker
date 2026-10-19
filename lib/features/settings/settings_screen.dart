@@ -15,9 +15,6 @@ import 'package:cross_file/cross_file.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_tracker/domain/services/notification_service.dart';
 import 'package:ramadan_tracker/domain/services/notification_ids.dart';
-import 'package:ramadan_tracker/domain/services/prayer_times/myquran_client.dart';
-import 'package:ramadan_tracker/domain/services/prayer_times/myquran_parser.dart';
-import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_models.dart';
 import 'package:ramadan_tracker/domain/services/prayer_times/prayer_time_sync_service.dart';
 import 'package:ramadan_tracker/features/settings/create_season_flow.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
@@ -105,23 +102,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildSectionHeader(l10n.settingsSectionEngage),
-              const SizedBox(height: 8),
-              _buildAbout(),
-              const SizedBox(height: 16),
-              _buildSectionHeader(l10n.settingsSectionTrack),
-              const SizedBox(height: 8),
-              _buildTimesAndReminders(),
-              const SizedBox(height: 16),
-              _buildHabitsSettings(),
-              const SizedBox(height: 16),
-              _buildSeasonManagement(),
-              const SizedBox(height: 16),
               _buildSectionHeader(l10n.settingsSectionApp),
               const SizedBox(height: 8),
               _buildAppearance(),
               const SizedBox(height: 16),
               _buildLanguage(),
+              const SizedBox(height: 16),
+              _buildAbout(),
+              const SizedBox(height: 16),
+              _buildSectionHeader(l10n.settingsSectionTrack),
+              const SizedBox(height: 8),
+              _buildSeasonManagement(),
+              const SizedBox(height: 16),
+              _buildHabitsSettings(),
+              const SizedBox(height: 16),
+              _buildTimesAndReminders(),
               if (_debugEnabled && kDebugMode) ...[
                 const SizedBox(height: 16),
                 _buildDebugSection(),
@@ -679,7 +674,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             settings['sunnah_reminder_enabled'] == 'true';
         final method = settings['prayer_method'] ?? 'mwl';
         final sourcePref = settings['prayer_time_source'] ?? 'auto';
-        final myquranCityName = settings['prayer_myquran_city_name'];
         final fajrAdj = int.tryParse(settings['prayer_fajr_adj'] ?? '0') ?? 0;
         final maghribAdj =
             int.tryParse(settings['prayer_maghrib_adj'] ?? '0') ?? 0;
@@ -712,16 +706,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showPrayerSourceDialog(sourcePref, seasonId),
             ),
-            if (sourcePref == 'myquran' || sourcePref == 'auto')
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.myQuranCity),
-                subtitle: Text(
-                  myquranCityName ?? l10n.myQuranCityNotSet,
-                ),
-                trailing: const Icon(Icons.search),
-                onTap: () => _showMyQuranCitySearch(seasonId),
-              ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.fajrAdjustment),
@@ -906,8 +890,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'prayer_method': await database.kvSettingsDao.getValue('prayer_method') ?? 'mwl',
       'prayer_time_source':
           await database.kvSettingsDao.getValue('prayer_time_source') ?? 'auto',
-      'prayer_myquran_city_name':
-          await database.kvSettingsDao.getValue('prayer_myquran_city_name'),
       'prayer_fajr_adj':
           await database.kvSettingsDao.getValue('prayer_fajr_adj') ?? '0',
       'prayer_maghrib_adj':
@@ -1075,85 +1057,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Future<void> _showMyQuranCitySearch(int seasonId) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    List<MyQuranCity> results = [];
-    await showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(l10n.myQuranCity),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: controller,
-                      decoration: InputDecoration(
-                        hintText: l10n.myQuranCitySearchHint,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () async {
-                        final cities =
-                            await MyQuranClient().searchCities(controller.text);
-                        setDialogState(() => results = cities);
-                      },
-                      child: Text(l10n.search),
-                    ),
-                    Flexible(
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: results
-                            .map(
-                              (city) => ListTile(
-                                title: Text(city.name),
-                                onTap: () async {
-                                  final database = ref.read(databaseProvider);
-                                  await database.kvSettingsDao.setValue(
-                                    PrayerTimeSyncService.myquranCityIdKey,
-                                    city.id,
-                                  );
-                                  await database.kvSettingsDao.setValue(
-                                    PrayerTimeSyncService.myquranCityNameKey,
-                                    city.name,
-                                  );
-                                  await database.kvSettingsDao.setValue(
-                                    PrayerTimeSyncService.myquranVersionKey,
-                                    MyQuranParser.sourceVersion,
-                                  );
-                                  if (dialogContext.mounted) {
-                                    Navigator.pop(dialogContext);
-                                  }
-                                  setState(() {});
-                                  _syncPrayerTimes(seasonId);
-                                },
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(l10n.cancel),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 
