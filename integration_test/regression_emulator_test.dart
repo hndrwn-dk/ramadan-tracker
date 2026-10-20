@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:ramadan_tracker/main.dart' as app;
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 
 import 'support/app_harness.dart';
 
@@ -25,7 +26,7 @@ void main() {
     app.main();
     await AppHarness.completeStartup(tester);
 
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(FloatingPillNavBar), findsOneWidget);
     expect(AppHarness.hasNoSeason(tester), isFalse,
         reason: 'Seeded season must exist');
 

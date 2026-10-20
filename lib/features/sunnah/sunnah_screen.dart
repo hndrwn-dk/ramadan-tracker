@@ -18,6 +18,7 @@ import 'package:ramadan_tracker/utils/hijri_calendar.dart';
 import 'package:ramadan_tracker/utils/islamic_events.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
 class SunnahScreen extends ConsumerStatefulWidget {
@@ -82,7 +83,10 @@ class _RamadanModeBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final today = DateTime.now();
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: FloatingPillNavBar.scrollPadding(
+        context,
+        padding: const EdgeInsets.all(16),
+      ),
       children: [
         _HijriHeader(s: s, date: today),
         const SizedBox(height: 16),
@@ -112,7 +116,10 @@ class _YearRoundBody extends ConsumerWidget {
         0;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: FloatingPillNavBar.scrollPadding(
+        context,
+        padding: const EdgeInsets.all(16),
+      ),
       children: [
         _HijriHeader(s: s, date: today),
         const SizedBox(height: 16),

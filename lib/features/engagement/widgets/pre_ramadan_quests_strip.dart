@@ -5,6 +5,7 @@ import 'package:ramadan_tracker/data/providers/engagement_providers.dart';
 import 'package:ramadan_tracker/data/providers/tab_provider.dart';
 import 'package:ramadan_tracker/domain/models/daily_quest.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/fasting_status_sheet.dart';
+import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
 
 /// Pre-Ramadan prep quests shown inside the countdown banner.
@@ -61,8 +62,10 @@ class PreRamadanQuestsStrip extends ConsumerWidget {
       });
     } else if (questId == 'prep_setup_reminders') {
       openSettingsScreen(context, ref, section: 'reminders');
-    } else if (questId == 'prep_review_plan' || questId == 'prep_create_season') {
+    } else if (questId == 'prep_review_plan') {
       ref.read(tabIndexProvider.notifier).state = 2;
+    } else if (questId == 'prep_create_season') {
+      YearRoundNavigation.openCreateSeason(context);
     }
     ref.invalidate(preRamadanQuestProgressProvider);
   }

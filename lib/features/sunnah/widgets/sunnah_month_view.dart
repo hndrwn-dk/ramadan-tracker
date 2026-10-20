@@ -10,6 +10,7 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_month_calendar.dart';
 import 'package:ramadan_tracker/features/sunnah/widgets/sunnah_month_legend.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 import 'package:ramadan_tracker/utils/fasting_status.dart';
 import 'package:ramadan_tracker/utils/hijri_calendar.dart';
 import 'package:ramadan_tracker/utils/sunnah_fasting_rules.dart';
@@ -63,11 +64,14 @@ class _SunnahMonthViewState extends ConsumerState<SunnahMonthView> {
         : '${HijriCalendar.monthNameId(hijriMid.month)} ${hijriMid.year} AH';
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        SunnahMonthView._hPad,
-        SunnahMonthView._hPad,
-        SunnahMonthView._hPad,
-        24,
+      padding: FloatingPillNavBar.scrollPadding(
+        context,
+        padding: const EdgeInsets.fromLTRB(
+          SunnahMonthView._hPad,
+          SunnahMonthView._hPad,
+          SunnahMonthView._hPad,
+          24,
+        ),
       ),
       children: [
         seasonAsync.when(
@@ -175,8 +179,7 @@ class _SunnahMonthViewState extends ConsumerState<SunnahMonthView> {
                   ),
                 ],
               ),
-              Align(
-                alignment: Alignment.centerRight,
+              Center(
                 child: TextButton.icon(
                   onPressed: _jumpToToday,
                   icon: const Icon(Icons.today, size: 18),

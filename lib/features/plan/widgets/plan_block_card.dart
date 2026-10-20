@@ -16,6 +16,7 @@ class PlanBlockCard extends ConsumerWidget {
   final String? timeWindow;
   final int seasonId;
   final int dayIndex;
+  final bool previewOnly;
 
   const PlanBlockCard({
     super.key,
@@ -25,6 +26,7 @@ class PlanBlockCard extends ConsumerWidget {
     this.timeWindow,
     required this.seasonId,
     required this.dayIndex,
+    this.previewOnly = false,
   });
 
   @override
@@ -210,10 +212,12 @@ class PlanBlockCard extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: _buildActionButton(context, ref, task),
-            ),
+            if (!previewOnly) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: _buildActionButton(context, ref, task),
+              ),
+            ],
           ],
         ),
       ],

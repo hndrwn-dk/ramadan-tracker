@@ -245,6 +245,12 @@ class SunnahStrings {
         'Buat atau lengkapi musim Ramadan dari tab Hari Ini — kebiasaan, pengingat Sahur/Iftar, dan pelacakan harian.',
         'Create or finish your Ramadan season from the Today tab — habits, Sahur/Iftar reminders, and daily tracking.',
       );
+  String get preRamadanTodayHintSeasonReady => t(
+        'Musim sudah siap. Selesaikan misi persiapan, atur Autopilot, dan aktifkan pengingat sebelum Ramadan dimulai.',
+        'Your season is ready. Finish prep quests, set Autopilot, and turn on reminders before Ramadan begins.',
+      );
+  String get manageRamadanSeason =>
+      t('Kelola musim Ramadan', 'Manage Ramadan season');
   String get preRamadanAutopilotHint => t(
         'Atur target Quran, dzikir, dan blok waktu harian. Autopilot aktif otomatis saat Ramadan dimulai.',
         'Set your Quran, dhikr, and daily time-block targets. Autopilot activates when Ramadan starts.',

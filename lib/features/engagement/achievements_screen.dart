@@ -8,6 +8,7 @@ import 'package:ramadan_tracker/l10n/app_localizations.dart';
 import 'package:ramadan_tracker/features/engagement/widgets/achievement_share_card.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 
 class AchievementsScreen extends ConsumerWidget {
   const AchievementsScreen({super.key});
@@ -53,7 +54,10 @@ class AchievementsScreen extends ConsumerWidget {
           ],
         ),
         body: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: FloatingPillNavBar.scrollPadding(
+            context,
+            padding: const EdgeInsets.all(16),
+          ),
           children: [
             engagementAsync.when(
               data: (e) => PremiumCard(

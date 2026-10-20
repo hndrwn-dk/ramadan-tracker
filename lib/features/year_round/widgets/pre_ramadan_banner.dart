@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ramadan_tracker/app/settings_navigation.dart';
 import 'package:ramadan_tracker/data/providers/season_provider.dart';
 import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_dates.dart';
@@ -9,7 +10,7 @@ import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
 
 /// Where the pre-Ramadan countdown banner is shown — copy and CTA differ.
 enum PreRamadanBannerTarget {
-  /// Hari Ini: season setup only (not Autopilot).
+  /// Hari Ini: season setup or manage.
   today,
 
   /// Rencana Autopilot: Quran/dhikr/time-block setup.
@@ -39,8 +40,11 @@ class PreRamadanBanner extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
+        final hasSeason = season != null;
         final hint = target == PreRamadanBannerTarget.today
-            ? s.preRamadanTodayHint
+            ? (hasSeason
+                ? s.preRamadanTodayHintSeasonReady
+                : s.preRamadanTodayHint)
             : s.preRamadanAutopilotHint;
 
         return PremiumCard(
@@ -86,12 +90,22 @@ class PreRamadanBanner extends ConsumerWidget {
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () =>
-                        YearRoundNavigation.openCreateSeason(context),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: Text(s.setupRamadanSeason),
-                  ),
+                  child: hasSeason
+                      ? OutlinedButton.icon(
+                          onPressed: () => openSettingsScreen(
+                            context,
+                            ref,
+                            section: 'season',
+                          ),
+                          icon: const Icon(Icons.settings_outlined, size: 18),
+                          label: Text(s.manageRamadanSeason),
+                        )
+                      : FilledButton.icon(
+                          onPressed: () =>
+                              YearRoundNavigation.openCreateSeason(context),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(s.setupRamadanSeason),
+                        ),
                 ),
               ],
             ],

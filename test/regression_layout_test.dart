@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 
 /// Layout regression checks at 360px width (small phone, Indonesian).
 void main() {
@@ -26,14 +27,35 @@ void main() {
       await pumpIdApp(
         tester,
         Scaffold(
-          bottomNavigationBar: NavigationBar(
+          bottomNavigationBar: FloatingPillNavBar(
             selectedIndex: 0,
-            destinations: const [
-              NavigationDestination(icon: Icon(Icons.today), label: 'Hari Ini'),
-              NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Bulan'),
-              NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'Rencana'),
-              NavigationDestination(icon: Icon(Icons.nightlight), label: 'Sunnah'),
-              NavigationDestination(icon: Icon(Icons.insights), label: 'Wawasan'),
+            onSelected: (_) {},
+            items: const [
+              FloatingPillNavItem(
+                icon: Icons.today_outlined,
+                selectedIcon: Icons.today,
+                label: 'Hari Ini',
+              ),
+              FloatingPillNavItem(
+                icon: Icons.calendar_month_outlined,
+                selectedIcon: Icons.calendar_month,
+                label: 'Bulan',
+              ),
+              FloatingPillNavItem(
+                icon: Icons.auto_awesome_outlined,
+                selectedIcon: Icons.auto_awesome,
+                label: 'Rencana',
+              ),
+              FloatingPillNavItem(
+                icon: Icons.nightlight_outlined,
+                selectedIcon: Icons.nightlight,
+                label: 'Sunnah',
+              ),
+              FloatingPillNavItem(
+                icon: Icons.insights_outlined,
+                selectedIcon: Icons.insights,
+                label: 'Wawasan',
+              ),
             ],
           ),
         ),

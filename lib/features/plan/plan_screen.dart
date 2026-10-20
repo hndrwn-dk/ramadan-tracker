@@ -23,6 +23,7 @@ import 'package:ramadan_tracker/utils/habit_helpers.dart';
 import 'package:ramadan_tracker/widgets/dhikr_icon.dart';
 import 'package:ramadan_tracker/widgets/quran_icon.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 import 'package:intl/intl.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
@@ -69,9 +70,12 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           }
           final seasonState = ref.watch(seasonStateProvider);
           if (seasonState == SeasonState.postRamadan) {
-            return const SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: SeasonCompletedCard(),
+            return SingleChildScrollView(
+              padding: FloatingPillNavBar.scrollPadding(
+                context,
+                padding: const EdgeInsets.all(16),
+              ),
+              child: const SeasonCompletedCard(),
             );
           }
           return _buildContent(season.id, season.days);
@@ -109,7 +113,10 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   Widget _buildSetupWizard(int seasonId, int totalDays) {
     final seasonState = ref.watch(seasonStateProvider);
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: FloatingPillNavBar.scrollPadding(
+        context,
+        padding: const EdgeInsets.all(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -286,11 +293,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final dayIndex = ref.watch(currentDayIndexProvider);
     final seasonState = ref.watch(seasonStateProvider);
     final dhikrPlanAsync = ref.watch(dhikrPlanProvider(seasonId));
+    final isPreview = seasonState == SeasonState.preRamadan;
 
     return dhikrPlanAsync.when(
       data: (dhikrPlan) {
-        // Use the actual current day index, same as Today screen
-        final effectiveDayIndex = dayIndex;
+        // Before Ramadan starts, dayIndex is clamped to 1 — use 0 so remaining
+        // days stay at the full season length and no day-1 progress is counted.
+        final effectiveDayIndex = isPreview ? 0 : dayIndex;
         return FutureBuilder<AutopilotPlan>(
               future: AutopilotService.generatePlan(
                 seasonId: seasonId,
@@ -327,11 +336,14 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 
                     final s = SunnahStrings.of(context);
                     return SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
+                      padding: FloatingPillNavBar.scrollPadding(
+                        context,
+                        padding: const EdgeInsets.all(16),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (seasonState == SeasonState.preRamadan) ...[
+                          if (isPreview) ...[
                             const PreRamadanBanner(
                               target: PreRamadanBannerTarget.autopilot,
                               showButton: false,
@@ -348,16 +360,37 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                             ),
                             const SizedBox(height: 16),
                           ],
-                          TodayRemainingCard(
-                            seasonId: seasonId,
-                            dayIndex: effectiveDayIndex,
+                          if (!isPreview) ...[
+                            TodayRemainingCard(
+                              seasonId: seasonId,
+                              dayIndex: effectiveDayIndex,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          _buildRecommendedPlanCard(
+                            context,
+                            plan,
+                            seasonId,
+                            isPreview ? 1 : effectiveDayIndex,
+                            previewOnly: isPreview,
                           ),
                           const SizedBox(height: 16),
-                          _buildRecommendedPlanCard(context, plan, seasonId, effectiveDayIndex),
+                          _buildTodaysPlanCard(
+                            context,
+                            plan,
+                            timeWindows,
+                            seasonId,
+                            isPreview ? 1 : effectiveDayIndex,
+                            previewOnly: isPreview,
+                          ),
                           const SizedBox(height: 16),
-                          _buildTodaysPlanCard(context, plan, timeWindows, seasonId, effectiveDayIndex),
-                          const SizedBox(height: 16),
-                          _buildProgressCard(context, plan, seasonId, effectiveDayIndex),
+                          _buildProgressCard(
+                            context,
+                            plan,
+                            seasonId,
+                            isPreview ? 1 : effectiveDayIndex,
+                            previewOnly: isPreview,
+                          ),
                         ],
                       ),
                     );
@@ -371,7 +404,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     );
   }
 
-  Widget _buildRecommendedPlanCard(BuildContext context, AutopilotPlan plan, int seasonId, int dayIndex) {
+  Widget _buildRecommendedPlanCard(
+    BuildContext context,
+    AutopilotPlan plan,
+    int seasonId,
+    int dayIndex, {
+    bool previewOnly = false,
+  }) {
     // Use providers for auto-refresh when data changes
     final quranDailyAsync = ref.watch(quranDailyProvider((seasonId: seasonId, dayIndex: dayIndex)));
     final entriesAsync = ref.watch(dailyEntriesProvider((seasonId: seasonId, dayIndex: dayIndex)));
@@ -383,7 +422,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
         data: (entries) => quranPlanAsync.when(
           data: (quranPlan) => dhikrPlanAsync.when(
             data: (dhikrPlan) {
-              final quranProgress = quranDaily?.pagesRead ?? 0;
+              final quranProgress = previewOnly ? 0 : (quranDaily?.pagesRead ?? 0);
               final quranTarget = quranPlan?.dailyTargetPages ?? plan.quranDailyTarget;
               
               // Get dhikr entry - need to await the habit
@@ -394,11 +433,15 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                   final dhikrEntry = dhikrHabit != null
                       ? entries.where((e) => e.habitId == dhikrHabit.id).firstOrNull
                       : null;
-                  final dhikrProgress = dhikrEntry?.valueInt ?? 0;
+                  final dhikrProgress =
+                      previewOnly ? 0 : (dhikrEntry?.valueInt ?? 0);
                   final dhikrTarget = dhikrPlan?.dailyTarget ?? plan.dhikrTarget;
                   
-                  final quranCompleted = quranProgress >= quranTarget;
-                  final dhikrCompleted = dhikrProgress >= dhikrTarget;
+                  final quranCompleted =
+                      !previewOnly && quranProgress >= quranTarget;
+                  final dhikrCompleted =
+                      !previewOnly && dhikrProgress >= dhikrTarget;
+                  final onHero = Theme.of(context).colorScheme.onPrimaryContainer;
 
                   return Container(
           decoration: BoxDecoration(
@@ -430,12 +473,12 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        color: onHero.withOpacity(0.18),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.auto_awesome,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: onHero,
                         size: 24,
                       ),
                     ),
@@ -448,13 +491,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                             AppLocalizations.of(context)!.recommendedPlan,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  color: onHero,
                                 ),
                           ),
                           Text(
                             AppLocalizations.of(context)!.recommendedPlanSubtitle,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                  color: onHero.withOpacity(0.7),
                                 ),
                           ),
                         ],
@@ -467,7 +510,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                   AppLocalizations.of(context)!.todayTarget,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        color: onHero,
                       ),
                 ),
                 const SizedBox(height: 16),
@@ -610,7 +653,14 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   }
 
 
-  Widget _buildTodaysPlanCard(BuildContext context, AutopilotPlan plan, Map<String, String?> timeWindows, int seasonId, int dayIndex) {
+  Widget _buildTodaysPlanCard(
+    BuildContext context,
+    AutopilotPlan plan,
+    Map<String, String?> timeWindows,
+    int seasonId,
+    int dayIndex, {
+    bool previewOnly = false,
+  }) {
     return AppSurface(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -640,6 +690,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
             timeWindow: timeWindows['morning'],
             seasonId: seasonId,
             dayIndex: dayIndex,
+            previewOnly: previewOnly,
           ),
           const SizedBox(height: 16),
           PlanBlockCard(
@@ -649,6 +700,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
             timeWindow: timeWindows['day'],
             seasonId: seasonId,
             dayIndex: dayIndex,
+            previewOnly: previewOnly,
           ),
           const SizedBox(height: 16),
           PlanBlockCard(
@@ -658,13 +710,20 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
             timeWindow: timeWindows['night'],
             seasonId: seasonId,
             dayIndex: dayIndex,
+            previewOnly: previewOnly,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProgressCard(BuildContext context, AutopilotPlan plan, int seasonId, int dayIndex) {
+  Widget _buildProgressCard(
+    BuildContext context,
+    AutopilotPlan plan,
+    int seasonId,
+    int dayIndex, {
+    bool previewOnly = false,
+  }) {
     // Hide progress card if season is completed (days left == 0)
     if (plan.quranRemainingDays <= 0) {
       return const SizedBox.shrink();

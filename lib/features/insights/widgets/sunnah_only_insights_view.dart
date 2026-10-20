@@ -13,6 +13,7 @@ import 'package:ramadan_tracker/features/sunnah/sunnah_strings.dart';
 import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
 import 'package:ramadan_tracker/insights/widgets/premium_card.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 
 /// Wawasan year-round content (pre-Ramadan, post-Ramadan, or no season).
 class SunnahOnlyInsightsView extends ConsumerWidget {
@@ -43,7 +44,10 @@ class SunnahOnlyInsightsView extends ConsumerWidget {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: FloatingPillNavBar.scrollPadding(
+            context,
+            padding: const EdgeInsets.all(16),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

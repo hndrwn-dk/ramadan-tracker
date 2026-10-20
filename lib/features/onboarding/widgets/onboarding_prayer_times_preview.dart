@@ -111,8 +111,10 @@ class _OnboardingPrayerTimesPreviewState
     final l10n = AppLocalizations.of(context)!;
     if (_previewTimes == null) return const SizedBox.shrink();
 
+    final scheme = Theme.of(context).colorScheme;
+    final onHero = scheme.onPrimaryContainer;
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      color: scheme.primaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -126,6 +128,7 @@ class _OnboardingPrayerTimesPreviewState
                     l10n.prayerTimesPreview,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: onHero,
                         ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -133,8 +136,8 @@ class _OnboardingPrayerTimesPreviewState
                 if (widget.showTestButton)
                   TextButton.icon(
                     onPressed: _testNotification,
-                    icon: const Icon(Icons.notifications_active, size: 18),
-                    label: Text(l10n.test),
+                    icon: Icon(Icons.notifications_active, size: 18, color: onHero),
+                    label: Text(l10n.test, style: TextStyle(color: onHero)),
                   ),
               ],
             ),
@@ -163,6 +166,7 @@ class _OnboardingPrayerTimesPreviewState
               l10n.prayerTimesVaryDaily,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
+                    color: onHero.withValues(alpha: 0.85),
                   ),
             ),
           ],
@@ -196,6 +200,7 @@ class _OnboardingPrayerTimesPreviewState
       displayTime = time;
     }
 
+    final onHero = Theme.of(context).colorScheme.onPrimaryContainer;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -206,6 +211,7 @@ class _OnboardingPrayerTimesPreviewState
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: isReminder ? FontWeight.normal : FontWeight.w500,
+                    color: onHero.withValues(alpha: isReminder ? 0.85 : 1),
                   ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -215,6 +221,7 @@ class _OnboardingPrayerTimesPreviewState
             DateFormat('HH:mm').format(displayTime),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: onHero,
                 ),
           ),
         ],

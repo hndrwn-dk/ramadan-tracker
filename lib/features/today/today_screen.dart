@@ -53,7 +53,7 @@ import 'package:ramadan_tracker/widgets/donation_icon_button.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
 import 'package:ramadan_tracker/features/today/today_checklist_navigation.dart';
 import 'package:ramadan_tracker/features/today/widgets/today_checklist_body.dart';
-import 'package:ramadan_tracker/features/today/widgets/today_checklist_sticky_bar.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 import 'package:ramadan_tracker/widgets/app_back_button.dart';
 import 'package:ramadan_tracker/widgets/scaffold_body_bottom_safe.dart';
 import 'package:ramadan_tracker/data/providers/support_provider.dart';
@@ -181,7 +181,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       body: seasonAsync.when(
         data: (season) {
           if (season == null) {
-            return const YearRoundNoSeasonBody();
+            return YearRoundNoSeasonBody(
+              padding: FloatingPillNavBar.scrollPadding(
+                context,
+                padding: const EdgeInsets.all(24),
+              ),
+            );
           }
           return _buildContent(season.id, dayIndex, season.days, seasonState);
         },
@@ -239,7 +244,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       },
       child: SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.all(16),
+        padding: FloatingPillNavBar.scrollPadding(
+          context,
+          padding: const EdgeInsets.all(16),
+          withAccessory: state == SeasonState.active,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -276,16 +285,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         ),
       ),
     );
-
-    if (state == SeasonState.active) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: scrollBody),
-          TodayChecklistStickyBar(seasonId: seasonId, dayIndex: dayIndex),
-        ],
-      );
-    }
 
     return scrollBody;
   }

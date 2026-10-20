@@ -65,20 +65,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  /// Maps deep-link section ids to [_expandedSections] keys.
+  String? _settingsSectionKey(String? section) {
+    switch (section) {
+      case 'times':
+      case 'reminders':
+        return 'times';
+      case 'season':
+        return 'season';
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     ref.listen(openSettingsSectionProvider, (prev, next) {
-      if (next == 'times') {
-        setState(() => _expandedSections['times'] = true);
+      final key = _settingsSectionKey(next);
+      if (key != null) {
+        setState(() => _expandedSections[key] = true);
         ref.read(openSettingsSectionProvider.notifier).state = null;
       }
     });
     final openSection = ref.read(openSettingsSectionProvider);
-    if (openSection == 'times' && !(_expandedSections['times'] ?? false)) {
+    final openKey = _settingsSectionKey(openSection);
+    if (openKey != null && !(_expandedSections[openKey] ?? false)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          setState(() => _expandedSections['times'] = true);
+          setState(() => _expandedSections[openKey] = true);
           ref.read(openSettingsSectionProvider.notifier).state = null;
         }
       });

@@ -21,6 +21,7 @@ import 'package:ramadan_tracker/features/month/widgets/season_trophy_sheet.dart'
 import 'package:ramadan_tracker/features/engagement/widgets/coach_mark_tip.dart';
 import 'package:ramadan_tracker/domain/services/coach_mark_service.dart';
 import 'package:ramadan_tracker/l10n/app_localizations.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 import 'package:ramadan_tracker/widgets/settings_icon_button.dart';
 
 class MonthScreen extends ConsumerWidget {
@@ -100,6 +101,7 @@ Widget buildMonthGrid(BuildContext context, WidgetRef ref, int seasonId, int day
         const gridGap = 10.0;
         
         return SingleChildScrollView(
+          padding: FloatingPillNavBar.scrollPadding(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

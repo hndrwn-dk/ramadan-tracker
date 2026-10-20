@@ -28,6 +28,7 @@ import 'package:ramadan_tracker/features/insights/widgets/weekly_highlights_card
 import 'package:ramadan_tracker/features/insights/widgets/weekly_task_row.dart';
 import 'package:ramadan_tracker/features/insights/widgets/sedekah_weekly_card.dart';
 import 'package:ramadan_tracker/features/insights/widgets/weekly_achievements_card.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 import 'package:ramadan_tracker/features/insights/widgets/weekly_review_bottom_sheet.dart';
 import 'package:ramadan_tracker/features/insights/widgets/insights_range_selector.dart';
 import 'package:ramadan_tracker/features/insights/utils/insights_labels.dart';
@@ -273,7 +274,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
         }
         
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: FloatingPillNavBar.scrollPadding(
+            context,
+            padding: const EdgeInsets.all(16),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2225,7 +2229,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: FloatingPillNavBar.scrollPadding(
+        context,
+        padding: const EdgeInsets.all(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -3024,7 +3031,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             final currency = weeklyData['currency'] as String;
             
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: FloatingPillNavBar.scrollPadding(
+                context,
+                padding: const EdgeInsets.all(16),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -3365,7 +3375,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with AutomaticK
             final currency = (seasonData['currency'] as String?) ?? 'IDR';
             
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: FloatingPillNavBar.scrollPadding(
+                context,
+                padding: const EdgeInsets.all(16),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

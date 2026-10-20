@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 
 /// Shared helpers for emulator regression tests.
 class AppHarness {
@@ -22,15 +23,11 @@ class AppHarness {
     }
   }
 
-  /// Bottom nav index: 0 Hari Ini, 1 Bulan, 2 Rencana, 3 Sunnah, 4 Wawasan, 5 Atur.
+  /// Bottom nav index: 0 Hari Ini, 1 Bulan, 2 Rencana, 3 Sunnah, 4 Wawasan.
   static Future<void> tapNavIndex(WidgetTester tester, int index) async {
-    final destinations = find.descendant(
-      of: find.byType(NavigationBar),
-      matching: find.byType(NavigationDestination),
-    );
-    expect(destinations, findsWidgets);
-    expect(destinations.evaluate().length, greaterThan(index));
-    await tester.tap(destinations.at(index));
+    final item = find.byKey(ValueKey('floating-pill-nav-$index'));
+    expect(item, findsOneWidget);
+    await tester.tap(item);
     await settle(tester);
   }
 
@@ -44,7 +41,7 @@ class AppHarness {
         throw TestFailure('App failed to initialize on device.');
       }
 
-      if (find.byType(NavigationBar).evaluate().isNotEmpty ||
+      if (find.byType(FloatingPillNavBar).evaluate().isNotEmpty ||
           find.byIcon(Icons.today_outlined).evaluate().isNotEmpty ||
           find.byIcon(Icons.today).evaluate().isNotEmpty ||
           find.byIcon(Icons.nightlight_outlined).evaluate().isNotEmpty) {
@@ -79,7 +76,7 @@ class AppHarness {
     }
 
     throw TestFailure(
-      'Main screen did not appear (NavigationBar not found after startup).',
+      'Main screen did not appear (floating pill nav not found after startup).',
     );
   }
 

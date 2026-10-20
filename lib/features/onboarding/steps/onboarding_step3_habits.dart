@@ -92,17 +92,7 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
                   ],
                   _buildHabitCheckbox(context, 'sedekah', l10n.habitSedekah, Icons.volunteer_activism, iconWidget: const SedekahIcon(size: 20)),
                   SizedBox(height: isSmallScreen ? 12 : 20),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: isSmallScreen ? VisualDensity.compact : VisualDensity.standard,
-                    title: Text(l10n.advanced),
-                    trailing: Icon(
-                      _advancedExpanded
-                          ? Icons.expand_less
-                          : Icons.expand_more,
-                    ),
-                    onTap: _onAdvancedTapped,
-                  ),
+                  _buildAdvancedHeader(context, l10n, isSmallScreen),
                   if (_advancedExpanded) ...[
                     _buildHabitCheckbox(context, 'prayers', l10n.habitPrayers, Icons.mosque, iconWidget: const PrayersIcon(size: 20)),
                     _buildHabitCheckbox(context, 'tahajud', l10n.habitTahajud, Icons.self_improvement, iconWidget: const TahajudIcon(size: 20)),
@@ -261,6 +251,42 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
     );
   }
 
+  VisualDensity _habitDensity(bool isSmallScreen) {
+    return isSmallScreen ? VisualDensity.compact : VisualDensity.standard;
+  }
+
+  EdgeInsetsGeometry _habitTilePadding(bool isSmallScreen) {
+    return isSmallScreen ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16);
+  }
+
+  /// Same outer box as [CheckboxListTile]'s shrink-wrapped checkbox, so the
+  /// chevron sits on the check column instead of the tile's right edge.
+  double _checkboxSlotSize(VisualDensity density) {
+    return (kMinInteractiveDimension - 8) + density.baseSizeAdjustment.dx;
+  }
+
+  Widget _buildAdvancedHeader(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isSmallScreen,
+  ) {
+    final density = _habitDensity(isSmallScreen);
+    final slot = _checkboxSlotSize(density);
+    return ListTile(
+      contentPadding: _habitTilePadding(isSmallScreen),
+      visualDensity: density,
+      title: Text(l10n.advanced),
+      trailing: SizedBox(
+        width: slot,
+        height: slot,
+        child: Icon(
+          _advancedExpanded ? Icons.expand_less : Icons.expand_more,
+        ),
+      ),
+      onTap: _onAdvancedTapped,
+    );
+  }
+
   Widget _buildHabitCheckbox(BuildContext context, String key, String label, IconData icon, {Widget? iconWidget}) {
     final isSelected = widget.data.selectedHabits.contains(key);
     final isSmallScreen = MediaQuery.sizeOf(context).height < 600;
@@ -282,8 +308,8 @@ class _OnboardingStep3HabitsState extends State<OnboardingStep3Habits> {
           }
         });
       },
-      visualDensity: isSmallScreen ? VisualDensity.compact : VisualDensity.standard,
-      contentPadding: isSmallScreen ? const EdgeInsets.symmetric(horizontal: 0, vertical: 0) : null,
+      visualDensity: _habitDensity(isSmallScreen),
+      contentPadding: _habitTilePadding(isSmallScreen),
       title: Row(
         children: [
           iconWidget ?? Icon(icon, size: iconSize),

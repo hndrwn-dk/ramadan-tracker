@@ -53,7 +53,7 @@ class SeasonModel {
   }
 
   bool isDateInSeason(DateTime date) {
-    final index = getDayIndex(date);
+    final index = getRawDayIndex(date);
     return index >= 1 && index <= days;
   }
 

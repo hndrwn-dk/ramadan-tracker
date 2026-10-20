@@ -28,6 +28,17 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('advanced chevron lines up with the habit checkboxes', (tester) async {
+    await pumpStep(tester, data: OnboardingData(), onNext: () {});
+
+    final checkbox = tester.getCenter(find.byType(Checkbox).first);
+    final chevron = tester.getCenter(find.byIcon(Icons.expand_more));
+    final label = tester.getCenter(find.text('Advanced'));
+
+    expect(chevron.dx, closeTo(checkbox.dx, 1));
+    expect(chevron.dy, closeTo(label.dy, 1));
+  });
+
   testWidgets('asks before expanding Advanced the first time', (tester) async {
     await pumpStep(tester, data: OnboardingData(), onNext: () {});
 

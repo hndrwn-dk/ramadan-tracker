@@ -6,6 +6,7 @@ import 'package:ramadan_tracker/features/year_round/year_round_navigation.dart';
 import 'package:ramadan_tracker/features/year_round/widgets/pre_ramadan_banner.dart';
 import 'package:ramadan_tracker/utils/ramadan_dates.dart';
 import 'package:ramadan_tracker/widgets/app_surface.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 
 /// Shared CTAs for no-season and post-Ramadan flows.
 class YearRoundActions extends ConsumerWidget {
@@ -128,7 +129,9 @@ class _RamadanNearCard extends ConsumerWidget {
 
 /// Header block for screens with no Ramadan season configured.
 class YearRoundNoSeasonBody extends ConsumerWidget {
-  const YearRoundNoSeasonBody({super.key});
+  const YearRoundNoSeasonBody({super.key, this.padding});
+
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,7 +139,7 @@ class YearRoundNoSeasonBody extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: padding ?? const EdgeInsets.all(24),
       children: [
         const SupportPromptSlot(),
         const SizedBox(height: 8),
@@ -177,7 +180,10 @@ class PlanNoSeasonBody extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: FloatingPillNavBar.scrollPadding(
+        context,
+        padding: const EdgeInsets.all(24),
+      ),
       children: [
         const SizedBox(height: 8),
         Center(

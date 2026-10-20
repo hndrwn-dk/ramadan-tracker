@@ -91,6 +91,9 @@ class AppTheme {
           ),
         ),
       ),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
@@ -164,6 +167,9 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

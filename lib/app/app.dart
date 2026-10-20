@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ramadan_tracker/features/today/today_screen.dart';
+import 'package:ramadan_tracker/features/today/widgets/today_checklist_sticky_bar.dart';
+import 'package:ramadan_tracker/widgets/floating_pill_nav_bar.dart';
 import 'package:ramadan_tracker/features/month/month_screen.dart';
 import 'package:ramadan_tracker/features/plan/plan_screen.dart';
 import 'package:ramadan_tracker/features/insights/insights_screen.dart';
@@ -247,8 +249,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
       });
     }
 
+    final checklistTarget = ref.watch(todayChecklistTargetProvider);
+    final showChecklist =
+        safeIndex == 0 && !showAchievements && checklistTarget != null;
+
     return Scaffold(
+      extendBody: true,
       body: SafeArea(
+        bottom: false,
         child: showAchievements
             ? const AchievementsScreen()
             : IndexedStack(
@@ -256,48 +264,134 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 children: _screens,
               ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: safeIndex,
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        onDestinationSelected: (index) {
-          if (showAchievements) {
-            closeAchievementsScreen(ref);
-          }
-          if (safeIndex == 0 && index != 0) {
-            ref.read(selectedDayIndexProvider.notifier).state = null;
-          }
-          if (index != safeIndex) {
-            PlatformAdaptive.lightHaptic();
-          }
-          ref.read(tabIndexProvider.notifier).state = index;
-        },
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.today_outlined),
-            selectedIcon: const Icon(Icons.today),
-            label: l10n.today,
+      bottomNavigationBar: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _FloatingChecklistSlot(
+              visible: showChecklist,
+              child: checklistTarget == null
+                  ? const SizedBox.shrink()
+                  : TodayChecklistStickyBar(
+                      seasonId: checklistTarget.seasonId,
+                      dayIndex: checklistTarget.dayIndex,
+                    ),
+            ),
+            FloatingPillNavBar(
+              selectedIndex: safeIndex,
+              onSelected: (index) {
+                if (showAchievements) {
+                  closeAchievementsScreen(ref);
+                }
+                if (safeIndex == 0 && index != 0) {
+                  ref.read(selectedDayIndexProvider.notifier).state = null;
+                }
+                if (index != safeIndex) {
+                  PlatformAdaptive.lightHaptic();
+                }
+                ref.read(tabIndexProvider.notifier).state = index;
+              },
+              items: [
+                FloatingPillNavItem(
+                  icon: Icons.today_outlined,
+                  selectedIcon: Icons.today,
+                  label: l10n.today,
+                ),
+                FloatingPillNavItem(
+                  icon: Icons.calendar_month_outlined,
+                  selectedIcon: Icons.calendar_month,
+                  label: l10n.month,
+                ),
+                FloatingPillNavItem(
+                  icon: Icons.auto_awesome_outlined,
+                  selectedIcon: Icons.auto_awesome,
+                  label: l10n.plan,
+                ),
+                FloatingPillNavItem(
+                  icon: Icons.nightlight_outlined,
+                  selectedIcon: Icons.nightlight,
+                  label: l10n.sunnah,
+                ),
+                FloatingPillNavItem(
+                  icon: Icons.insights_outlined,
+                  selectedIcon: Icons.insights,
+                  label: l10n.insights,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingChecklistSlot extends StatefulWidget {
+  final bool visible;
+  final Widget child;
+
+  const _FloatingChecklistSlot({
+    required this.visible,
+    required this.child,
+  });
+
+  @override
+  State<_FloatingChecklistSlot> createState() => _FloatingChecklistSlotState();
+}
+
+class _FloatingChecklistSlotState extends State<_FloatingChecklistSlot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+      value: widget.visible ? 1 : 0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _FloatingChecklistSlot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.visible == oldWidget.visible) return;
+    if (widget.visible) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = Curves.easeOutCubic.transform(_controller.value);
+        return Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: t,
+          child: Opacity(
+            opacity: t,
+            child: Transform.translate(
+              offset: Offset(0, (1 - t) * 18),
+              child: child,
+            ),
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.calendar_month_outlined),
-            selectedIcon: const Icon(Icons.calendar_month),
-            label: l10n.month,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.auto_awesome_outlined),
-            selectedIcon: const Icon(Icons.auto_awesome),
-            label: l10n.plan,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.nightlight_outlined),
-            selectedIcon: const Icon(Icons.nightlight),
-            label: l10n.sunnah,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.insights_outlined),
-            selectedIcon: const Icon(Icons.insights),
-            label: l10n.insights,
-          ),
-        ],
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: FloatingPillNavBar.accessoryGap),
+        child: widget.child,
       ),
     );
   }
